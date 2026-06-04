@@ -145,8 +145,8 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#F0EDE8;min-height:10
       <p id="month-label">Loading...</p>
     </div>
     <div class="role-wrap" id="no-print">
-      <span>Viewing as</span>
-      <select id="role-sel" onchange="setRole(this.value)">
+      <span id="role-label" style="display:none">Viewing as</span>
+      <select id="role-sel" onchange="setRole(this.value)" style="display:none">
         <option value="billy">Billy (Owner)</option>
         <option value="steven">Steven &mdash; Myrtle Beach</option>
         <option value="caleb">Caleb &mdash; Charleston</option>
@@ -551,6 +551,7 @@ function rTeam(mgr){
         const svc=(e.svc||0)+(e.chs||0); const ins=(e.ins||0)+(e.chi||0);
         const total=empTot(e)+manAmt;
         const dupW=(e.dups||[]).length?`<div class="dup-warn">⚠ Possible duplicate — check flags</div>`:'';
+        if(total===0&&!manAmt) return '';
         return `<tr><td>${e.name}${dupW}</td><td>${svc>0?fp(svc):'<span class="zero">—</span>'}</td><td>${ins>0?fp(ins):'<span class="zero">—</span>'}</td><td>${e.plb>0?fp(e.plb):'<span class="zero">—</span>'}</td><td>${e.com>0?fp(e.com):'<span class="zero">—</span>'}</td><td>${manAmt>0?fp(manAmt):'<span class="zero">—</span>'}</td><td>${fp(total)}</td></tr>`;
       }).join('')}</tbody>
     </table>
@@ -640,6 +641,37 @@ async function resolveFlag(mgr,id){
 }
 
 /* ── Boot ── */
+/* ── PIN Protection ── */
+const PINS = { '1234': 'billy', '5678': 'steven', '9012': 'caleb' };
+const PIN_LABELS = { billy:'Billy (Owner)', steven:'Steven — Myrtle Beach', caleb:'Caleb — Charleston' };
+
+function showPinScreen() {
+  document.getElementById('nav').style.display='none';
+  document.getElementById('views').innerHTML=`
+    <div style="max-width:320px;margin:4rem auto;text-align:center">
+      <div style="font-size:1rem;font-weight:600;margin-bottom:.5rem">Enter your access PIN</div>
+      <div style="font-size:.8rem;color:#999;margin-bottom:1.5rem">Contact Billy if you need your PIN</div>
+      <input type="password" id="pin-input" maxlength="4" placeholder="••••"
+        style="width:100%;font-size:1.5rem;text-align:center;padding:.75rem;border:1px solid #ddd;border-radius:10px;letter-spacing:.5rem;font-family:'DM Mono',monospace;background:#fff;color:#1a1a1a"
+        onkeyup="checkPin(this.value)">
+      <div id="pin-error" style="color:#991b1b;font-size:.78rem;margin-top:.75rem;min-height:1.2rem"></div>
+    </div>`;
+}
+
+function checkPin(val) {
+  if(val.length < 4) { document.getElementById('pin-error').textContent=''; return; }
+  const role = PINS[val];
+  if(role) {
+    document.getElementById('role-sel').value = role==='billy'?'Billy (Owner)':role==='steven'?'Steven — Myrtle Beach':'Caleb — Charleston';
+    document.getElementById('role-sel').style.display = role==='billy'?'':'none';
+    document.getElementById('nav').style.display='';
+    setRole(role);
+  } else {
+    document.getElementById('pin-error').textContent='Incorrect PIN — try again';
+    document.getElementById('pin-input').value='';
+  }
+}
+
 (async function init(){
   const badge=document.getElementById('conn-badge');
   document.getElementById('month-label').textContent=`${MONTH} · Processing window open`;
@@ -649,14 +681,12 @@ async function resolveFlag(mgr,id){
     if(!API_KEY) throw new Error('No API key in app_config tab');
     await loadSheets();
     badge.textContent='Connected'; badge.className='conn conn-ok'; CONN_OK=true;
-    toast('Connected to Google Sheets');
   } catch(e){
     badge.textContent='Connection failed'; badge.className='conn conn-err';
     console.error(e);
-    toast('Could not connect to Google Sheet — check app_config tab',5000);
   }
-  document.getElementById('role-sel').value='billy';
-  setRole('billy');
+  document.getElementById('role-sel').style.display='none';
+  showPinScreen();
 })();
 </script>
 </body>

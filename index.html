@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coastal Air — Spiff & Bonus Processing</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:14px}
+body{font-family:'DM Sans',system-ui,sans-serif;background:#F0EDE8;min-height:100vh;color:#1a1a1a}
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+/* Layout */
+.shell{max-width:1040px;margin:0 auto;padding:1.5rem 1.25rem}
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.75rem;gap:1rem;flex-wrap:wrap}
+.brand h1{font-size:1.25rem;font-weight:600;color:#1a1a1a;letter-spacing:-.02em}
+.brand p{font-size:.75rem;color:#888;margin-top:2px;letter-spacing:.01em}
+.conn{display:inline-flex;align-items:center;gap:5px;font-size:.7rem;padding:3px 9px;border-radius:20px;font-weight:500;margin-left:8px;vertical-align:middle}
+.conn-ok{background:#d1fae5;color:#065f46}
+.conn-err{background:#fee2e2;color:#991b1b}
+.conn-wait{background:#f3f4f6;color:#6b7280}
+.role-wrap{display:flex;align-items:center;gap:.5rem;font-size:.8rem;color:#666}
+.role-wrap select{font-size:.8rem;padding:6px 10px;border-radius:8px;border:1px solid #ddd;background:#fff;color:#1a1a1a;cursor:pointer;font-family:inherit}
+
+/* Nav */
+.nav{display:flex;gap:4px;margin-bottom:1.25rem;flex-wrap:wrap;background:#E4E0DA;padding:4px;border-radius:10px;width:fit-content}
+.nb{padding:6px 14px;border-radius:7px;border:none;background:transparent;color:#666;font-size:.8rem;cursor:pointer;font-family:inherit;font-weight:500;transition:all .15s}
+.nb:hover{color:#1a1a1a}
+.nb.on{background:#fff;color:#1a1a1a;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+
+/* Cards */
+.card{background:#fff;border:1px solid #E8E4DF;border-radius:12px;padding:1.125rem 1.25rem;margin-bottom:.875rem}
+.card-title{font-size:.7rem;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.875rem}
+
+/* Stats */
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.625rem;margin-bottom:.875rem}
+.sc{background:#FAFAF8;border:1px solid #EEEBE7;border-radius:10px;padding:.875rem 1rem}
+.sl{font-size:.7rem;color:#999;margin-bottom:.25rem;letter-spacing:.02em}
+.sv{font-size:1.5rem;font-weight:600;color:#1a1a1a;letter-spacing:-.02em;line-height:1}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:.7rem;padding:2px 8px;border-radius:20px;font-weight:500;white-space:nowrap;letter-spacing:.01em}
+.bok{background:#d1fae5;color:#065f46}
+.bwarn{background:#fef3c7;color:#92400e}
+.bdanger{background:#fee2e2;color:#991b1b}
+.binfo{background:#dbeafe;color:#1e40af}
+.bgray{background:#f3f4f6;color:#6b7280}
+
+/* Row items */
+.ri{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #F0EDE8;font-size:.85rem}
+.ri:last-child{border-bottom:none}
+.ril{display:flex;flex-direction:column;gap:2px}
+.risub{font-size:.72rem;color:#999}
+
+/* Buttons */
+.btn{padding:7px 16px;border-radius:8px;border:1px solid #ddd;background:#fff;color:#1a1a1a;font-size:.8rem;cursor:pointer;font-family:inherit;font-weight:500;transition:all .15s}
+.btn:hover{background:#f9f9f7}
+.btnp{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.btnp:hover{background:#333}
+.btnd{background:#fee2e2;color:#991b1b;border-color:#fca5a5}
+.bsm{padding:4px 10px;font-size:.72rem}
+
+/* Flag blocks */
+.fb{border-left:3px solid #ddd;padding:.875rem 1rem;border-radius:0 10px 10px 0;background:#fff;border-top:1px solid #eee;border-right:1px solid #eee;border-bottom:1px solid #eee;margin-bottom:.625rem;transition:opacity .2s}
+.fb.red{border-left-color:#ef4444}
+.fb.yellow{border-left-color:#f59e0b}
+.fb.done{opacity:.45}
+.fmeta{font-size:.7rem;color:#999;margin-bottom:3px;font-family:'DM Mono',monospace}
+.ftitle{font-size:.85rem;font-weight:600;margin-bottom:4px}
+.fdetail{font-size:.78rem;color:#666;margin-bottom:10px;line-height:1.55}
+.factions{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start}
+.factions select,.factions textarea{font-size:.78rem;padding:5px 8px;border:1px solid #ddd;border-radius:7px;background:#fff;color:#1a1a1a;font-family:inherit}
+.factions textarea{flex:1;min-width:160px;resize:vertical;min-height:34px}
+
+/* Tables */
+.et{width:100%;border-collapse:collapse;font-size:.82rem}
+.et th{font-size:.68rem;font-weight:600;color:#999;text-align:right;padding:6px 8px;border-bottom:1px solid #F0EDE8;text-transform:uppercase;letter-spacing:.04em}
+.et th:first-child{text-align:left}
+.et td{padding:8px;text-align:right;border-bottom:1px solid #F0EDE8;font-variant-numeric:tabular-nums;font-family:'DM Mono',monospace;font-size:.78rem}
+.et td:first-child{text-align:left;font-family:'DM Sans',system-ui,sans-serif;font-weight:500}
+.et tr:last-child td{border-bottom:none}
+.et .trow td{font-weight:600;background:#FAFAF8}
+
+/* Accounting table */
+.aw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.at{width:100%;border-collapse:collapse;font-size:.75rem;min-width:680px}
+.at th{font-size:.65rem;font-weight:600;color:#999;text-align:right;padding:6px 6px;border-bottom:1px solid #F0EDE8;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.at th:first-child{text-align:left;min-width:150px}
+.at td{padding:7px 6px;text-align:right;border-bottom:1px solid #F0EDE8;font-variant-numeric:tabular-nums;font-family:'DM Mono',monospace;font-size:.72rem}
+.at td:first-child{text-align:left;font-family:'DM Sans',system-ui,sans-serif;font-weight:500}
+.at .dtrow td{font-weight:600;background:#FAFAF8;border-top:2px solid #E8E4DF}
+.at .gtrow td{font-weight:600;background:#1a1a1a;color:#fff;font-size:.8rem}
+.zero{color:#ccc}
+
+/* Manual add grid */
+.mg{display:grid;grid-template-columns:1.5fr 1.5fr 90px 1fr auto;gap:8px;align-items:end;margin-top:.75rem}
+.mg label{font-size:.7rem;color:#999;display:block;margin-bottom:3px;letter-spacing:.02em}
+.mg input,.mg select{width:100%;font-size:.8rem;padding:6px 8px;border:1px solid #ddd;border-radius:7px;background:#fff;color:#1a1a1a;font-family:inherit}
+
+/* Push-back box */
+.pb-box{background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:.875rem 1rem;margin-bottom:1rem;font-size:.82rem}
+.pb-label{font-size:.68rem;font-weight:600;color:#991b1b;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em}
+
+/* Revenue table */
+.rev-t{width:100%;border-collapse:collapse;font-size:.82rem}
+.rev-t th{font-size:.68rem;font-weight:600;color:#999;padding:6px 8px;border-bottom:1px solid #F0EDE8;text-align:right;text-transform:uppercase;letter-spacing:.04em}
+.rev-t th:first-child{text-align:left}
+.rev-t td{padding:8px;border-bottom:1px solid #F0EDE8;text-align:right;font-variant-numeric:tabular-nums}
+.rev-t td:first-child{text-align:left;font-weight:500}
+.rev-t input[type=number]{width:110px;font-size:.8rem;text-align:right;padding:4px 8px;border:1px solid #ddd;border-radius:7px;background:#fff;color:#1a1a1a;font-family:'DM Mono',monospace}
+
+/* Carry forward */
+.cf-badge{background:#dbeafe;color:#1e40af;border-radius:6px;padding:2px 8px;font-size:.68rem;font-weight:600}
+.dup-warn{background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:3px 8px;font-size:.68rem;color:#92400e;margin-top:4px;display:inline-block}
+
+/* Toast */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:#1a1a1a;color:#fff;padding:.75rem 1.25rem;border-radius:10px;font-size:.8rem;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.toast.on{opacity:1}
+
+/* Spinner */
+.spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(0,0,0,.1);border-top-color:#1a1a1a;border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle;margin-right:5px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* Loading */
+.loading{text-align:center;padding:3rem;color:#999;font-size:.85rem}
+.loading .spin{border-top-color:#999;width:20px;height:20px;margin:0 auto 1rem;display:block}
+
+@media print{
+  .nav,.role-wrap,.btn,.nb,#no-print,body{background:white!important}
+  .card{border:1px solid #ddd;break-inside:avoid;box-shadow:none}
+  .shell{padding:.5rem}
+}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="shell">
+  <div class="topbar">
+    <div class="brand">
+      <h1>Coastal Air &mdash; Spiff &amp; Bonus Processing
+        <span class="conn conn-wait" id="conn-badge">Connecting...</span>
+      </h1>
+      <p id="month-label">Loading...</p>
+    </div>
+    <div class="role-wrap" id="no-print">
+      <span>Viewing as</span>
+      <select id="role-sel" onchange="setRole(this.value)">
+        <option value="billy">Billy (Owner)</option>
+        <option value="steven">Steven &mdash; Myrtle Beach</option>
+        <option value="caleb">Caleb &mdash; Charleston</option>
+      </select>
+    </div>
+  </div>
+  <div class="nav" id="nav"></div>
+  <div id="views">
+    <div class="loading"><div class="spin"></div>Connecting to Google Sheets...</div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SHEET_ID = '1E3p3clqh1svM_F8dOXAh7pbFUqQCUFRetyHeElpDXTI';
+const MONTH    = 'May 2026';
+const PREV_M   = 'Apr 2026';
+const NEXT_M   = 'Jun 2026';
+let API_KEY = '';
+let CONN_OK = false;
+
+/* ── Sheets API ── */
+async function sGet(range) {
+  try {
+    const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?key=${API_KEY}`);
+    if (!r.ok) return null;
+    return (await r.json()).values || [];
+  } catch { return null; }
+}
+async function sPut(range, values) {
+  try {
+    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=RAW&key=${API_KEY}`, {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({range, majorDimension:'ROWS', values})
+    });
+  } catch(e) { console.error('sPut error', e); }
+}
+async function sAppend(tab, values) {
+  try {
+    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(tab+'!A1')}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS&key=${API_KEY}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({majorDimension:'ROWS', values})
+    });
+  } catch(e) { console.error('sAppend error', e); }
+}
+
+/* ── State ── */
+const S = {
+  role: 'billy',
+  submissions: {steven:'not_started', caleb:'not_started'},
+  pushback: {steven:null, caleb:null},
+  revenue: [
+    {dept:'MB Service-Residential', goal:123437, actual:null, se:true},
+    {dept:'MB Service-Commercial',  goal:216964, actual:null, se:true},
+    {dept:'MB Plumbing',            goal:69934,  actual:null, se:true},
+    {dept:'CHS Service',            goal:150144, actual:null, se:false},
+    {dept:'CHS Install-All',        goal:301651, actual:null, se:false},
+    {dept:'MB Install-Residential', goal:349051, actual:null, se:false},
+    {dept:'MB Install-Commercial',  goal:299381, actual:null, se:false},
+  ],
+  bonuses: [
+    {id:'jenny', name:'Jenny Miller', type:'CCS Supervisor Bonus',       amount:680,  dept:'Call Center',           approved:false},
+    {id:'rich',  name:'Rich Smith',   type:'Commercial Commission (3%)', amount:412,  dept:'MB Service Commercial', approved:false},
+  ],
+  emps: {
+    steven:[
+      {name:'Darren Goida',   svc:250,  ins:100, plb:0,   com:0,   chs:0, chi:0, dups:['Job #130079759 paid Apr 2026']},
+      {name:'Jim LeBlanc',    svc:1565, ins:300, plb:0,   com:0,   chs:0, chi:0, dups:[]},
+      {name:'Karl Welch',     svc:1165, ins:350, plb:0,   com:0,   chs:0, chi:0, dups:[]},
+      {name:'Jesse Mertens',  svc:0,    ins:0,   plb:115, com:0,   chs:0, chi:0, dups:[]},
+      {name:'Herbie Windley', svc:0,    ins:0,   plb:200, com:0,   chs:0, chi:0, dups:[]},
+      {name:'Nick Scarpa',    svc:0,    ins:0,   plb:0,   com:80,  chs:0, chi:0, dups:[]},
+      {name:'Javi Vazquez',   svc:0,    ins:0,   plb:0,   com:125, chs:0, chi:0, dups:[]},
+      {name:'Ray Lambert',    svc:0,    ins:0,   plb:0,   com:0,   chs:0, chi:0, dups:[]},
+      {name:'Kyle Freeman',   svc:0,    ins:0,   plb:0,   com:0,   chs:0, chi:0, dups:[]},
+      {name:'Stuart Akel',    svc:0,    ins:0,   plb:0,   com:0,   chs:0, chi:0, dups:[]},
+    ],
+    caleb:[
+      {name:'Jay Hall',      svc:0, ins:0, plb:0, com:0, chs:430, chi:100, dups:[]},
+      {name:'Steve Gordon',  svc:0, ins:0, plb:0, com:0, chs:50,  chi:25,  dups:[]},
+      {name:'Derrick Hall',  svc:0, ins:0, plb:0, com:0, chs:0,   chi:0,   dups:[]},
+      {name:'Quincy Fields', svc:0, ins:0, plb:0, com:0, chs:0,   chi:0,   dups:[]},
+    ]
+  },
+  flags: {
+    steven:[
+      {id:'s1',sev:'red',   emp:'Darren Goida', ref:'Job #130079759',              resolved:false,disp:'',note:'',
+       title:'Possible duplicate — paid last month',
+       detail:'This job number appears in the Apr 2026 paid ledger. Darren may have already received this $100 spiff. Verify before paying.'},
+      {id:'s2',sev:'red',   emp:'Jim LeBlanc',  ref:'Job #132980076 — CHAC-91 $300',resolved:false,disp:'',note:'',
+       title:'Accessory not on Master Pay File',
+       detail:'$300 Air Scrubber on Accessory Sales report but job not found on Master Pay File. Invoice may be unpaid or there is a data issue in ST.'},
+      {id:'s3',sev:'yellow',emp:'Karl Welch',   ref:'Job #157799674',              resolved:false,disp:'',note:'',
+       title:'Lead Stage 1 spiff not on pay file',
+       detail:'Lead Request submitted as Completed but no $25 Stage 1 spiff on Master Pay File. Was the quote delivered to the homeowner?'},
+      {id:'s4',sev:'yellow',emp:'Darren Goida', ref:'Job #154957959',              resolved:false,disp:'',note:'',
+       title:'Lead Stage 1 spiff not on pay file',
+       detail:'Lead Request submitted as Completed but no Stage 1 spiff on Master Pay File.'},
+    ],
+    caleb:[
+      {id:'c1',sev:'yellow',emp:'Jay Hall',     ref:'Job #155755046',              resolved:false,disp:'',note:'',
+       title:'Lead status unclear — quote delivered?',
+       detail:'Lead Request submitted with "Saved" status (not Completed). Stage 1 spiff not paid. Was the quote delivered to the homeowner?'},
+    ]
+  },
+  carryForward:[
+    {fromMonth:'Apr 2026',emp:'Jim LeBlanc',ref:'Job #131506001',type:'Accessory — Air Scrubber $300',amount:300,dept:'MB Residential Service',reason:'Invoice was unpaid in April'}
+  ],
+  manuals:{steven:[],caleb:[]},
+  ingestion:[
+    {name:'Master Pay File',    ok:true},
+    {name:'Accessory Sales',    ok:true},
+    {name:'Membership Report',  ok:true},
+    {name:'Lead Request Report',ok:true},
+    {name:'Tech Performance',   ok:true},
+    {name:'Rich Commission',    ok:true},
+    {name:'CCS Tracker',        ok:false, note:"Jenny has not submitted yet"},
+  ]
+};
+
+/* ── Utils ── */
+function fp(n){ return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2}).format(n||0); }
+function f$(n){ if(!n&&n!==0) return '—'; if(n===0) return '<span class="zero">—</span>'; return fp(n); }
+function toast(msg,dur=3200){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('on');
+  setTimeout(()=>t.classList.remove('on'),dur);
+}
+function empTot(e){ return (e.svc||0)+(e.ins||0)+(e.plb||0)+(e.com||0)+(e.chs||0)+(e.chi||0); }
+function stevenBonus(){ return S.revenue.filter(r=>r.se&&r.actual&&r.actual>=r.goal).length*350; }
+
+/* ── Load from Sheets ── */
+async function loadSheets(){
+  const [subs,rev,flags,mans] = await Promise.all([
+    sGet('submissions!A2:F50'),
+    sGet('revenue_actuals!A2:D50'),
+    sGet('flags!A2:N500'),
+    sGet('manual_adds!A2:I500'),
+  ]);
+  if(subs) subs.forEach(r=>{
+    if(r[0]===MONTH&&r[1]){
+      const m=r[1].toLowerCase();
+      if(m in S.submissions){ S.submissions[m]=r[2]||'not_started'; S.pushback[m]=(r[4]==='pushed_back'&&r[5])?r[5]:null; }
+    }
+  });
+  if(rev) rev.forEach(r=>{ if(r[0]===MONTH){ const row=S.revenue.find(x=>x.dept===r[1]); if(row&&r[3]) row.actual=parseFloat(r[3]); } });
+  if(flags) flags.forEach(r=>{
+    if(r[0]!==MONTH||!r[1]||!r[2]) return;
+    const mgr=r[1]; if(!S.flags[mgr]) return;
+    const fl=S.flags[mgr].find(f=>f.id===r[2]);
+    if(fl){ fl.disp=r[9]||''; fl.note=r[10]||''; fl.resolved=r[11]==='true'; }
+  });
+  if(mans) mans.forEach(r=>{ if(r[0]===MONTH&&r[1]&&S.manuals[r[1]]) S.manuals[r[1]].push({name:r[2],reason:r[3],amount:parseFloat(r[4])||0,dept:r[5]}); });
+}
+
+/* ── Nav / routing ── */
+const NAVS = {
+  billy: [{id:'overview',label:'Overview'},{id:'review',label:'Manager Review'},{id:'revenue',label:'Revenue & Budgets'},{id:'bonuses',label:'Bonus Approvals'},{id:'output',label:'Accounting Output'}],
+  steven:[{id:'myteam',label:'My Team'},{id:'flags',label:'Flags to Resolve'}],
+  caleb: [{id:'myteam',label:'My Team'},{id:'flags',label:'Flags to Resolve'}],
+};
+const RENDERS = {
+  overview:rOverview, review:rReview, revenue:rRevenue, bonuses:rBonuses, output:rOutput,
+  myteam:()=>rTeam(S.role), flags:()=>rFlags(S.role)
+};
+
+function setRole(role){
+  S.role=role;
+  const nav=document.getElementById('nav');
+  nav.innerHTML='';
+  NAVS[role].forEach((v,i)=>{
+    const b=document.createElement('button');
+    b.className='nb'+(i===0?' on':''); b.textContent=v.label; b.dataset.v=v.id;
+    b.onclick=()=>show(v.id); nav.appendChild(b);
+  });
+  show(NAVS[role][0].id);
+}
+function show(id){
+  document.querySelectorAll('.nb').forEach(b=>b.classList.toggle('on',b.dataset.v===id));
+  const views=document.getElementById('views');
+  views.innerHTML='';
+  const d=document.createElement('div'); d.className='view'; views.appendChild(d);
+  if(RENDERS[id]) RENDERS[id]();
+}
+function vw(){ return document.querySelector('.view'); }
+
+/* ── OVERVIEW ── */
+function rOverview(){
+  const v=vw();
+  const allF=[...S.flags.steven,...S.flags.caleb];
+  const open=allF.filter(f=>!f.resolved).length;
+  const subs=Object.values(S.submissions).filter(s=>s==='submitted'||s==='approved').length;
+  v.innerHTML=`
+  <div class="sg">
+    <div class="sc"><div class="sl">Est. total spiffs</div><div class="sv">${fp(grandTotal())}</div></div>
+    <div class="sc"><div class="sl">Open flags</div><div class="sv">${open}</div></div>
+    <div class="sc"><div class="sl">Submissions</div><div class="sv">${subs} / 2</div></div>
+    <div class="sc"><div class="sl">Steven bonus</div><div class="sv">${fp(stevenBonus())}</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Manager submissions</div>
+    ${['steven','caleb'].map(m=>{
+      const s=S.submissions[m]; const lbl=m==='steven'?'Steven — Myrtle Beach':'Caleb — Charleston';
+      const oc=S.flags[m].filter(f=>!f.resolved).length;
+      const badge=s==='approved'?'<span class="badge bok">Approved</span>':s==='submitted'?'<span class="badge binfo">Submitted — awaiting review</span>':s==='pushed_back'?'<span class="badge bdanger">Pushed back</span>':`<span class="badge bwarn">${oc} flag${oc!==1?'s':''} open</span>`;
+      return `<div class="ri"><div class="ril"><span style="font-weight:500">${lbl}</span></div>${badge}</div>`;
+    }).join('')}
+  </div>
+  <div class="card">
+    <div class="card-title">Your action items</div>
+    ${S.bonuses.map(b=>`<div class="ri"><div class="ril"><span style="font-weight:500">${b.name} — ${b.type}</span><span class="risub">${b.dept}</span></div><span class="badge ${b.approved?'bok':'bwarn'}">${b.approved?'Approved':fp(b.amount)+' — needs approval'}</span></div>`).join('')}
+    <div class="ri"><div class="ril"><span style="font-weight:500">Revenue scorecard actuals</span><span class="risub">Enter from end-of-month scorecard email</span></div><span class="badge ${S.revenue.some(r=>r.actual!==null)?'bok':'bdanger'}">${S.revenue.some(r=>r.actual!==null)?'Partially entered':'Not entered'}</span></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Data ingestion — ${MONTH}</div>
+    ${S.ingestion.map(i=>`<div class="ri"><span>${i.name}${i.note?` <span style="font-size:.7rem;color:#999">— ${i.note}</span>`:''}</span><span class="badge ${i.ok?'bok':'bwarn'}">${i.ok?'Auto-pulled':'Pending'}</span></div>`).join('')}
+    <div style="margin-top:.75rem;font-size:.75rem;color:#999">Make.com auto-pulls on the 2nd of each month. Manual trigger available below.</div>
+    <button class="btn bsm" style="margin-top:.5rem" onclick="toast('Make.com trigger sent — data will refresh in ~2 minutes.')">Trigger manual pull</button>
+  </div>`;
+}
+
+/* ── MANAGER REVIEW ── */
+function rReview(){
+  const v=vw();
+  v.innerHTML=['steven','caleb'].map(mgr=>{
+    const lbl=mgr==='steven'?'Steven — Myrtle Beach':'Caleb — Charleston';
+    const s=S.submissions[mgr]; const rf=S.flags[mgr].filter(f=>f.resolved);
+    const canApprove=s==='submitted';
+    return `<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.875rem">
+        <div class="card-title" style="margin:0">${lbl}</div>
+        <span class="badge ${s==='approved'?'bok':s==='submitted'?'binfo':s==='pushed_back'?'bdanger':'bgray'}">${s==='approved'?'Approved':s==='submitted'?'Submitted':s==='pushed_back'?'Pushed back':'Not submitted'}</span>
+      </div>
+      ${rf.length?rf.map(f=>`<div style="padding:7px 0;border-bottom:1px solid #F0EDE8;font-size:.82rem;display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div><div style="font-weight:500">${f.title}</div><div style="font-size:.7rem;color:#999;font-family:'DM Mono',monospace">${f.emp} · ${f.ref}</div>${f.note?`<div style="font-size:.7rem;color:#999;margin-top:2px">Note: ${f.note}</div>`:''}</div>
+        <span class="badge ${f.disp==='Pay this month'?'bok':f.disp==='Pay next month'?'binfo':'bdanger'}">${f.disp}</span>
+      </div>`).join(''):'<div style="font-size:.82rem;color:#999;padding:6px 0">No resolved flags yet.</div>'}
+      ${canApprove?`<div style="margin-top:1rem;padding-top:.75rem;border-top:1px solid #F0EDE8">
+        <div style="font-size:.75rem;color:#999;margin-bottom:.5rem">Push back with a note or approve this submission:</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+          <textarea id="pbn-${mgr}" placeholder="Push-back reason (required to push back)..." style="font-size:.78rem;min-height:36px;flex:1;min-width:180px;padding:6px 8px;border:1px solid #ddd;border-radius:7px;background:#fff;color:#1a1a1a;font-family:inherit;resize:vertical"></textarea>
+          <button class="btn btnd bsm" onclick="pushBack('${mgr}')">Push back</button>
+          <button class="btn btnp bsm" onclick="approveSubmission('${mgr}')">Approve</button>
+        </div>
+      </div>`:''}
+      ${s==='approved'?'<div style="margin-top:.5rem;font-size:.75rem;color:#065f46">✓ Approved — included in accounting output</div>':''}
+    </div>`;
+  }).join('');
+}
+async function pushBack(mgr){
+  const note=document.getElementById('pbn-'+mgr).value.trim();
+  if(!note){toast('Please add a note explaining what needs revision.');return;}
+  S.submissions[mgr]='pushed_back'; S.pushback[mgr]=note;
+  await sAppend('submissions',[[MONTH,mgr,'pushed_back',new Date().toISOString(),'pushed_back',note]]);
+  toast(`Pushed back to ${mgr==='steven'?'Steven':'Caleb'}`);
+  rReview();
+}
+async function approveSubmission(mgr){
+  S.submissions[mgr]='approved'; S.pushback[mgr]=null;
+  await sAppend('submissions',[[MONTH,mgr,'approved',new Date().toISOString(),'approved','']]);
+  for(const f of S.flags[mgr].filter(f=>f.resolved&&f.disp==='Pay this month'))
+    await sAppend('paid_ledger',[[MONTH,f.emp,f.ref,'',f.title,0,'','flag_resolution',new Date().toISOString()]]);
+  toast(`${mgr==='steven'?'Steven':'Caleb'}'s submission approved`);
+  rReview();
+}
+
+/* ── REVENUE ── */
+function rRevenue(){
+  const v=vw();
+  v.innerHTML=`<div class="card">
+    <div class="card-title">Revenue & budgets — ${MONTH}</div>
+    <div style="font-size:.75rem;color:#999;margin-bottom:1rem">Enter MTD revenue from the end-of-month Daily Revenue Scorecard email. Goals auto-pull from CCS Tracker.</div>
+    <table class="rev-t">
+      <thead><tr><th style="text-align:left">Department</th><th>Goal</th><th>Actual (enter)</th><th>$ to goal</th><th>% to goal</th><th>Goal met?</th><th>Steven bonus</th></tr></thead>
+      <tbody>${S.revenue.map((r,i)=>{
+        const met=r.actual!==null&&r.actual>=r.goal;
+        const pct=r.actual?Math.round(r.actual/r.goal*100):0;
+        const diff=r.actual!==null?r.actual-r.goal:null;
+        const bonus=r.se&&met?350:0;
+        return `<tr>
+          <td>${r.dept}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:.78rem">${fp(r.goal)}</td>
+          <td><input type="number" value="${r.actual||''}" min="0" step="0.01" placeholder="Enter actual" onchange="S.revenue[${i}].actual=parseFloat(this.value)||null;rRevenue()"></td>
+          <td style="font-family:'DM Mono',monospace;font-size:.78rem">${diff!==null?fp(diff):'—'}</td>
+          <td>${r.actual?pct+'%':'—'}</td>
+          <td>${r.actual!==null?`<span class="badge ${met?'bok':'bdanger'}">${met?'Yes':'No'}</span>`:'—'}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:.78rem">${bonus?fp(bonus):r.se?'<span class="zero">—</span>':'N/A'}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>
+    <div style="margin-top:.875rem;padding-top:.75rem;border-top:1px solid #F0EDE8;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:.82rem">Steven total bonus: <strong>${fp(stevenBonus())}</strong></span>
+      <button class="btn btnp" onclick="saveRevenue()">Save actuals</button>
+    </div>
+  </div>`;
+}
+async function saveRevenue(){
+  const rows=S.revenue.map(r=>[MONTH,r.dept,r.goal,r.actual||'']);
+  await sPut(`revenue_actuals!A2:D${rows.length+1}`,rows);
+  toast('Actuals saved to Google Sheet');
+}
+
+/* ── BONUSES ── */
+function rBonuses(){
+  const v=vw();
+  v.innerHTML=`<div class="card"><div class="card-title">Bonus approvals — ${MONTH}</div>${
+    S.bonuses.map((b,i)=>`<div class="ri">
+      <div class="ril"><span style="font-weight:500">${b.name}</span><span class="risub">${b.type} · ${b.dept}</span></div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <span style="font-size:1rem;font-weight:600;font-family:'DM Mono',monospace">${fp(b.amount)}</span>
+        <button class="btn bsm" onclick="toggleBonus(${i})" style="${b.approved?'color:#065f46;border-color:#6ee7b7':''}">
+          ${b.approved?'✓ Approved':'Approve'}
+        </button>
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+async function toggleBonus(i){
+  S.bonuses[i].approved=!S.bonuses[i].approved;
+  await sAppend('flags',[[MONTH,'billy','bonus-'+S.bonuses[i].id,'','','','','','',S.bonuses[i].approved?'approved':'','',String(S.bonuses[i].approved),new Date().toISOString()]]);
+  rBonuses();
+}
+
+/* ── ACCOUNTING OUTPUT ── */
+const DCOLS=['MB Resi Svc','MB Install Resi','MB Plumbing','MB Svc Comm','CH Service','CH Install'];
+function buildRows(){
+  const rows=[];
+  [...S.emps.steven,...S.emps.caleb].forEach(e=>{
+    const mgr=S.emps.steven.includes(e)?'steven':'caleb';
+    const manAmt=(S.manuals[mgr]||[]).filter(m=>m.name===e.name).reduce((a,m)=>a+m.amount,0);
+    const vals=[e.svc||0,e.ins||0,e.plb||0,e.com||0,e.chs||0,e.chi||0];
+    const total=vals.reduce((a,b)=>a+b,0)+manAmt;
+    if(total>0) rows.push({name:e.name,vals,manAmt,total,note:''});
+  });
+  [...S.flags.steven,...S.flags.caleb].filter(f=>f.resolved&&f.disp==='Pay this month').forEach(f=>{
+    rows.push({name:f.emp,vals:[25,0,0,0,0,0],manAmt:0,total:25,note:`Flag: ${f.title}`});
+  });
+  S.revenue.filter(r=>r.se&&r.actual&&r.actual>=r.goal).forEach(r=>{
+    const col=r.dept.includes('Residential')?0:r.dept.includes('Commercial')?3:r.dept.includes('Plumbing')?2:0;
+    const v=[0,0,0,0,0,0]; v[col]=350;
+    rows.push({name:'Steven',vals:v,manAmt:0,total:350,note:r.dept+' goal met'});
+  });
+  S.bonuses.filter(b=>b.approved).forEach(b=>rows.push({name:b.name,vals:[0,0,0,0,0,0],manAmt:0,total:b.amount,note:b.type}));
+  return rows;
+}
+function grandTotal(){ return buildRows().reduce((a,r)=>a+r.total,0); }
+
+function rOutput(){
+  const v=vw();
+  const rows=buildRows(); const ct=[0,0,0,0,0,0]; let gt=0;
+  const tbody=rows.map(r=>{ r.vals.forEach((x,i)=>ct[i]+=x); gt+=r.total;
+    return `<tr><td>${r.name}${r.note?`<div style="font-size:.65rem;color:#999">${r.note}</div>`:''}</td>${r.vals.map(x=>`<td>${x>0?fp(x):'<span class="zero">—</span>'}</td>`).join('')}<td style="font-weight:600">${fp(r.total)}</td></tr>`;
+  }).join('');
+  v.innerHTML=`
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem" id="no-print">
+    <div style="font-size:1rem;font-weight:600">Accounting output — ${MONTH}</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" onclick="window.print()">Print</button>
+      <button class="btn btnp" onclick="dlCSV()">Download CSV</button>
+    </div>
+  </div>
+  <div class="card"><div class="aw"><table class="at">
+    <thead><tr><th style="text-align:left">Employee</th>${DCOLS.map(d=>`<th>${d}</th>`).join('')}<th>Total due</th></tr></thead>
+    <tbody>${tbody}</tbody>
+    <tfoot>
+      <tr class="dtrow"><td style="text-align:left;font-weight:600">Dept total</td>${ct.map(x=>`<td style="font-weight:600">${x>0?fp(x):'<span class="zero">—</span>'}</td>`).join('')}<td style="font-weight:600">${fp(gt)}</td></tr>
+      <tr class="gtrow"><td style="text-align:left">Grand total — ${MONTH}</td>${ct.map(()=>'<td></td>').join('')}<td>${fp(gt)}</td></tr>
+    </tfoot>
+  </table></div></div>
+  <div class="card" style="font-size:.75rem;color:#999">Each column shows which department is paying. Copy values only when sending to accounting. Department totals at bottom show each dept's total payout for the month.</div>`;
+}
+function dlCSV(){
+  const rows=buildRows();
+  const h=['Employee',...DCOLS,'Total Due','Notes'].join(',');
+  const lines=rows.map(r=>[`"${r.name}"`,...r.vals.map(x=>x||0),r.total,`"${r.note||''}"`].join(','));
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent([h,...lines].join('\n'));
+  a.download=`CoastalAir_Spiffs_${MONTH.replace(' ','')}.csv`; a.click();
+}
+
+/* ── MANAGER TEAM ── */
+function rTeam(mgr){
+  const v=vw(); const d=S.emps[mgr]; const pb=S.pushback[mgr];
+  const sub=S.submissions[mgr]; const openF=S.flags[mgr].filter(f=>!f.resolved).length;
+  const adds=S.manuals[mgr]||[];
+  const btnS=openF>0?'background:#ccc;color:#666;border-color:#ccc;cursor:not-allowed':sub==='approved'?'background:#d1fae5;color:#065f46;border-color:#6ee7b7;cursor:default':'background:#1a1a1a;color:#fff;border-color:#1a1a1a;cursor:pointer';
+  const btnT=openF>0?`${openF} flag${openF!==1?'s':''} need resolution`:sub==='approved'?'✓ Approved by Billy':sub==='submitted'?'Resubmit to Billy':'Submit to Billy';
+  v.innerHTML=`
+  ${pb?`<div class="pb-box"><div class="pb-label">Revision requested by Billy</div><div style="margin-top:4px">${pb}</div><div style="margin-top:.5rem;font-size:.72rem;color:#991b1b">Resolve any remaining flags and resubmit.</div></div>`:''}
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+    <div>
+      <div style="font-size:1rem;font-weight:600">${mgr==='steven'?'Myrtle Beach':'Charleston'} team — ${MONTH}</div>
+      <div style="font-size:.75rem;color:#999;margin-top:2px">${d.length} employees · ${openF} flag${openF!==1?'s':''} need attention</div>
+    </div>
+    <button class="btn" style="${btnS}" onclick="submitWorkbook()">${btnT}</button>
+  </div>
+  <div class="card">
+    <div class="card-title">Calculated spiffs this month</div>
+    <table class="et">
+      <thead><tr><th>Employee</th><th>Svc dept</th><th>Install / leads</th><th>Plumbing</th><th>Commercial</th><th>Manual adds</th><th>Total</th></tr></thead>
+      <tbody>${d.map(e=>{
+        const manAmt=adds.filter(a=>a.name===e.name).reduce((s,a)=>s+a.amount,0);
+        const svc=(e.svc||0)+(e.chs||0); const ins=(e.ins||0)+(e.chi||0);
+        const total=empTot(e)+manAmt;
+        const dupW=(e.dups||[]).length?`<div class="dup-warn">⚠ Possible duplicate — check flags</div>`:'';
+        return `<tr><td>${e.name}${dupW}</td><td>${svc>0?fp(svc):'<span class="zero">—</span>'}</td><td>${ins>0?fp(ins):'<span class="zero">—</span>'}</td><td>${e.plb>0?fp(e.plb):'<span class="zero">—</span>'}</td><td>${e.com>0?fp(e.com):'<span class="zero">—</span>'}</td><td>${manAmt>0?fp(manAmt):'<span class="zero">—</span>'}</td><td>${fp(total)}</td></tr>`;
+      }).join('')}</tbody>
+    </table>
+  </div>
+  <div class="card">
+    <div class="card-title">Manual spiff additions</div>
+    <div style="font-size:.75rem;color:#999;margin-bottom:.5rem">Add any one-off spiffs not captured automatically.</div>
+    <div class="mg">
+      <div><label>Employee</label><select id="m-emp">${d.map(e=>`<option>${e.name}</option>`).join('')}</select></div>
+      <div><label>Reason</label><input type="text" id="m-rsn" placeholder="e.g. Equipment upsell"></div>
+      <div><label>Amount ($)</label><input type="number" id="m-amt" min="0" step="0.01" placeholder="0.00"></div>
+      <div><label>Dept pays</label><select id="m-dept"><option>MB Residential Service</option><option>MB Install Residential</option><option>MB Plumbing</option><option>MB Service Commercial</option><option>CH Service</option><option>CH Install</option></select></div>
+      <div><label>&nbsp;</label><button class="btn btnp" onclick="addManual('${mgr}')">Add</button></div>
+    </div>
+    ${adds.length?`<div style="margin-top:.75rem">${adds.map((a,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;font-size:.78rem;padding:5px 0;border-top:1px solid #F0EDE8"><span>${a.name} — ${a.reason} <span style="color:#999">(${a.dept})</span></span><span style="display:flex;gap:8px;align-items:center"><strong style="font-family:'DM Mono',monospace">${fp(a.amount)}</strong><button class="btn bsm" onclick="removeManual('${mgr}',${i})">Remove</button></span></div>`).join('')}</div>`:''}
+  </div>`;
+}
+async function addManual(mgr){
+  const name=document.getElementById('m-emp').value;
+  const reason=document.getElementById('m-rsn').value.trim();
+  const amount=parseFloat(document.getElementById('m-amt').value)||0;
+  const dept=document.getElementById('m-dept').value;
+  if(!reason||amount<=0){toast('Please enter a reason and amount.');return;}
+  const add={name,reason,amount,dept};
+  S.manuals[mgr].push(add);
+  await sAppend('manual_adds',[[MONTH,mgr,name,reason,amount,dept,S.role,new Date().toISOString(),'pending']]);
+  toast('Manual spiff added and saved to Sheet');
+  rTeam(mgr);
+}
+function removeManual(mgr,i){ S.manuals[mgr].splice(i,1); rTeam(mgr); }
+async function submitWorkbook(){
+  const mgr=S.role;
+  if(S.flags[mgr].filter(f=>!f.resolved).length>0) return;
+  S.submissions[mgr]='submitted';
+  await sAppend('submissions',[[MONTH,mgr,'submitted',new Date().toISOString(),'','']]);
+  toast('Submitted to Billy — he will be notified.');
+  rTeam(mgr);
+}
+
+/* ── FLAGS ── */
+function rFlags(mgr){
+  const v=vw(); const flags=S.flags[mgr];
+  const open=flags.filter(f=>!f.resolved).length;
+  const cf=mgr==='steven'?S.carryForward:[];
+  v.innerHTML=`
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+    <div style="font-size:1rem;font-weight:600">Flags to resolve</div>
+    <span class="badge bwarn">${open} open</span>
+  </div>
+  ${cf.length?`<div class="card" style="border-left:3px solid #3b82f6">
+    <div class="card-title">Carried forward from ${PREV_M}</div>
+    ${cf.map(c=>`<div class="ri"><div class="ril"><span class="cf-badge">Carry forward</span><span style="font-size:.82rem;margin-top:3px;font-weight:500">${c.emp} — ${c.type}</span><span class="risub" style="font-family:'DM Mono',monospace">${c.ref} · ${c.reason}</span></div><div style="display:flex;gap:8px;align-items:center"><span style="font-weight:600;font-family:'DM Mono',monospace">${fp(c.amount)}</span><span class="badge bwarn">Cross-ref MPF — dup risk</span></div></div>`).join('')}
+    <div style="font-size:.7rem;color:#999;margin-top:.5rem">⚠ Verify these items are not also being paid by this month's Master Pay File before including.</div>
+  </div>`:''}
+  ${flags.map(f=>`<div class="fb ${f.sev} ${f.resolved?'done':''}">
+    <div class="fmeta">${f.emp} · ${f.ref}</div>
+    <div class="ftitle">${f.title}</div>
+    ${f.resolved?`
+      <span class="badge ${f.disp==='Pay this month'?'bok':f.disp==='Pay next month'?'binfo':'bdanger'}">${f.disp}</span>
+      ${f.note?`<span style="font-size:.72rem;color:#999;margin-left:8px">${f.note}</span>`:''}`:`
+      <div class="fdetail">${f.detail}</div>
+      <div class="factions">
+        <select onchange="S.flags['${mgr}'].find(x=>x.id==='${f.id}').disp=this.value">
+          <option value="">Select action…</option>
+          <option>Pay this month</option>
+          <option>Pay next month</option>
+          <option>Not paid</option>
+        </select>
+        <textarea placeholder="Note — required for 'Not paid'…" onchange="S.flags['${mgr}'].find(x=>x.id==='${f.id}').note=this.value"></textarea>
+        <button class="btn btnp bsm" onclick="resolveFlag('${mgr}','${f.id}')">Resolve</button>
+      </div>`}
+  </div>`).join('')}
+  ${!flags.length?`<div class="card" style="text-align:center;color:#999;font-size:.85rem;padding:2rem">No flags for your team this month.</div>`:''}`;
+}
+async function resolveFlag(mgr,id){
+  const f=S.flags[mgr].find(x=>x.id===id);
+  if(!f||!f.disp){toast('Please select an action first.');return;}
+  if(f.disp==='Not paid'&&!f.note.trim()){toast("Please add a note explaining why this spiff isn't being paid.");return;}
+  f.resolved=true;
+  await sAppend('flags',[[MONTH,mgr,id,f.sev,f.sev,f.emp,f.ref,'',f.detail,f.disp,f.note,'true',new Date().toISOString()]]);
+  if(f.disp==='Pay next month')
+    await sAppend('carry_forward',[[MONTH,NEXT_M,f.emp,f.ref,'',f.title,'','',f.note||f.detail,'pending','']]);
+  toast(f.disp==='Pay next month'?'Carried forward to June.':'Flag resolved and saved.');
+  rFlags(mgr);
+  const ob=document.querySelector('button[onclick="submitWorkbook()"]');
+  if(ob){ const oc=S.flags[mgr].filter(x=>!x.resolved).length; if(oc===0){ob.textContent='Submit to Billy';ob.style.background='#1a1a1a';ob.style.cursor='pointer';} }
+}
+
+/* ── Boot ── */
+(async function init(){
+  const badge=document.getElementById('conn-badge');
+  document.getElementById('month-label').textContent=`${MONTH} · Processing window open`;
+  try {
+    const cfg=await sGet('app_config!A1:B10');
+    if(cfg) cfg.forEach(row=>{ if(row[0]==='api_key'&&row[1]) API_KEY=row[1]; });
+    if(!API_KEY) throw new Error('No API key in app_config tab');
+    await loadSheets();
+    badge.textContent='Connected'; badge.className='conn conn-ok'; CONN_OK=true;
+    toast('Connected to Google Sheets');
+  } catch(e){
+    badge.textContent='Connection failed'; badge.className='conn conn-err';
+    console.error(e);
+    toast('Could not connect to Google Sheet — check app_config tab',5000);
+  }
+  document.getElementById('role-sel').value='billy';
+  setRole('billy');
+})();
+</script>
+</body>
+</html>

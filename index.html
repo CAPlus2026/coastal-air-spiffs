@@ -171,7 +171,10 @@ let CONN_OK = false;
 /* ── Sheets API ── */
 async function sGet(range) {
   try {
-    const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?key=${API_KEY}`);
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 4000);
+    const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?key=${API_KEY}`, {signal: ctrl.signal});
+    clearTimeout(t);
     if (!r.ok) return null;
     return (await r.json()).values || [];
   } catch { return null; }
@@ -770,6 +773,13 @@ function checkPin(val) {
 (async function init(){
   const badge=document.getElementById('conn-badge');
   document.getElementById('month-label').textContent=`${MONTH} · Processing window open`;
+  // Hard 8 second timeout — app loads regardless of Sheet status
+  const initTimeout = setTimeout(() => {
+    badge.textContent='Offline — saves disabled'; badge.className='conn conn-err';
+    document.getElementById('views').innerHTML='';
+    document.getElementById('role-sel').style.display='none';
+    showPinScreen();
+  }, 8000);
   try {
     const cfg=await sGet('app_config!A1:B10');
     if(cfg) cfg.forEach(row=>{ if(row[0]==='api_key'&&row[1]) API_KEY=row[1]; });
@@ -777,10 +787,10 @@ function checkPin(val) {
     await loadSheets();
     badge.textContent='Connected'; badge.className='conn conn-ok'; CONN_OK=true;
   } catch(e){
-    badge.textContent='Offline — data not synced'; badge.className='conn conn-err';
+    badge.textContent='Offline — saves disabled'; badge.className='conn conn-err';
     console.warn('Sheet connection failed — running on local data', e);
-    // App still works with local hardcoded data
   }
+  clearTimeout(initTimeout);
   document.getElementById('role-sel').style.display='none';
   showPinScreen();
 })();

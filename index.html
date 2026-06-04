@@ -360,12 +360,18 @@ function stevenBonus(){ return S.revenue.filter(r=>r.se&&r.actual&&r.actual>=r.g
 
 /* ── Load from Sheets ── */
 async function loadSheets(){
-  const [subs,rev,flags,mans] = await Promise.all([
-    sGet('submissions!A2:F50'),
-    sGet('revenue_actuals!A2:D50'),
-    sGet('flags!A2:N500'),
-    sGet('manual_adds!A2:I500'),
-  ]);
+  let subs, rev, flags, mans;
+  try {
+    [subs,rev,flags,mans] = await Promise.all([
+      sGet('submissions!A2:F50'),
+      sGet('revenue_actuals!A2:D50'),
+      sGet('flags!A2:N500'),
+      sGet('manual_adds!A2:I500'),
+    ]);
+  } catch(e) {
+    console.warn('Sheet load failed, using local state', e);
+    return;
+  }
   if(subs) subs.forEach(r=>{
     if(r[0]===MONTH&&r[1]){
       const m=r[1].toLowerCase();
@@ -771,8 +777,9 @@ function checkPin(val) {
     await loadSheets();
     badge.textContent='Connected'; badge.className='conn conn-ok'; CONN_OK=true;
   } catch(e){
-    badge.textContent='Connection failed'; badge.className='conn conn-err';
-    console.error(e);
+    badge.textContent='Offline — data not synced'; badge.className='conn conn-err';
+    console.warn('Sheet connection failed — running on local data', e);
+    // App still works with local hardcoded data
   }
   document.getElementById('role-sel').style.display='none';
   showPinScreen();

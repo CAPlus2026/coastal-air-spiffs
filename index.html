@@ -213,9 +213,9 @@ const S = {
   ],
   emps: {
     steven:[
-      {name:'Darren Goida',   svc:250,  ins:0, plb:0,   com:0,   chs:0, chi:0, dups:[]},
-      {name:'Jim LeBlanc',    svc:1865, ins:0, plb:0,   com:0,   chs:0, chi:0, dups:[]},
-      {name:'Karl Welch',     svc:1515, ins:0, plb:0,   com:0,   chs:0, chi:0, dups:[]},
+      {name:'Darren Goida',   svc:300,  ins:0, plb:0,   com:0,   chs:0, chi:0, dups:[]},
+      {name:'Jim LeBlanc',    svc:1990, ins:0, plb:0,   com:0,   chs:0, chi:0, dups:[]},
+      {name:'Karl Welch',     svc:2015, ins:0, plb:0,   com:0,   chs:0, chi:0, dups:[]},
       {name:'Jesse Mertens',  svc:0,    ins:0, plb:115, com:0,   chs:0, chi:0, dups:[]},
       {name:'Herbie Windley', svc:0,    ins:0, plb:300, com:0,   chs:0, chi:0, dups:[]},
       {name:'Nick Scarpa',    svc:0,    ins:0, plb:0,   com:0,   chs:0, chi:0, dups:[]},
@@ -225,7 +225,7 @@ const S = {
       {name:'Stuart Akel',    svc:0,    ins:0, plb:0,   com:0,   chs:0, chi:0, dups:[]},
     ],
     caleb:[
-      {name:'Jay Hall',      svc:0, ins:0, plb:0, com:0, chs:430, chi:0, dups:[]},
+      {name:'Jay Hall',      svc:0, ins:0, plb:0, com:0, chs:505, chi:0, dups:[]},
       {name:'Steve Gordon',  svc:0, ins:0, plb:0, com:0, chs:150, chi:0, dups:[]},
       {name:'Derrick Hall',  svc:0, ins:0, plb:0, com:0, chs:0,   chi:0, dups:[]},
       {name:'Quincy Fields', svc:0, ins:0, plb:0, com:0, chs:0,   chi:0, dups:[]},
@@ -233,41 +233,46 @@ const S = {
   },
   flags: {
     steven:[
-      {id:'s1',sev:'red',emp:'Darren Goida',ref:'Job #155817332 — CHAC-91',resolved:false,disp:'',note:'',
+      {id:'s1',sev:'red',emp:'Darren Goida',ref:'6 leads — Stage 1 missing',resolved:false,disp:'',note:'',
+       title:'Lead Stage 1 spiff missing — office booking issue (6 leads)',
+       detail:'6 completed lead requests for Darren Goida have no TGL on the Master Pay File. The office did not properly link the tech job to the salesperson job in ST so configurable payroll could not fire. Each needs a $25 manual add. Customers: Gaines Tracy, Burr Debra, Provini Drew (x2), Bossert Madison, Callahan Nienke. Dept: MB Install Residential.'},
+      {id:'s2',sev:'red',emp:'Karl Welch',ref:'5 leads — Stage 1 missing',resolved:false,disp:'',note:'',
+       title:'Lead Stage 1 spiff missing — office booking issue (5 leads)',
+       detail:'5 completed lead requests for Karl Welch have no TGL on the Master Pay File. Office did not properly link tech job to salesperson job. Each needs a $25 manual add. Customers: Shea Joe, Mole Susan, Drost David, Romero Anais, ODrobinak Larry. Dept: MB Install Residential.'},
+      {id:'s3',sev:'red',emp:'Jim LeBlanc',ref:'2 leads — Stage 1 missing',resolved:false,disp:'',note:'',
+       title:'Lead Stage 1 spiff missing — office booking issue (2 leads)',
+       detail:'2 completed lead requests for Jim LeBlanc have no TGL on the Master Pay File. Each needs a $25 manual add. Customers: Padgett Debby & Tim, Jonathan Harbour. Dept: MB Install Residential.'},
+      {id:'s4',sev:'red',emp:'Javi Vazquez',ref:'Job #158354782 — Eagle Beach Rentals',resolved:false,disp:'',note:'',
+       title:'Lead Stage 1 spiff missing — office booking issue',
+       detail:'Completed lead request for Eagle Beach Rentals has no TGL on Master Pay File. Office did not properly link tech job to salesperson job. Needs $25 manual add. Dept: MB Install Residential.'},
+      {id:'s5',sev:'yellow',emp:'Darren Goida',ref:'Accessory — Job #155817332',resolved:false,disp:'',note:'',
        title:'Accessory not on Master Pay File',
-       detail:'$300 Air Scrubber (CHAC-91) on Accessory Sales report for Dorman, Adrian but job not on Master Pay File. Invoice may be unpaid — if so, move to next month. Otherwise investigate in ST.'},
-      {id:'s2',sev:'red',emp:'Kyle Freeman',ref:'Job #155953011 — CAC3',resolved:false,disp:'',note:'',
+       detail:'CHAC-91 Air Scrubber ($300 spiff) sold to Dorman, Adrian not on Master Pay File. Invoice may be unpaid — if so move to next month. Otherwise investigate in ST.'},
+      {id:'s6',sev:'yellow',emp:'Kyle Freeman',ref:'Accessory — Job #155953011',resolved:false,disp:'',note:'',
        title:'Accessory not on Master Pay File',
        detail:'CAC3 Single Phase Surge Protector ($50 spiff) at Ocean Lakes Billing not on Master Pay File. Invoice may be unpaid or data issue in ST.'},
-      {id:'s3',sev:'yellow',emp:'Karl Welch',ref:'10 leads — see detail',resolved:false,disp:'',note:'',
-       title:'Lead Stage 1 spiffs not on pay file (10 leads)',
-       detail:'10 completed lead requests for Karl Welch not showing $25 Stage 1 spiff on Master Pay File. Likely a ST configurable payroll issue. Jobs: 157799674 (Cooper, Ray), 133146335 (Shea, Joe), 157601759 (Mole, Susan), 156887931 (Drost, David), 157796861 (Romero, Anais), 155549918 (Escolopio, Danny), 156671451 (Garber, Jacob), 156979623 (Ogletree, Bill), 158196088 (ODrobinak, Larry), 157783679 (Bernard, Jonathan). Verify payroll setup in ST.'},
-      {id:'s4',sev:'yellow',emp:'Darren Goida',ref:'7 leads — see detail',resolved:false,disp:'',note:'',
-       title:'Lead Stage 1 spiffs not on pay file (7 leads)',
-       detail:'7 completed lead requests for Darren Goida not showing $25 Stage 1 spiff on Master Pay File. Jobs: 154957959 (Gaines, Tracy), 155863773 (Burr, Debra), 157737957 (Provini, Drew), 158002039 (Provini, Drew), 157752796 (Bossert, Madison), 157782511 (Mains, Charlie), 157995373 (Callahan, Nienke). Verify payroll setup in ST.'},
-      {id:'s5',sev:'yellow',emp:'Jim LeBlanc',ref:'4 leads — see detail',resolved:false,disp:'',note:'',
-       title:'Lead Stage 1 spiffs not on pay file (4 leads)',
-       detail:'4 completed lead requests for Jim LeBlanc not showing $25 Stage 1 spiff on Master Pay File. Jobs: 157876582 (Parsons, Karen), 156860918 (Padgett, Debby & Tim), 158011483 (Jonathan Harbour), 158111360 (Sea-Mix LLC). Verify payroll setup in ST.'},
-      {id:'s6',sev:'yellow',emp:'Javi Vazquez',ref:'Job #158354782',resolved:false,disp:'',note:'',
-       title:'Lead Stage 1 spiff not on pay file',
-       detail:'Completed lead request for Eagle Beach Rentals not showing $25 Stage 1 spiff on Master Pay File.'},
     ],
     caleb:[
       {id:'c1',sev:'red',emp:'Jay Hall',ref:'5 accessories — see detail',resolved:false,disp:'',note:'',
        title:'Accessory sales not on Master Pay File (5 items)',
-       detail:'5 CHAC-7 Compressor Protection Kit ($50 spiff each = $250 total) sales on Accessory Sales report not on Master Pay File. Jobs: 155702118 (Valdez, Nick), 157006406 (Harper, Mikell), 157103988 (Biggers, Sherrill), 157554153 (Buhan, Nick), 157656677 (Gethers, Shannon). Invoice may be unpaid or data issue in ST.'},
-      {id:'c2',sev:'red',emp:'Steve Gordon',ref:'2 accessories — see detail',resolved:false,disp:'',note:'',
-       title:'Accessory sales not on Master Pay File (2 items)',
-       detail:'2 CHAC-7 Compressor Protection Kit ($50 spiff each = $100 total) sales not on Master Pay File. Jobs: 156996218 (Fields, Kathy & Chris), 158233979 (Pure Property Management of SC). Invoice may be unpaid or data issue in ST.'},
-      {id:'c3',sev:'yellow',emp:'Jay Hall',ref:'Job #155755046',resolved:false,disp:'',note:'',
-       title:'Lead saved — quote delivered?',
-       detail:'Lead Request for Dicenzo, Devin submitted with Saved status (not Completed). $25 Stage 1 spiff not paid. Was the quote actually delivered to the homeowner? If yes, mark Completed in ST.'},
-      {id:'c4',sev:'yellow',emp:'Steve Gordon',ref:'Job #155490574',resolved:false,disp:'',note:'',
-       title:'Lead Stage 1 spiff not on pay file',
-       detail:'Completed lead request for King and Society (RENTAL - 30 Vendue Range) not showing $25 Stage 1 spiff on Master Pay File. Verify payroll setup in ST.'},
+       detail:'5 CHAC-7 Compressor Protection Kit sales ($50 spiff each = $250 total) not on Master Pay File. Jobs: 155702118 (Valdez Nick), 157006406 (Harper Mikell), 157103988 (Biggers Sherrill), 157554153 (Buhan Nick), 157656677 (Gethers Shannon). Invoice may be unpaid or data issue in ST.'},
+      {id:'c2',sev:'red',emp:'Steve Gordon',ref:'2 accessories + 1 lead — see detail',resolved:false,disp:'',note:'',
+       title:'Accessory sales not on Master Pay File + Lead Stage 1 missing',
+       detail:'2 CHAC-7 sales ($50 each) not on pay file: Jobs 156996218 (Fields Kathy & Chris), 158233979 (Pure Property Management SC). Also: Lead Stage 1 $25 missing for King and Society (Job 155490574) — office booking issue. Dept: accessories = CH Service, lead = CH Install.'},
+      {id:'c3',sev:'yellow',emp:'Jay Hall',ref:'Job #155755046 — Dicenzo Devin',resolved:false,disp:'',note:'',
+       title:'Lead saved — was quote delivered?',
+       detail:'Lead Request for Dicenzo, Devin has Saved status (not Completed). $25 Stage 1 spiff not paid. Was the quote actually delivered to the homeowner? If yes, mark Completed in ST and add $25 manual spiff.'},
     ]
   },
-  carryForward:[],
+
+  carryForward:[
+    {fromMonth:'May 2026',emp:'Darren Goida',ref:'Job 157782511',type:'Lead Stage 2 — Mains, Charlie',amount:75,dept:'MB Install Residential',reason:'Stage 1 paid in May. Job not yet sold — pay $75 when sold, installed, and paid.'},
+    {fromMonth:'May 2026',emp:'Jim LeBlanc',ref:'Job 157876582',type:'Lead Stage 2 — Parsons, Karen',amount:75,dept:'MB Install Residential',reason:'Stage 1 paid in May. Job not yet sold — pay $75 when sold, installed, and paid.'},
+    {fromMonth:'May 2026',emp:'Jim LeBlanc',ref:'Job 158111360',type:'Lead Stage 2 — Sea-Mix LLC',amount:75,dept:'MB Install Residential',reason:'Stage 1 paid in May. Job not yet sold — pay $75 when sold, installed, and paid.'},
+    {fromMonth:'May 2026',emp:'Karl Welch',ref:'Job 157799674',type:'Lead Stage 2 — Cooper, Ray',amount:75,dept:'MB Install Residential',reason:'Stage 1 paid in May. Job not yet sold — pay $75 when sold, installed, and paid.'},
+    {fromMonth:'May 2026',emp:'Karl Welch',ref:'Job 156979623',type:'Lead Stage 2 — Ogletree, Bill',amount:75,dept:'MB Install Residential',reason:'Stage 1 paid in May. Job not yet sold — pay $75 when sold, installed, and paid.'},
+    {fromMonth:'May 2026',emp:'Karl Welch',ref:'Job 157783679',type:'Lead Stage 2 — Bernard, Jonathan',amount:75,dept:'MB Install Residential',reason:'Stage 1 paid in May. Job not yet sold — pay $75 when sold, installed, and paid.'},
+  ],
   manuals:{steven:[],caleb:[]},
   officeMems:[
     {name:'Jenny Miller',    total:105, dept:'MB Residential Service'},
@@ -646,7 +651,7 @@ function rFlags(mgr){
           <option>Pay this month</option>
           <option>Pay next month</option>
           <option>Not paid</option>
-          <option>Verified — Paid via ST Payroll</option>
+          <option>Add manual spiff below</option>
         </select>
         <textarea placeholder="Note — required for 'Not paid'…" onchange="S.flags['${mgr}'].find(x=>x.id==='${f.id}').note=this.value"></textarea>
         <button class="btn btnp bsm" onclick="resolveFlag('${mgr}','${f.id}')">Resolve</button>

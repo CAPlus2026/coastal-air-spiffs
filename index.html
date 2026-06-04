@@ -773,27 +773,25 @@ function checkPin(val) {
 (async function init(){
   const badge=document.getElementById('conn-badge');
   document.getElementById('month-label').textContent=`${MONTH} · Processing window open`;
-  // Hard 8 second timeout — app loads regardless of Sheet status
-  const initTimeout = setTimeout(() => {
-    badge.textContent='Offline — saves disabled'; badge.className='conn conn-err';
-    document.getElementById('views').innerHTML='';
-    document.getElementById('role-sel').style.display='none';
-    showPinScreen();
-  }, 8000);
+
+  // Show app immediately — no waiting
+  document.getElementById('role-sel').style.display='none';
+  showPinScreen();
+
+  // Try Sheet connection in background — 5 second max
   try {
-    const cfg=await sGet('app_config!A1:B10');
-    if(cfg) cfg.forEach(row=>{ if(row[0]==='api_key'&&row[1]) API_KEY=row[1]; });
-    if(!API_KEY) throw new Error('No API key in app_config tab');
-    await loadSheets();
+    const timeoutPromise = new Promise((_,reject) => setTimeout(() => reject(new Error('timeout')), 5000));
+    const connectPromise = (async () => {
+      const cfg = await sGet('app_config!A1:B10');
+      if(cfg) cfg.forEach(row=>{ if(row[0]==='api_key'&&row[1]) API_KEY=row[1]; });
+      if(!API_KEY) throw new Error('no key');
+      await loadSheets();
+    })();
+    await Promise.race([connectPromise, timeoutPromise]);
     badge.textContent='Connected'; badge.className='conn conn-ok'; CONN_OK=true;
   } catch(e){
     badge.textContent='Offline — saves disabled'; badge.className='conn conn-err';
-    console.warn('Sheet connection failed — running on local data', e);
+    console.warn('Sheet offline:', e.message);
   }
-  clearTimeout(initTimeout);
-  document.getElementById('role-sel').style.display='none';
-  showPinScreen();
 })();
 </script>
-</body>
-</html>

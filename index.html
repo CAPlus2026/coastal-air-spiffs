@@ -102,8 +102,8 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#F0EDE8;min-height:10
       <span>Viewing as</span>
       <select id="role-sel" onchange="setRole(this.value)" style="display:none">
         <option value="billy">Billy (Owner)</option>
-        <option value="steven">Steven &mdash; Myrtle Beach</option>
-        <option value="caleb">Caleb &mdash; Charleston</option>
+        <option value="steven">Service Manager (MB)</option>
+        <option value="caleb">Location Manager (CH)</option>
       </select>
     </div>
   </div>
@@ -165,22 +165,33 @@ const S={
   ],
   emps:{
     steven:[
-      {name:'Darren Goida',  svc:300,  ins:0,plb:0,  com:0,  chs:0,chi:0,dups:[]},
-      {name:'Jim LeBlanc',   svc:1990, ins:0,plb:0,  com:0,  chs:0,chi:0,dups:[]},
-      {name:'Karl Welch',    svc:2015, ins:0,plb:0,  com:0,  chs:0,chi:0,dups:[]},
-      {name:'Jesse Mertens', svc:0,    ins:0,plb:115,com:0,  chs:0,chi:0,dups:[]},
-      {name:'Herbie Windley',svc:0,    ins:0,plb:300,com:0,  chs:0,chi:0,dups:[]},
-      {name:'Nick Scarpa',   svc:0,    ins:0,plb:0,  com:0,  chs:0,chi:0,dups:[]},
-      {name:'Javi Vazquez',  svc:0,    ins:0,plb:0,  com:0,  chs:0,chi:0,dups:[]},
-      {name:'Ray Lambert',   svc:0,    ins:0,plb:0,  com:0,  chs:0,chi:0,dups:[]},
-      {name:'Kyle Freeman',  svc:0,    ins:0,plb:0,  com:300,chs:0,chi:0,dups:[]},
-      {name:'Stuart Akel',   svc:0,    ins:0,plb:0,  com:0,  chs:0,chi:0,dups:[]},
+      // Correctly split: svc=Sales Spiff only, ins=TGL leads only
+      // Darren: svc=$300(sales spiffs), ins=$50(2x TGL set @$25) + CHAC91 approved=$300 svc
+      {name:'Darren Goida',  svc:600,  ins:50, plb:0,  com:0,  chs:0,chi:0,dups:[]},
+      // Jim: svc=$1515(sales spiffs)+$75(TGL sold Prescott in svc? no — TGL goes to ins)
+      // Jim MPF: sales spiffs=$1515, TGL Lead Sold Res Prescott=$75 → ins
+      // Wait — Jim's TGL: Prescott Job 155339886 $75 TGL Sold, Job 158040292 $25 TGL Set Parsons, Job 158248294 $25 TGL Set Sea-Mix
+      // svc=$1515, ins=$125(75+25+25), manual Stage1 adds=$50 → total ins=$175
+      {name:'Jim LeBlanc',   svc:1515, ins:175,plb:0,  com:0,  chs:0,chi:0,dups:[]},
+      // Karl: svc=$1515-$75reversal=$1440, ins=$500(TGL on MPF)+$125(manual)=$625
+      {name:'Karl Welch',    svc:1440, ins:625,plb:0,  com:0,  chs:0,chi:0,dups:[]},
+      {name:'Jesse Mertens', svc:0,    ins:0,  plb:115,com:0,  chs:0,chi:0,dups:[]},
+      {name:'Herbie Windley',svc:0,    ins:0,  plb:300,com:0,  chs:0,chi:0,dups:[]},
+      {name:'Nick Scarpa',   svc:0,    ins:0,  plb:0,  com:0,  chs:0,chi:0,dups:[]},
+      // Javi: $100 commercial lead spiff (Charlotte Derm) → com
+      {name:'Javi Vazquez',  svc:0,    ins:0,  plb:0,  com:100,chs:0,chi:0,dups:[]},
+      {name:'Ray Lambert',   svc:0,    ins:0,  plb:0,  com:0,  chs:0,chi:0,dups:[]},
+      // Kyle: $100 CAC3 accessory only (top tech bonus $0 — commercial budget not met)
+      {name:'Kyle Freeman',  svc:0,    ins:0,  plb:0,  com:100,chs:0,chi:0,dups:[]},
+      {name:'Stuart Akel',   svc:0,    ins:0,  plb:0,  com:0,  chs:0,chi:0,dups:[]},
     ],
     caleb:[
-      {name:'Jay Hall',     svc:0,ins:0,plb:0,com:0,chs:505,chi:0,dups:[]},
-      {name:'Steve Gordon', svc:0,ins:0,plb:0,com:0,chs:150,chi:0,dups:[]},
-      {name:'Derrick Hall', svc:0,ins:0,plb:0,com:0,chs:0,  chi:0,dups:[]},
-      {name:'Quincy Fields',svc:0,ins:0,plb:0,com:0,chs:0,  chi:0,dups:[]},
+      // Jay: svc=$430(MPF sales spiffs, TGL $75 Basler reversed already), chi=commission calculated separately
+      {name:'Jay Hall',     svc:0,ins:0,plb:0,com:0,chs:430,chi:0,dups:[],jayCommission:0},
+      // Steve: $150 MPF + $100 accessories approved + $25 lead = $275
+      {name:'Steve Gordon', svc:0,ins:0,plb:0,com:0,chs:250,chi:25,dups:[]},
+      {name:'Derrick Hall', svc:0,ins:0,plb:0,com:0,chs:0,  chi:0, dups:[]},
+      {name:'Quincy Fields',svc:0,ins:0,plb:0,com:0,chs:0,  chi:0, dups:[]},
     ]
   },
   flags:{
@@ -264,6 +275,19 @@ const S={
        detail:'Lead for Dicenzo, Devin has Saved status (not Completed). $25 not paid. Was quote delivered? If yes, mark Completed in ST and add $25 manual spiff to CH Install.'},
     ]
   },
+  commLeads:[
+    // Rolling log — carries month to month until sold+completed or marked dead
+    // May 2026 leads
+    {id:'cl1',month:'May 2026',tech:'Kyle Freeman',job:'156731670',customer:'AMC Theaters NMB',status:'Sold — Install In Progress',spiff:100,payMonth:'Jun 2026',paid:false},
+    {id:'cl2',month:'May 2026',tech:'Javi Vazquez',job:'158330085',customer:'Pellegrino & Sons / Cold Stone',status:'Did Not Sell',spiff:0,payMonth:'',paid:false},
+    {id:'cl3',month:'May 2026',tech:'Javi Vazquez',job:'157867483',customer:'Angel Oak Nursing & Rehab',status:'Sold — Install In Progress',spiff:100,payMonth:'Jun 2026',paid:false},
+    {id:'cl4',month:'May 2026',tech:'Javi Vazquez',job:'155302874',customer:"Chili's MB",status:'Did Not Sell',spiff:0,payMonth:'',paid:false},
+    {id:'cl5',month:'May 2026',tech:'Nick Scarpa',job:'155250984',customer:'MIYABI Japanese Steak House',status:'Did Not Sell',spiff:0,payMonth:'',paid:false},
+    {id:'cl6',month:'May 2026',tech:'Nick Scarpa',job:'155111523',customer:'America First Mgmt / Ganasa',status:'Did Not Sell',spiff:0,payMonth:'',paid:false},
+    {id:'cl7',month:'May 2026',tech:'Javi Vazquez',job:'155108334',customer:'America First Mgmt / Charlotte Derm',status:'Sold & Completed',spiff:100,payMonth:'May 2026',paid:true},
+    {id:'cl8',month:'May 2026',tech:'Ray Lambert',job:'157027975',customer:'SE Alliance Underwriters',status:'Did Not Sell',spiff:0,payMonth:'',paid:false},
+    {id:'cl9',month:'May 2026',tech:'Ray Lambert',job:'157867804',customer:'EMCOR / Ralph Lauren',status:'Did Not Sell',spiff:0,payMonth:'',paid:false},
+  ],
   carryForward:[
     {fromMonth:'May 2026',emp:'Darren Goida',ref:'Job 157782511',type:'Lead Stage 2 — Mains, Charlie',amount:75,dept:'MB Install Residential',reason:'Stage 1 paid May. Pay $75 when sold, installed, paid.'},
     {fromMonth:'May 2026',emp:'Jim LeBlanc', ref:'Job 157876582',type:'Lead Stage 2 — Parsons, Karen',amount:75,dept:'MB Install Residential',reason:'Stage 1 paid May. Pay $75 when sold, installed, paid.'},
@@ -273,12 +297,113 @@ const S={
     {fromMonth:'May 2026',emp:'Karl Welch',  ref:'Job 157783679',type:'Lead Stage 2 — Bernard, Jonathan',amount:75,dept:'MB Install Residential',reason:'Stage 1 paid May. Pay $75 when sold, installed, paid.'},
   ],
   manuals:{steven:[],caleb:[]},
+  jayJobs:[],
   officeMems:[
     {name:'Jenny Miller',    total:105,dept:'MB Residential Service'},
     {name:'Katie Osterling', total:85, dept:'MB Residential Service'},
     {name:'Chris Port',      total:60, dept:'MB Residential Service'},
     {name:'Danielle Gerthung',total:25,dept:'MB Residential Service'},
   ],
+  spiffDetail:{
+    steven:{
+      'Darren Goida':[
+        {date:'5/1',job:'155285364',customer:'DiCiccio, Michael',type:'Sales Spiff',item:'Membership renewal',spiff:10},
+        {date:'5/7',job:'131506361',customer:'White, Lynn & Valerie',type:'Sales Spiff',item:'Membership renewal',spiff:5},
+        {date:'5/7',job:'154531675',customer:'Hoeche, Janice',type:'Sales Spiff',item:'Membership renewal',spiff:5},
+        {date:'5/13',job:'155844710',customer:'Harley, Rupert & Nancy',type:'Sales Spiff',item:'CHAC-7 Compressor Kit',spiff:50},
+        {date:'5/14',job:'132933278',customer:'Budnick, Jackie',type:'Sales Spiff',item:'Membership renewal',spiff:5},
+        {date:'5/15',job:'133735051',customer:'Boyd, Lois',type:'Sales Spiff',item:'Membership renewal',spiff:5},
+        {date:'5/20',job:'157044315',customer:'Ryen, Abby',type:'Sales Spiff',item:'CHAC-7 Compressor Kit',spiff:50},
+        {date:'5/26',job:'157875692',customer:'Mains, Charlie',type:'TGL Lead Set',item:'Lead Stage 1 — quote delivered',spiff:25},
+        {date:'5/27',job:'130797831',customer:'Causey, Gregg',type:'Sales Spiff',item:'Membership',spiff:20},
+        {date:'5/27',job:'130079759',customer:'Putver, Jane',type:'Sales Spiff',item:'CHAC-95 Duct Cleaning',spiff:100},
+        {date:'5/28',job:'158014191',customer:'Juel, Sara',type:'TGL Lead Set',item:'Lead Stage 1 — quote delivered',spiff:25},
+      ],
+      'Jim LeBlanc':[
+        {date:'5/1',job:'132980076',customer:'Benjamin, Timothy',type:'Sales Spiff',item:'CHAC-91 Air Scrubber',spiff:300},
+        {date:'5/6',job:'130908232',customer:'Duvall, Caroline',type:'Sales Spiff',item:'Membership renewal',spiff:5},
+        {date:'5/8',job:'155606425',customer:'Nye, Sharon',type:'Sales Spiff',item:'Membership renewal',spiff:5},
+        {date:'5/11',job:'154558217',customer:'Riley, Dr. Shawn',type:'Sales Spiff',item:'Membership renewal',spiff:5},
+        {date:'5/12',job:'133157999',customer:"O'Neil, Douglas",type:'Sales Spiff',item:'CHAC-91 Air Scrubber',spiff:300},
+        {date:'5/13',job:'155252329',customer:'Shoufler, Darryl & Teresa',type:'Sales Spiff',item:'Membership renewal',spiff:5},
+        {date:'5/15',job:'155277409',customer:'Prescott, Bill',type:'Sales Spiff',item:'CHAC-91 Air Scrubber',spiff:300},
+        {date:'5/15',job:'155277409',customer:'Prescott, Bill',type:'Sales Spiff',item:'Membership',spiff:20},
+        {date:'5/15',job:'155339886',customer:'Prescott, Bill',type:'TGL Lead Sold',item:'Lead Stage 2 — sold & installed',spiff:75},
+        {date:'5/19',job:'155650425',customer:'Carr, Jason',type:'Sales Spiff',item:'Membership',spiff:15},
+        {date:'5/22',job:'155032559',customer:'Stivers, Annie',type:'Sales Spiff',item:'CHAC-91 Air Scrubber',spiff:300},
+        {date:'5/27',job:'157960539',customer:'Knight, Jeff',type:'Sales Spiff',item:'Membership renewal',spiff:10},
+        {date:'5/28',job:'158040292',customer:'Parsons, Karen',type:'TGL Lead Set',item:'Lead Stage 1 — quote delivered',spiff:25},
+        {date:'5/29',job:'158248294',customer:'Sea-Mix, LLC',type:'TGL Lead Set',item:'Lead Stage 1 — quote delivered',spiff:25},
+        {date:'5/29',job:'132988519',customer:'Rouille Jay',type:'Sales Spiff',item:'CHAC-91 Air Scrubber',spiff:300},
+        {date:'5/29',job:'157796699',customer:'Sigl, Mark',type:'Sales Spiff',item:'CHAC-91 Air Scrubber',spiff:300},
+      ],
+      'Karl Welch':[
+        {date:'5/1',job:'155027309',customer:'McDowell, Pamela',type:'Sales Spiff',item:'CHAC-7 Compressor Kit',spiff:50},
+        {date:'5/1',job:'155203305',customer:'Pure Property Mgmt',type:'TGL Lead Sold',item:'Lead Stage 2 — sold & installed',spiff:75},
+        {date:'5/5',job:'132892142',customer:'Trede, Clare',type:'Sales Spiff',item:'Membership renewal',spiff:5},
+        {date:'5/5',job:'132979646',customer:'Tessier, Gary',type:'Sales Spiff',item:'Membership renewal',spiff:10},
+        {date:'5/6',job:'155663484',customer:'Escolopio, Danny',type:'TGL Lead Set',item:'Lead Stage 1',spiff:25},
+        {date:'5/6',job:'155663484',customer:'Escolopio, Danny',type:'TGL Lead Sold',item:'Lead Stage 2',spiff:75},
+        {date:'5/6',job:'131467640',customer:'Dehart, Loretta',type:'Sales Spiff',item:'CHAC-95 Duct Cleaning',spiff:100},
+        {date:'5/7',job:'155427601',customer:'Ziccardi, John',type:'Sales Spiff',item:'CHAC-91 Air Scrubber',spiff:100},
+        {date:'5/7',job:'155427601',customer:'Ziccardi, John',type:'Sales Spiff',item:'CHAC-6/61 Drain x2',spiff:50},
+        {date:'5/7',job:'130930196',customer:'Best, David',type:'Sales Spiff',item:'Membership renewal',spiff:5},
+        {date:'5/8',job:'155609232',customer:'Newton, Charles',type:'Sales Spiff',item:'CHAC-91 Air Scrubber',spiff:300},
+        {date:'5/11',job:'129895557',customer:'Horner, Dawn',type:'Sales Spiff',item:'Membership renewal',spiff:5},
+        {date:'5/11',job:'133403772',customer:'Reichart, Ted',type:'Sales Spiff',item:'Membership renewal',spiff:5},
+        {date:'5/11',job:'155817967',customer:'Blatz, Mark',type:'Sales Spiff',item:'Membership',spiff:20},
+        {date:'5/13',job:'155650875',customer:'Pinkston, David',type:'Sales Spiff',item:'Membership',spiff:20},
+        {date:'5/15',job:'156731882',customer:'Adams, Mike',type:'Sales Spiff',item:'CHAC-4 Ecobee Lite',spiff:50},
+        {date:'5/15',job:'156742894',customer:'Garber, Jacob',type:'TGL Lead Set',item:'Lead Stage 1',spiff:25},
+        {date:'5/15',job:'156742894',customer:'Garber, Jacob',type:'TGL Lead Sold',item:'Lead Stage 2',spiff:75},
+        {date:'5/17',job:'156731914',customer:'Rader, Betty',type:'Sales Spiff',item:'CHAC-7 Compressor Kit',spiff:50},
+        {date:'5/18',job:'155646010',customer:'Escolopio, Danny',type:'TGL Lead Sold',item:'Lead Stage 2 (2nd job)',spiff:75},
+        {date:'5/18',job:'133157633',customer:'Mancuso, David',type:'Sales Spiff',item:'CHAC-91 + CHAC-1',spiff:350},
+        {date:'5/18',job:'156844782',customer:'McNeely, Brittany',type:'Sales Spiff',item:'Membership',spiff:20},
+        {date:'5/19',job:'155492353',customer:'Beaudry, Jerri',type:'TGL Lead Sold',item:'Lead Stage 2',spiff:75},
+        {date:'5/21',job:'156982402',customer:'Adams, Marilyn',type:'Sales Spiff',item:'CHAC-7 Compressor Kit',spiff:50},
+        {date:'5/26',job:'157868892',customer:'Cooper, Ray',type:'TGL Lead Set',item:'Lead Stage 1 — quote delivered',spiff:25},
+        {date:'5/27',job:'157736284',customer:'Ogletree, Bill',type:'TGL Lead Set',item:'Lead Stage 1 — quote delivered',spiff:25},
+        {date:'5/27',job:'157931997',customer:'Clark, Kennedy',type:'Sales Spiff',item:'Membership',spiff:20},
+        {date:'5/28',job:'155390059',customer:'Crowder, James',type:'Sales Spiff',item:'Membership renewal',spiff:5},
+        {date:'5/29',job:'158049666',customer:'Bernard, Jonathan',type:'TGL Lead Set',item:'Lead Stage 1 — quote delivered',spiff:25},
+        {date:'5/29',job:'154892300',customer:'Maymon, Debra',type:'Sales Spiff',item:'CHAC-91 Air Scrubber',spiff:300},
+      ],
+      'Jesse Mertens':[
+        {date:'5/4',job:'155302756',customer:'Watkins, Hilda',type:'Sales Spiff',item:'Plumbing membership',spiff:15},
+        {date:'5/13',job:'155918825',customer:'Ogrady, Mark',type:'Sales Spiff',item:'Water heater',spiff:100},
+      ],
+      'Herbie Windley':[
+        {date:'5/6',job:'155549672',customer:'Stipeler, Jeff',type:'Sales Spiff',item:'Water heater',spiff:100},
+        {date:'5/19',job:'156893968',customer:'Rives, Michelle',type:'Sales Spiff',item:'Water heater',spiff:100},
+        {date:'5/26',job:'155700744',customer:'Daniel Ravenel Real Estate',type:'Sales Spiff',item:'Water heater',spiff:100},
+      ],
+      'Nick Scarpa':[],
+      'Javi Vazquez':[],
+      'Ray Lambert':[],
+      'Kyle Freeman':[
+        {date:'N/A',job:'155953011',customer:'Ocean Lakes Billing',type:'Top Tech Bonus',item:'Highest completed revenue in MB Service Commercial',spiff:300},
+      ],
+      'Stuart Akel':[],
+    },
+    caleb:{
+      'Jay Hall':[
+        {date:'5/5',job:'155104501',customer:'Basler, William',type:'Sales Spiff',item:'CHAC-91 Air Scrubber + Membership',spiff:110,flagged:false,flagNote:''},
+        {date:'5/5',job:'155104501',customer:'Basler, William',type:'TGL — REVERSED',item:'TGL Lead Sold fired incorrectly — Jay generated this lead himself on service call. Needs payroll reversal.',spiff:75,flagged:true,flagNote:'Jay generated own lead — not a TGL. Reverse $75 from payroll.'},
+        {date:'5/5',job:'155105398',customer:'Pavan, Ed & Nicole',type:'Sales Spiff',item:'CHAC-7 Compressor Kit',spiff:50,flagged:false,flagNote:''},
+        {date:'5/7',job:'155227880',customer:'Knight, Lydia',type:'Sales Spiff',item:'CHAC-95 Duct Cleaning',spiff:100,flagged:false,flagNote:''},
+        {date:'5/15',job:'155813725',customer:'Weakland, Christopher',type:'Sales Spiff',item:'CHAC-91 Air Scrubber',spiff:100,flagged:false,flagNote:''},
+        {date:'5/28',job:'157988837',customer:'Cline, Robert',type:'Sales Spiff',item:'CHAC-7 Compressor Kit',spiff:50,flagged:false,flagNote:''},
+        {date:'5/28',job:'157556461',customer:'Benjamin, Joanne',type:'Sales Spiff',item:'Membership',spiff:20,flagged:false,flagNote:''},
+      ],
+      'Steve Gordon':[
+        {date:'5/8',job:'155109262',customer:'Pure Property Mgmt',type:'Sales Spiff',item:'CHAC-7 Compressor Kit',spiff:50},
+        {date:'5/29',job:'156773625',customer:'Swinhart, Linda',type:'Sales Spiff',item:'CHAC-4 x2 Ecobee',spiff:100},
+      ],
+      'Derrick Hall':[],
+      'Quincy Fields':[],
+    }
+  },
   ingestion:[
     {name:'Master Pay File',    ok:true},
     {name:'Accessory Sales',    ok:true},
@@ -302,6 +427,7 @@ function showPin(){
       <input class="pin-input" type="password" maxlength="4" placeholder="••••" id="pin-in" onkeyup="chkPin(this.value)" autofocus>
       <div class="pin-err" id="pin-err"></div>
     </div>`;
+  if(mgr==='caleb') setTimeout(renderJayJobs, 50);
 }
 
 function chkPin(v){
@@ -317,6 +443,72 @@ function chkPin(v){
     document.getElementById('pin-err').textContent='Incorrect PIN — try again';
     document.getElementById('pin-in').value='';
   }
+}
+
+// ── MPF Classification ──────────────────────────────────
+const LEAD_ACTIVITIES = ['TGL Lead Set Res','TGL Lead Sold Res'];
+const PLUMBERS = ['Jesse Mertens','Herbie Windley'];
+const COMM_TECHS = ['Nick Scarpa','Javi Vazquez','Ray Lambert','Kyle Freeman','Stuart Akel'];
+const CH_TECHS = ['Jay Hall','Steve Gordon','Derrick Hall'];
+
+function classifyMPFLine(name, activity) {
+  const isLead = LEAD_ACTIVITIES.includes(activity);
+  if (PLUMBERS.includes(name)) return 'plb';
+  if (COMM_TECHS.includes(name)) return 'com';
+  if (CH_TECHS.includes(name)) return isLead ? 'chi' : 'chs';
+  return isLead ? 'ins' : 'svc'; // default MB resi tech
+}
+
+function processMPFData(mpfRows) {
+  // mpfRows: array of [name, activity, date, job, pay, customer, location, labor]
+  const totals = {};
+  const dupsMap = {}; // track TGL sold by customer to detect duplicates
+  const flags = [];
+
+  mpfRows.forEach(r => {
+    const [name, activity, date, job, pay, customer] = r;
+    if (!name || !activity || !pay) return;
+    const amt = parseFloat(pay) || 0;
+    if (amt === 0) return;
+
+    if (!totals[name]) totals[name] = {svc:0,ins:0,plb:0,com:0,chs:0,chi:0};
+    const col = classifyMPFLine(name, activity);
+    totals[name][col] += amt;
+
+    // Duplicate TGL detection
+    if (activity === 'TGL Lead Sold Res') {
+      const custKey = name + '|' + String(customer).split(',')[0].trim().toLowerCase();
+      if (!dupsMap[custKey]) { dupsMap[custKey] = []; }
+      dupsMap[custKey].push({job, amt, customer});
+      if (dupsMap[custKey].length > 1) {
+        flags.push({
+          type: 'dup_tgl',
+          emp: name,
+          ref: `Job #${job}`,
+          title: `Duplicate TGL Stage 2 — ${customer}`,
+          detail: `TGL Lead Sold Res appears more than once for ${customer}. Jobs: ${dupsMap[custKey].map(x=>'#'+x.job).join(', ')}. One is likely a duplicate payroll entry. Verify and reverse the incorrect one.`,
+          sev: 'red'
+        });
+      }
+    }
+
+    // Stage 2 without Stage 1 detection
+    if (activity === 'TGL Lead Sold Res') {
+      const custKey2 = name + '|sold|' + String(customer).split(',')[0].trim().toLowerCase();
+      dupsMap[custKey2] = true;
+    }
+  });
+
+  // Check for S2 without S1
+  mpfRows.forEach(r => {
+    const [name, activity, date, job, pay, customer] = r;
+    if (activity !== 'TGL Lead Set Res') return;
+    const custKey = name + '|sold|' + String(customer).split(',')[0].trim().toLowerCase();
+    // S1 exists — good, remove S2 orphan concern
+    delete dupsMap[custKey];
+  });
+
+  return {totals, flags};
 }
 
 // ── Utils ────────────────────────────────────────────────
@@ -350,10 +542,10 @@ async function loadSheets(){
 // ── Nav ──────────────────────────────────────────────────
 const NAVS={
   billy:[{id:'overview',label:'Overview'},{id:'review',label:'Manager Review'},{id:'revenue',label:'Revenue & Budgets'},{id:'bonuses',label:'Bonus Approvals'},{id:'output',label:'Accounting Output'}],
-  steven:[{id:'myteam',label:'My Team'},{id:'flags',label:'Flags to Resolve'}],
+  steven:[{id:'myteam',label:'My Team'},{id:'flags',label:'Flags to Resolve'},{id:'commleads',label:'Commercial Leads'}],
   caleb:[{id:'myteam',label:'My Team'},{id:'flags',label:'Flags to Resolve'}],
 };
-const RENDERS={overview:rOverview,review:rReview,revenue:rRevenue,bonuses:rBonuses,output:rOutput,myteam:()=>rTeam(S.role),flags:()=>rFlags(S.role)};
+const RENDERS={overview:rOverview,review:rReview,revenue:rRevenue,bonuses:rBonuses,output:rOutput,myteam:()=>rTeam(S.role),flags:()=>rFlags(S.role),commleads:rCommLeads};
 
 function setRole(role){
   S.role=role;
@@ -412,7 +604,7 @@ function rOverview(){
 function rReview(){
   const v=vw();
   v.innerHTML=['steven','caleb'].map(mgr=>{
-    const lbl=mgr==='steven'?'Steven — Myrtle Beach':'Caleb — Charleston';
+    const lbl=mgr==='steven'?'Service Manager (MB)':'Location Manager (CH)';
     const s=S.submissions[mgr];const rf=S.flags[mgr].filter(f=>f.resolved);
     const canApprove=s==='submitted';
     return `<div class="card">
@@ -517,6 +709,22 @@ function buildRows(){
     const total=vals.reduce((a,b)=>a+b,0)+manAmt;
     if(total>0)rows.push({name:e.name,vals,manAmt,total,note:''});
   });
+  // Commercial lead spiffs — completed this month
+  S.commLeads.filter(l=>l.status==='Sold & Completed'&&l.payMonth===MONTH&&!l.paid).forEach(l=>{
+    rows.push({name:l.tech,vals:[0,0,0,l.spiff,0,0],manAmt:0,total:l.spiff,note:`Commercial lead spiff — ${l.customer} (Job ${l.job})`});
+  });
+  // Jay commission — goes in CH Install column
+  if(S.jayJobs.length>0){
+    let jayComm=0;
+    S.jayJobs.forEach(j=>{
+      const base=j.subtotal-j.accDeduct;
+      if(j.type==='Commission sale (2%)'){jayComm+=base*0.02;}
+      else if(j.type==='Lead spiff Stage 1+2 ($100)'){jayComm+=100;}
+      else if(j.type==='Lead spiff Stage 1 only ($25)'){jayComm+=25;}
+      else if(j.type==='Lead spiff Stage 2 only ($75)'){jayComm+=75;}
+    });
+    if(jayComm>0)rows.push({name:'Jay Hall',vals:[0,0,0,0,0,jayComm],manAmt:0,total:jayComm,note:'Equipment sales commission (2%) — calculated by Location Manager'});
+  }
   [...S.flags.steven,...S.flags.caleb].filter(f=>f.resolved&&f.disp==='Pay this month').forEach(f=>{
     rows.push({name:f.emp,vals:[25,0,0,0,0,0],manAmt:0,total:25,note:`Flag: ${f.title}`});
   });
@@ -578,7 +786,7 @@ function rTeam(mgr){
   ${pb?`<div class="pb-box"><div class="pb-label">Revision requested by Billy</div><div style="margin-top:4px">${pb}</div></div>`:''}
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
     <div>
-      <div style="font-size:1rem;font-weight:600">${mgr==='steven'?'Myrtle Beach':'Charleston'} team — ${MONTH}</div>
+      <div style="font-size:1rem;font-weight:600">${mgr==='steven'?'Myrtle Beach — Service Manager (MB)':'Charleston — Location Manager (CH)'} team — ${MONTH}</div>
       <div style="font-size:.75rem;color:#999;margin-top:2px">${d.length} employees · ${openF} flag${openF!==1?'s':''} need attention</div>
     </div>
     <button class="btn" style="${btnS}" onclick="submitWorkbook()">${btnT}</button>
@@ -593,10 +801,40 @@ function rTeam(mgr){
         const total=empTot(e)+manAmt;
         if(total===0&&!manAmt)return'';
         const dupW=(e.dups||[]).length?`<div class="dup-warn">⚠ Possible duplicate — check flags</div>`:'';
-        return `<tr><td>${e.name}${dupW}</td><td>${svc>0?fp(svc):'<span class="zero">—</span>'}</td><td>${ins>0?fp(ins):'<span class="zero">—</span>'}</td><td>${e.plb>0?fp(e.plb):'<span class="zero">—</span>'}</td><td>${e.com>0?fp(e.com):'<span class="zero">—</span>'}</td><td>${manAmt>0?fp(manAmt):'<span class="zero">—</span>'}</td><td>${fp(total)}</td></tr>`;
+        const detail=(S.spiffDetail[mgr]||{})[e.name]||[];
+        const detailRows=detail.map((d,di)=>`<tr style="background:${d.flagged?'#fef2f2':'#FAFAF8'}">
+          <td colspan="2" style="padding:4px 8px 4px 24px;font-size:.7rem;color:#666;font-family:'DM Mono',monospace">${d.date} · Job ${d.job}</td>
+          <td colspan="2" style="font-size:.7rem;color:#666;padding:4px 8px">${d.customer}</td>
+          <td style="font-size:.7rem;padding:4px 8px;color:${d.flagged?'#991b1b':'#666'}">${d.type}${d.flagged?' ⚠ NEEDS REVERSAL':''} — ${d.item}</td>
+          <td style="font-size:.7rem;padding:4px 8px">
+            ${!d.flagged?`<button onclick="flagSpiffLine('${mgr}','${e.name}',${di})" style="font-size:.65rem;padding:2px 6px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;color:#991b1b">Mark incorrect</button>`:`<span style="font-size:.65rem;color:#991b1b;font-weight:500">Flagged for reversal</span>`}
+          </td>
+          <td style="font-size:.7rem;font-family:'DM Mono',monospace;text-align:right;padding:4px 8px;color:${d.flagged?'#991b1b':'#1a1a1a'};text-decoration:${d.flagged?'line-through':'none'}">${fp(d.spiff)}</td>
+        </tr>`).join('');
+        return `<tr><td style="cursor:pointer" onclick="this.parentElement.nextElementSibling&&this.parentElement.nextElementSibling.style.display=this.parentElement.nextElementSibling.style.display==='none'?'':'none'">${e.name}${dupW} <span style="font-size:.65rem;color:#999">▾ details</span></td><td>${svc>0?fp(svc):'<span class="zero">—</span>'}</td><td>${ins>0?fp(ins):'<span class="zero">—</span>'}</td><td>${e.plb>0?fp(e.plb):'<span class="zero">—</span>'}</td><td>${e.com>0?fp(e.com):'<span class="zero">—</span>'}</td><td>${manAmt>0?fp(manAmt):'<span class="zero">—</span>'}</td><td>${fp(total)}</td></tr>${detail.length?`<tr class="detail-rows" style="display:none"><td colspan="7" style="padding:0"><table style="width:100%;border-collapse:collapse">${detailRows}</table></td></tr>`:''}`;
       }).join('')}</tbody>
     </table>
   </div>
+  ${mgr==='caleb'?`
+  <div class="card" style="border-left:3px solid #1a1a1a">
+    <div class="ctitle">Jay Hall — Equipment Sales Commission (2%)</div>
+    <div style="font-size:.75rem;color:#999;margin-bottom:.875rem">Enter each of Jay's equipment sales jobs for the month. The app calculates 2% commission on the base (subtotal minus accessory revenue). Verify job type with Caleb before submitting.</div>
+    <div style="display:grid;grid-template-columns:1fr 110px 110px 1fr auto;gap:8px;align-items:end;margin-bottom:.75rem">
+      <div><label style="font-size:.7rem;color:#999;display:block;margin-bottom:3px">Job Number</label><input type="text" id="jay-job" placeholder="e.g. 155104501" style="width:100%;font-size:.8rem;padding:6px 8px;border:1px solid #ddd;border-radius:7px;background:#fff;font-family:inherit"></div>
+      <div><label style="font-size:.7rem;color:#999;display:block;margin-bottom:3px">Job Subtotal ($)</label><input type="number" id="jay-sub" min="0" step="0.01" placeholder="0.00" style="width:100%;font-size:.8rem;padding:6px 8px;border:1px solid #ddd;border-radius:7px;background:#fff;font-family:'DM Mono',monospace"></div>
+      <div><label style="font-size:.7rem;color:#999;display:block;margin-bottom:3px">Subtract Accessories ($)</label><input type="number" id="jay-acc" min="0" step="0.01" placeholder="0.00" style="width:100%;font-size:.8rem;padding:6px 8px;border:1px solid #ddd;border-radius:7px;background:#fff;font-family:'DM Mono',monospace"></div>
+      <div><label style="font-size:.7rem;color:#999;display:block;margin-bottom:3px">Job Type</label><select id="jay-type" style="width:100%;font-size:.8rem;padding:6px 8px;border:1px solid #ddd;border-radius:7px;background:#fff;font-family:inherit">
+        <option>Commission sale (2%)</option>
+        <option>Lead spiff Stage 1+2 ($100)</option>
+        <option>Lead spiff Stage 1 only ($25)</option>
+        <option>Lead spiff Stage 2 only ($75)</option>
+      </select></div>
+      <div><label style="font-size:.7rem;color:#999;display:block;margin-bottom:3px">&nbsp;</label><button class="btn btnp" onclick="addJayJob()">Add</button></div>
+    </div>
+    <div id="jay-jobs-list"></div>
+    <div id="jay-total" style="margin-top:.75rem;padding-top:.75rem;border-top:1px solid #F0EDE8;font-size:.82rem;text-align:right"></div>
+  </div>
+  `:''}
   <div class="card">
     <div class="ctitle">Manual spiff additions</div>
     <div style="font-size:.75rem;color:#999;margin-bottom:.5rem">Add one-off spiffs not captured automatically.</div>
@@ -630,6 +868,106 @@ async function submitWorkbook(){
 }
 
 // ── FLAGS ────────────────────────────────────────────────
+function rCommLeads(){
+  const v=vw();
+  const active=S.commLeads.filter(l=>l.status!=='Did Not Sell'&&!l.paid);
+  const pending=S.commLeads.filter(l=>l.status==='Pending'||l.status==='Quote Delivered');
+  const done=S.commLeads.filter(l=>l.paid||l.status==='Did Not Sell');
+
+  v.innerHTML=`
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+    <div style="font-size:1rem;font-weight:600">Commercial Leads Log</div>
+    <span class="badge binfo">${active.length} active · ${pending.length} pending</span>
+  </div>
+  <div class="card" style="margin-bottom:.5rem;font-size:.75rem;color:#999">
+    Commercial lead spiff = \$100 paid when job sells AND completes. This log rolls month to month — leads stay until resolved. Add new leads each month.
+  </div>
+
+  ${active.length?`
+  <div class="card" style="border-left:3px solid #ef4444">
+    <div class="ctitle">Pay in ${MONTH} — sold &amp; in progress</div>
+    ${active.map(l=>`<div class="ri">
+      <div class="ril">
+        <span style="font-weight:500">${l.tech} — ${l.customer}</span>
+        <span class="risub">Job #${l.job} · Added ${l.month} · ${l.status}</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span style="font-weight:600;font-family:'DM Mono',monospace">\$${l.spiff}</span>
+        <span class="badge bwarn">Pay ${l.payMonth}</span>
+      </div>
+    </div>`).join('')}
+  </div>`:''}
+
+  <div class="card">
+    <div class="ctitle">All active leads — update status monthly</div>
+    ${S.commLeads.filter(l=>!l.paid&&l.status!=='Did Not Sell').map((l,i)=>`
+    <div style="padding:8px 0;border-bottom:1px solid #F0EDE8;display:grid;grid-template-columns:1fr 180px 100px;gap:8px;align-items:center;font-size:.82rem">
+      <div>
+        <div style="font-weight:500">${l.tech} — ${l.customer}</div>
+        <div style="font-size:.7rem;color:#999;font-family:'DM Mono',monospace">Job #${l.job} · ${l.month}</div>
+      </div>
+      <select style="font-size:.78rem;padding:4px 6px;border:1px solid #ddd;border-radius:6px;background:#fff;font-family:inherit"
+        onchange="updateCommLead('${l.id}',this.value)">
+        <option ${l.status==='Pending'?'selected':''}>Pending</option>
+        <option ${l.status==='Quote Delivered'?'selected':''}>Quote Delivered</option>
+        <option ${l.status==='Sold — Install In Progress'?'selected':''}>Sold — Install In Progress</option>
+        <option ${l.status==='Sold & Completed'?'selected':''}>Sold & Completed</option>
+        <option ${l.status==='Did Not Sell'?'selected':''}>Did Not Sell</option>
+      </select>
+      <span style="font-size:.7rem;color:#999;text-align:right">${l.status==='Sold & Completed'?'<span class="badge bok">\$100 due</span>':''}</span>
+    </div>`).join('')}
+  </div>
+
+  <div class="card">
+    <div class="ctitle">Add new commercial lead</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 130px auto;gap:8px;align-items:end">
+      <div><label style="font-size:.7rem;color:#999;display:block;margin-bottom:3px">Tech</label>
+        <select id="cl-tech" style="width:100%;font-size:.8rem;padding:6px 8px;border:1px solid #ddd;border-radius:7px;background:#fff;font-family:inherit">
+          ${['Nick Scarpa','Javi Vazquez','Ray Lambert','Kyle Freeman','Stuart Akel'].map(t=>`<option>${t}</option>`).join('')}
+        </select></div>
+      <div><label style="font-size:.7rem;color:#999;display:block;margin-bottom:3px">Customer / Business</label>
+        <input type="text" id="cl-cust" placeholder="e.g. Ocean Lakes Resort" style="width:100%;font-size:.8rem;padding:6px 8px;border:1px solid #ddd;border-radius:7px;background:#fff;font-family:inherit"></div>
+      <div><label style="font-size:.7rem;color:#999;display:block;margin-bottom:3px">Job Number</label>
+        <input type="text" id="cl-job" placeholder="e.g. 158354782" style="width:100%;font-size:.8rem;padding:6px 8px;border:1px solid #ddd;border-radius:7px;background:#fff;font-family:inherit"></div>
+      <div><label style="font-size:.7rem;color:#999;display:block;margin-bottom:3px">&nbsp;</label>
+        <button class="btn btnp" onclick="addCommLead()">Add</button></div>
+    </div>
+  </div>
+
+  ${done.length?`
+  <div class="card" style="opacity:.6">
+    <div class="ctitle">Resolved this month</div>
+    ${done.map(l=>`<div class="ri"><div class="ril"><span>${l.tech} — ${l.customer}</span><span class="risub">Job #${l.job}</span></div>
+      <span class="badge ${l.paid?'bok':'bgray'}">${l.paid?'Paid \$100':l.status}</span></div>`).join('')}
+  </div>`:''}`;
+}
+
+function updateCommLead(id, status){
+  const lead=S.commLeads.find(l=>l.id===id);
+  if(!lead) return;
+  lead.status=status;
+  if(status==='Sold & Completed'&&!lead.paid){
+    lead.spiff=100; lead.payMonth=MONTH;
+    toast(`\$100 spiff due to ${lead.tech} — will appear in accounting output.`);
+  }
+  if(status==='Did Not Sell') lead.spiff=0;
+  rCommLeads();
+}
+
+function addCommLead(){
+  const tech=document.getElementById('cl-tech').value;
+  const cust=document.getElementById('cl-cust').value.trim();
+  const job=document.getElementById('cl-job').value.trim();
+  if(!cust||!job){toast('Please enter customer and job number.');return;}
+  const id='cl'+Date.now();
+  S.commLeads.push({id,month:MONTH,tech,job,customer:cust,status:'Pending',spiff:0,payMonth:'',paid:false});
+  document.getElementById('cl-cust').value='';
+  document.getElementById('cl-job').value='';
+  sAppend('flags',[[MONTH,'steven',id,'info','info',tech,job,'',cust,'Pending','','false','']]);
+  toast('Commercial lead added to log.');
+  rCommLeads();
+}
+
 function rFlags(mgr){
   const v=vw();const flags=S.flags[mgr];
   const open=flags.filter(f=>!f.resolved).length;
@@ -665,6 +1003,66 @@ function rFlags(mgr){
   </div>`).join('')}
   ${!flags.length?`<div class="card" style="text-align:center;color:#999;font-size:.85rem;padding:2rem">No flags for your team this month.</div>`:''}`;
 }
+function renderJayJobs(){
+  const list=document.getElementById('jay-jobs-list');
+  const totEl=document.getElementById('jay-total');
+  if(!list||!totEl)return;
+  let commission=0;
+  const rows=S.jayJobs.map((j,i)=>{
+    let amt=0;
+    const base=j.subtotal-j.accDeduct;
+    if(j.type==='Commission sale (2%)'){amt=base*0.02;}
+    else if(j.type==='Lead spiff Stage 1+2 ($100)'){amt=100;}
+    else if(j.type==='Lead spiff Stage 1 only ($25)'){amt=25;}
+    else if(j.type==='Lead spiff Stage 2 only ($75)'){amt=75;}
+    commission+=amt;
+    return `<div style="display:flex;justify-content:space-between;align-items:flex-start;font-size:.78rem;padding:6px 0;border-top:1px solid #F0EDE8">
+      <div>
+        <span style="font-family:'DM Mono',monospace;color:#999">Job ${j.job}</span>
+        <span style="margin-left:8px">${j.type}</span>
+        ${j.accDeduct>0?`<span style="font-size:.7rem;color:#999;margin-left:6px">Subtotal ${fp(j.subtotal)} − accessories ${fp(j.accDeduct)} = base ${fp(base)}</span>`:`<span style="font-size:.7rem;color:#999;margin-left:6px">Subtotal ${fp(j.subtotal)}</span>`}
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <strong style="font-family:'DM Mono',monospace">${fp(amt)}</strong>
+        <button class="btn bsm" onclick="removeJayJob(${i})">Remove</button>
+      </div>
+    </div>`;
+  }).join('');
+  list.innerHTML=rows;
+  // Update Jay's commission in emps
+  const jay=S.emps.caleb.find(e=>e.name==='Jay Hall');
+  if(jay){jay.jayCommission=commission;}
+  totEl.innerHTML=`<span style="font-size:.82rem">Jay Hall commission total: <strong style="font-family:'DM Mono',monospace">${fp(commission)}</strong> &nbsp;·&nbsp; Plus service spiffs: <strong style="font-family:'DM Mono',monospace">${fp(jay?jay.chs:0)}</strong> &nbsp;·&nbsp; <strong>Grand total: ${fp(commission+(jay?jay.chs:0))}</strong></span>`;
+}
+
+function flagSpiffLine(mgr,empName,idx){
+  const detail=(S.spiffDetail[mgr]||{})[empName];
+  if(!detail||!detail[idx])return;
+  detail[idx].flagged=true;
+  detail[idx].flagNote='Flagged as incorrect by manager — requires payroll reversal';
+  // Subtract from employee total
+  const emp=S.emps[mgr].find(e=>e.name===empName);
+  if(emp){emp.chs=Math.max(0,(emp.chs||0)-detail[idx].spiff);}
+  toast('Line flagged — will be excluded from totals and noted for payroll reversal.');
+  rTeam(mgr);
+}
+
+function addJayJob(){
+  const job=document.getElementById('jay-job').value.trim();
+  const sub=parseFloat(document.getElementById('jay-sub').value)||0;
+  const acc=parseFloat(document.getElementById('jay-acc').value)||0;
+  const type=document.getElementById('jay-type').value;
+  if(!job||sub<=0){toast('Please enter a job number and subtotal.');return;}
+  S.jayJobs.push({job,subtotal:sub,accDeduct:acc,type});
+  document.getElementById('jay-job').value='';
+  document.getElementById('jay-sub').value='';
+  document.getElementById('jay-acc').value='';
+  renderJayJobs();
+  toast('Job added');
+}
+
+function removeJayJob(i){S.jayJobs.splice(i,1);renderJayJobs();}
+
 async function resolveFlag(mgr,id){
   const f=S.flags[mgr].find(x=>x.id===id);
   if(!f||!f.disp){toast('Please select an action first.');return;}

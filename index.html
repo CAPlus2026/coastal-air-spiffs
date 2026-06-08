@@ -559,6 +559,15 @@ async function loadSheets(){
       if(b&&r[11]==='true') b.approved=true;
     }
   });
+  // Read Jenny's bonus total from CCS Tracker tab — cell B70
+  const ccs = await sGet('ccs_tracker!B70');
+  if(ccs&&ccs[0]&&ccs[0][0]){
+    const jennyAmt = parseFloat(String(ccs[0][0]).replace(/[^0-9.]/g,''));
+    if(jennyAmt>0){
+      const jenny=S.bonuses.find(b=>b.id==='jenny');
+      if(jenny) jenny.amount=jennyAmt;
+    }
+  }
 }
 
 // ── Nav ──────────────────────────────────────────────────

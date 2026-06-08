@@ -614,7 +614,13 @@ function rReview(){
       </div>
       ${rf.length?rf.map(f=>`<div style="padding:7px 0;border-bottom:1px solid #F0EDE8;font-size:.82rem;display:flex;justify-content:space-between;gap:8px">
         <div><div style="font-weight:500">${f.title}</div><div style="font-size:.7rem;color:#999;font-family:'DM Mono',monospace">${f.emp} · ${f.ref}</div>${f.note?`<div style="font-size:.7rem;color:#999">${f.note}</div>`:''}</div>
-        <span class="badge ${f.disp==='Pay this month'?'bok':f.disp==='Pay next month'?'binfo':'bdanger'}">${f.disp}</span>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px">
+          <span class="badge ${f.disp==='Pay this month'?'bok':f.disp==='Pay next month'?'binfo':'bdanger'}">${f.disp}</span>
+          <button onclick="undoFlag('${mgr}','${f.id}');S.submissions['${mgr}']='not_started';renderAfterUndo('${mgr}');" 
+            style="font-size:.65rem;padding:2px 8px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;color:#666">
+            Undo
+          </button>
+        </div>
       </div>`).join(''):'<div style="font-size:.82rem;color:#999;padding:6px 0">No resolved flags yet.</div>'}
       ${canApprove?`<div style="margin-top:1rem;padding-top:.75rem;border-top:1px solid #F0EDE8">
         <div style="font-size:.75rem;color:#999;margin-bottom:.5rem">Push back or approve:</div>
@@ -803,11 +809,28 @@ function rTeam(mgr){
         const dupW=(e.dups||[]).length?`<div class="dup-warn">⚠ Possible duplicate — check flags</div>`:'';
         const detail=(S.spiffDetail[mgr]||{})[e.name]||[];
         const detailRows=detail.map((d,di)=>`<tr style="background:${d.flagged?'#fef2f2':'#FAFAF8'}">
-          <td colspan="2" style="padding:4px 8px 4px 24px;font-size:.7rem;color:#666;font-family:'DM Mono',monospace">${d.date} · Job ${d.job}</td>
-          <td colspan="2" style="font-size:.7rem;color:#666;padding:4px 8px">${d.customer}</td>
-          <td style="font-size:.7rem;padding:4px 8px;color:${d.flagged?'#991b1b':'#666'}">${d.type}${d.flagged?' ⚠ NEEDS REVERSAL':''} — ${d.item}</td>
-          <td style="font-size:.7rem;padding:4px 8px">
-            ${!d.flagged?`<button onclick="flagSpiffLine('${mgr}','${e.name}',${di})" style="font-size:.65rem;padding:2px 6px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;color:#991b1b">Mark incorrect</button>`:`<span style="font-size:.65rem;color:#991b1b;font-weight:500">Flagged for reversal</span>`}
+          <td style="padding:4px 8px 4px 24px;font-size:.7rem;color:#666;font-family:'DM Mono',monospace">${d.date} · Job ${d.job}</td>
+          <td style="font-size:.7rem;color:#666;padding:4px 8px">${d.customer}</td>
+          <td style="font-size:.7rem;padding:4px 8px;color:${d.flagged?'#991b1b':'#666'}">${d.type}${d.flagged?` ⚠ ${d.flagNote||'Needs reversal'}`:''} — ${d.item}</td>
+          <td style="font-size:.7rem;padding:4px 8px;min-width:200px">
+            ${!d.flagged?`
+              <div style="display:flex;gap:4px;align-items:center">
+                <input type="text" placeholder="Reason (required)" id="flag-reason-${mgr}-${e.name.replace(/\s/g,'_')}-${di}"
+                  style="font-size:.65rem;padding:2px 6px;border:1px solid #ddd;border-radius:4px;width:130px;font-family:inherit">
+                <button onclick="flagSpiffLine('${mgr}','${e.name}',${di})" 
+                  style="font-size:.65rem;padding:2px 6px;border:1px solid #fca5a5;border-radius:4px;background:#fee2e2;cursor:pointer;color:#991b1b;white-space:nowrap">
+                  Mark incorrect
+                </button>
+              </div>`:
+            d.flagged?`
+              <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
+                <span style="font-size:.65rem;color:#991b1b;font-weight:500">⚠ Flagged</span>
+                <button onclick="unflagSpiffLine('${mgr}','${e.name}',${di})"
+                  style="font-size:.65rem;padding:2px 6px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;color:#666">
+                  Undo
+                </button>
+              </div>`:''
+            }
           </td>
           <td style="font-size:.7rem;font-family:'DM Mono',monospace;text-align:right;padding:4px 8px;color:${d.flagged?'#991b1b':'#1a1a1a'};text-decoration:${d.flagged?'line-through':'none'}">${fp(d.spiff)}</td>
         </tr>`).join('');
@@ -870,9 +893,9 @@ async function submitWorkbook(){
 // ── FLAGS ────────────────────────────────────────────────
 function rCommLeads(){
   const v=vw();
-  const active=S.commLeads.filter(l=>l.status!=='Did Not Sell'&&!l.paid);
-  const pending=S.commLeads.filter(l=>l.status==='Pending'||l.status==='Quote Delivered');
-  const done=S.commLeads.filter(l=>l.paid||l.status==='Did Not Sell');
+  const active=S.commLeads.filter(l=>l.status==='Sold — Install In Progress'&&!l.paid);
+  const pending=S.commLeads.filter(l=>l.status==='Pending');
+  const done=S.commLeads.filter(l=>l.paid||l.status==='Did Not Sell — Close Lead');
 
   v.innerHTML=`
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
@@ -900,7 +923,7 @@ function rCommLeads(){
 
   <div class="card">
     <div class="ctitle">All active leads — update status monthly</div>
-    ${S.commLeads.filter(l=>!l.paid&&l.status!=='Did Not Sell').map((l,i)=>`
+    ${S.commLeads.filter(l=>!l.paid&&l.status!=='Did Not Sell — Close Lead').map((l,i)=>`
     <div style="padding:8px 0;border-bottom:1px solid #F0EDE8;display:grid;grid-template-columns:1fr 180px 100px;gap:8px;align-items:center;font-size:.82rem">
       <div>
         <div style="font-weight:500">${l.tech} — ${l.customer}</div>
@@ -909,10 +932,9 @@ function rCommLeads(){
       <select style="font-size:.78rem;padding:4px 6px;border:1px solid #ddd;border-radius:6px;background:#fff;font-family:inherit"
         onchange="updateCommLead('${l.id}',this.value)">
         <option ${l.status==='Pending'?'selected':''}>Pending</option>
-        <option ${l.status==='Quote Delivered'?'selected':''}>Quote Delivered</option>
         <option ${l.status==='Sold — Install In Progress'?'selected':''}>Sold — Install In Progress</option>
         <option ${l.status==='Sold & Completed'?'selected':''}>Sold & Completed</option>
-        <option ${l.status==='Did Not Sell'?'selected':''}>Did Not Sell</option>
+        <option ${l.status==='Did Not Sell'?'selected':''}>Did Not Sell — Close Lead</option>
       </select>
       <span style="font-size:.7rem;color:#999;text-align:right">${l.status==='Sold & Completed'?'<span class="badge bok">\$100 due</span>':''}</span>
     </div>`).join('')}
@@ -950,7 +972,7 @@ function updateCommLead(id, status){
     lead.spiff=100; lead.payMonth=MONTH;
     toast(`\$100 spiff due to ${lead.tech} — will appear in accounting output.`);
   }
-  if(status==='Did Not Sell') lead.spiff=0;
+  if(status==='Did Not Sell — Close Lead'){lead.spiff=0;lead.status='Did Not Sell — Close Lead';}
   rCommLeads();
 }
 
@@ -986,8 +1008,11 @@ function rFlags(mgr){
     <div class="fmeta">${f.emp} · ${f.ref}</div>
     <div class="ftitle">${f.title}</div>
     ${f.resolved?`
-      <span class="badge ${f.disp==='Pay this month'?'bok':f.disp==='Pay next month'?'binfo':'bdanger'}">${f.disp}</span>
-      ${f.note?`<span style="font-size:.72rem;color:#999;margin-left:8px">${f.note}</span>`:''}`:`
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <span class="badge ${f.disp==='Pay this month'?'bok':f.disp==='Pay next month'?'binfo':'bdanger'}">${f.disp}</span>
+        ${f.note?`<span style="font-size:.72rem;color:#999">${f.note}</span>`:''}
+        <button onclick="undoFlag('${mgr}','${f.id}')" style="font-size:.65rem;padding:2px 8px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;color:#666">Undo</button>
+      </div>`:`
       <div class="fdetail">${f.detail}</div>
       <div class="factions">
         <select onchange="S.flags['${mgr}'].find(x=>x.id==='${f.id}').disp=this.value">
@@ -1036,14 +1061,38 @@ function renderJayJobs(){
 }
 
 function flagSpiffLine(mgr,empName,idx){
+  const reasonId=`flag-reason-${mgr}-${empName.replace(/\s/g,'_')}-${idx}`;
+  const reasonEl=document.getElementById(reasonId);
+  const reason=reasonEl?reasonEl.value.trim():'';
+  if(!reason){toast('Please enter a reason before marking incorrect.');return;}
   const detail=(S.spiffDetail[mgr]||{})[empName];
   if(!detail||!detail[idx])return;
   detail[idx].flagged=true;
-  detail[idx].flagNote='Flagged as incorrect by manager — requires payroll reversal';
+  detail[idx].flagNote=reason;
   // Subtract from employee total
   const emp=S.emps[mgr].find(e=>e.name===empName);
-  if(emp){emp.chs=Math.max(0,(emp.chs||0)-detail[idx].spiff);}
-  toast('Line flagged — will be excluded from totals and noted for payroll reversal.');
+  if(emp){
+    const col=detail[idx].type&&detail[idx].type.includes('TGL')?'chi':'chs';
+    if(mgr==='steven') emp.svc=Math.max(0,(emp.svc||0)-detail[idx].spiff);
+    else emp.chs=Math.max(0,(emp.chs||0)-detail[idx].spiff);
+  }
+  toast('Line flagged — excluded from totals. Noted for payroll reversal.');
+  rTeam(mgr);
+}
+
+function unflagSpiffLine(mgr,empName,idx){
+  const detail=(S.spiffDetail[mgr]||{})[empName];
+  if(!detail||!detail[idx])return;
+  const wasSpiff=detail[idx].spiff;
+  detail[idx].flagged=false;
+  detail[idx].flagNote='';
+  // Add back to employee total
+  const emp=S.emps[mgr].find(e=>e.name===empName);
+  if(emp){
+    if(mgr==='steven') emp.svc=(emp.svc||0)+wasSpiff;
+    else emp.chs=(emp.chs||0)+wasSpiff;
+  }
+  toast('Flag removed — spiff restored to total.');
   rTeam(mgr);
 }
 
@@ -1062,6 +1111,25 @@ function addJayJob(){
 }
 
 function removeJayJob(i){S.jayJobs.splice(i,1);renderJayJobs();}
+
+function renderAfterUndo(mgr){
+  // Re-render whichever view is active
+  if(document.querySelector('.nb.on')&&document.querySelector('.nb.on').dataset.v==='review') rReview();
+  else rOverview();
+}
+
+async function undoFlag(mgr,id){
+  const f=S.flags[mgr].find(x=>x.id===id);
+  if(!f) return;
+  f.resolved=false; f.disp=''; f.note='';
+  // Write undo to sheet — new row overrides previous resolution
+  await sAppend('flags',[[MONTH,mgr,id,f.sev,f.sev,f.emp,f.ref,'',f.detail,'','','false',new Date().toISOString()]]);
+  toast('Flag re-opened.');
+  rFlags(mgr);
+  // Update submit button
+  const btn=document.querySelector('button[onclick="submitWorkbook()"]');
+  if(btn){btn.textContent=`1 flag needs resolution`;btn.style.background='#ccc';btn.style.cursor='not-allowed';}
+}
 
 async function resolveFlag(mgr,id){
   const f=S.flags[mgr].find(x=>x.id===id);

@@ -550,6 +550,15 @@ async function loadSheets(){
     if(fl){fl.disp=r[9]||'';fl.note=r[10]||'';fl.resolved=r[11]==='true';}
   });
   if(mans)mans.forEach(r=>{if(r[0]===MONTH&&r[1]&&S.manuals[r[1]])S.manuals[r[1]].push({name:r[2],reason:r[3],amount:parseFloat(r[4])||0,dept:r[5]});});
+  // Load bonus approvals from Sheet (approved state only — amounts stay hardcoded)
+  if(flags)flags.forEach(r=>{
+    if(r[0]!==MONTH||r[1]!=='billy') return;
+    const bonusId = r[2]&&r[2].startsWith('bonus-') ? r[2].replace('bonus-','') : null;
+    if(bonusId){
+      const b=S.bonuses.find(x=>x.id===bonusId);
+      if(b&&r[11]==='true') b.approved=true;
+    }
+  });
 }
 
 // ── Nav ──────────────────────────────────────────────────
@@ -749,12 +758,24 @@ function buildRows(){
 
   // Roll resolved flags into the employee's row
   [...S.flags.steven,...S.flags.caleb].filter(f=>f.resolved&&f.disp==='Pay this month').forEach(f=>{
-    // Determine correct column based on flag content
-    const isLead = f.title.toLowerCase().includes('lead') || f.title.toLowerCase().includes('tgl');
+    const isLead = f.title.toLowerCase().includes('lead stage 1')||f.title.toLowerCase().includes('lead stage 2');
+    const isAccessory = f.title.toLowerCase().includes('accessory');
     const isCH = f.emp==='Steve Gordon'||f.emp==='Jay Hall';
-    const col = isLead ? (isCH?5:1) : (isCH?4:0);
-    const v=[0,0,0,0,0,0]; v[col]=25;
-    addToEmp(f.emp, v, `Resolved flag: ${f.title} — ${fp(25)}`, '');
+    // Determine amount from flag title
+    let amt = 25; // default Stage 1
+    if(f.title.includes('Stage 2')) amt=75;
+    if(f.title.includes('Stage 1+2')||f.title.includes('$100 total')||f.title.match(/\$100/)) amt=100;
+    if(f.title.includes('CHAC-91')||f.title.includes('$300')) amt=300;
+    if(f.title.includes('2x CAC3')||f.title.includes('CAC3')) amt=100;
+    if(f.title.includes('CHAC-7')&&!f.title.includes('2x')) amt=50;
+    if(f.note&&f.note.match(/\$(\d+)/)) amt=parseInt(f.note.match(/\$(\d+)/)[1])||amt;
+    // Determine column
+    let col = isLead ? (isCH?5:1) : (isCH?4:0);
+    if(isAccessory && isCH) col=4;
+    if(isAccessory && !isCH) col=0;
+    if(f.emp==='Javi Vazquez'||f.emp==='Kyle Freeman'||f.emp==='Nick Scarpa') col=3;
+    const v=[0,0,0,0,0,0]; v[col]=amt;
+    addToEmp(f.emp, v, `Resolved: ${f.title} — ${fp(amt)}`, '');
   });
 
   // Commercial lead spiffs — roll into tech's row

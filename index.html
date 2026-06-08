@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"> 
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -173,7 +173,7 @@ const S={
     {dept:'MB Install-Commercial', goal:299381,actual:null,se:false},
   ],
   bonuses:[
-    {id:'jenny',name:'Jenny Miller',type:'CCS Supervisor Bonus',amount:0,dept:'Call Center',approved:false,note:'Enter from CCS Tracker after Jenny submits'},
+    {id:'jenny',name:'Jenny Miller',type:'CCS Supervisor Bonus',amount:720,dept:'Call Center',approved:false,note:'Per CCS Tracker May 2026: Booking $200 + Membership Renewal $200 + New Memberships $50 + Daily Goals $270'},
     {id:'rich', name:'Rich Smith',  type:'Commercial Commission (3%)',amount:694.05,dept:'MB Service Commercial',approved:false},
   ],
   emps:{
@@ -720,54 +720,106 @@ async function toggleBonus(i){
 // ── ACCOUNTING OUTPUT ─────────────────────────────────────
 const DCOLS=['MB Resi Svc','MB Install Resi','MB Plumbing','MB Svc Comm','CH Service','CH Install'];
 function buildRows(){
-  const rows=[];
+  // Build a map keyed by employee name so resolved flags roll up
+  const empMap = {};
+
+  function addToEmp(name, vals, detail, note) {
+    if (!empMap[name]) empMap[name] = {name, vals:[0,0,0,0,0,0], details:[], total:0};
+    vals.forEach((v,i) => empMap[name].vals[i] += (v||0));
+    empMap[name].total = empMap[name].vals.reduce((a,b)=>a+b,0);
+    if (detail) empMap[name].details.push(detail);
+  }
+
+  // Base employee spiffs from MPF
   [...S.emps.steven,...S.emps.caleb].forEach(e=>{
     const mgr=S.emps.steven.includes(e)?'steven':'caleb';
     const manAmt=(S.manuals[mgr]||[]).filter(m=>m.name===e.name).reduce((a,m)=>a+m.amount,0);
     const vals=[e.svc||0,e.ins||0,e.plb||0,e.com||0,e.chs||0,e.chi||0];
-    const total=vals.reduce((a,b)=>a+b,0)+manAmt;
-    if(total>0)rows.push({name:e.name,vals,manAmt,total,note:''});
+    const baseTotal=vals.reduce((a,b)=>a+b,0);
+    if(baseTotal>0||manAmt>0){
+      addToEmp(e.name, vals, null, '');
+      if(manAmt>0){
+        const mVals=[0,0,0,0,0,0];
+        (S.manuals[mgr]||[]).filter(m=>m.name===e.name).forEach(m=>{
+          addToEmp(e.name, [0,0,0,0,0,0], `Manual add: ${m.reason} — ${fp(m.amount)} (${m.dept})`, '');
+        });
+      }
+    }
   });
-  // Commercial lead spiffs — completed this month
-  S.commLeads.filter(l=>l.status==='Sold & Completed'&&l.payMonth===MONTH&&!l.paid).forEach(l=>{
-    rows.push({name:l.tech,vals:[0,0,0,l.spiff,0,0],manAmt:0,total:l.spiff,note:`Commercial lead spiff — ${l.customer} (Job ${l.job})`});
+
+  // Roll resolved flags into the employee's row
+  [...S.flags.steven,...S.flags.caleb].filter(f=>f.resolved&&f.disp==='Pay this month').forEach(f=>{
+    // Determine correct column based on flag content
+    const isLead = f.title.toLowerCase().includes('lead') || f.title.toLowerCase().includes('tgl');
+    const isCH = f.emp==='Steve Gordon'||f.emp==='Jay Hall';
+    const col = isLead ? (isCH?5:1) : (isCH?4:0);
+    const v=[0,0,0,0,0,0]; v[col]=25;
+    addToEmp(f.emp, v, `Resolved flag: ${f.title} — ${fp(25)}`, '');
   });
-  // Jay commission — goes in CH Install column
+
+  // Commercial lead spiffs — roll into tech's row
+  S.commLeads.filter(l=>l.status==='Sold & Completed'&&l.payMonth===MONTH).forEach(l=>{
+    addToEmp(l.tech, [0,0,0,l.spiff,0,0], `Commercial lead: ${l.customer} (Job ${l.job}) — ${fp(l.spiff)}`, '');
+  });
+
+  // Jay commission — roll into Jay's row
   if(S.jayJobs.length>0){
     let jayComm=0;
+    const jayDetails=[];
     S.jayJobs.forEach(j=>{
       const base=j.subtotal-j.accDeduct;
-      if(j.type==='Commission sale (2%)'){jayComm+=base*0.02;}
-      else if(j.type==='Lead spiff Stage 1+2 ($100)'){jayComm+=100;}
-      else if(j.type==='Lead spiff Stage 1 only ($25)'){jayComm+=25;}
-      else if(j.type==='Lead spiff Stage 2 only ($75)'){jayComm+=75;}
+      let amt=0;
+      if(j.type==='Commission sale (2%)'){amt=base*0.02;}
+      else if(j.type==='Lead spiff Stage 1+2 ($100)'){amt=100;}
+      else if(j.type==='Lead spiff Stage 1 only ($25)'){amt=25;}
+      else if(j.type==='Lead spiff Stage 2 only ($75)'){amt=75;}
+      jayComm+=amt;
+      jayDetails.push(`Job ${j.job}: ${j.type} — ${fp(amt)}`);
     });
-    if(jayComm>0)rows.push({name:'Jay Hall',vals:[0,0,0,0,0,jayComm],manAmt:0,total:jayComm,note:'Equipment sales commission (2%) — calculated by Location Manager'});
+    if(jayComm>0){
+      addToEmp('Jay Hall',[0,0,0,0,0,jayComm], `Equipment commission: ${jayDetails.join('; ')}`, '');
+    }
   }
-  [...S.flags.steven,...S.flags.caleb].filter(f=>f.resolved&&f.disp==='Pay this month').forEach(f=>{
-    rows.push({name:f.emp,vals:[25,0,0,0,0,0],manAmt:0,total:25,note:`Flag: ${f.title}`});
-  });
+
+  // Steven performance bonus
   S.revenue.filter(r=>r.se&&r.actual&&r.actual>=r.goal).forEach(r=>{
     const col=r.dept.includes('Residential')?0:r.dept.includes('Commercial')?3:r.dept.includes('Plumbing')?2:0;
     const v=[0,0,0,0,0,0];v[col]=350;
-    rows.push({name:'Steven',vals:v,manAmt:0,total:350,note:r.dept+' goal met'});
+    addToEmp('Steven (performance bonus)',v,`Performance bonus: ${r.dept} goal met — $350`,'');
   });
-  S.bonuses.filter(b=>b.approved).forEach(b=>rows.push({name:b.name,vals:[0,0,0,0,0,0],manAmt:0,total:b.amount,note:b.type}));
+
+  // Approved bonuses
+  S.bonuses.filter(b=>b.approved).forEach(b=>{
+    addToEmp(b.name,[0,0,0,0,0,0],`${b.type}: ${fp(b.amount)}`,'');
+    if(!empMap[b.name]) empMap[b.name]={name:b.name,vals:[0,0,0,0,0,0],details:[],total:0};
+    empMap[b.name].total+=b.amount;
+    empMap[b.name].bonusAmt=(empMap[b.name].bonusAmt||0)+b.amount;
+    empMap[b.name].bonusNote=b.type;
+  });
+
+  // Office membership spiffs
   S.officeMems.forEach(m=>{
     const v=[0,0,0,0,0,0];
     if(m.dept==='MB Residential Service')v[0]=m.total;
     else if(m.dept==='MB Plumbing')v[2]=m.total;
     else if(m.dept==='CH Service')v[4]=m.total;
-    if(m.total>0)rows.push({name:m.name,vals:v,manAmt:0,total:m.total,note:'Membership spiffs'});
+    if(m.total>0) addToEmp(m.name,v,`Membership spiffs: ${fp(m.total)}`,'');
   });
-  return rows;
+
+  return Object.values(empMap).filter(r=>r.total>0);
 }
-function grandTotal(){return buildRows().reduce((a,r)=>a+r.total,0);}
+function grandTotal(){return buildRows().reduce((a,r)=>a+r.total+(r.bonusAmt||0),0);}
 
 function rOutput(){
   const v=vw();const rows=buildRows();const ct=[0,0,0,0,0,0];let gt=0;
-  const tbody=rows.map(r=>{r.vals.forEach((x,i)=>ct[i]+=x);gt+=r.total;
-    return `<tr><td>${r.name}${r.note?`<div style="font-size:.65rem;color:#999">${r.note}</div>`:''}</td>${r.vals.map(x=>`<td>${x>0?fp(x):'<span class="zero">—</span>'}</td>`).join('')}<td style="font-weight:600">${fp(r.total)}</td></tr>`;
+  const tbody=rows.map(r=>{
+    r.vals.forEach((x,i)=>ct[i]+=x);
+    const rowTotal = r.total + (r.bonusAmt||0);
+    gt+=rowTotal;
+    const details = (r.details||[]).filter(Boolean);
+    const detailHtml = details.length ? `<div style="font-size:.65rem;color:#888;margin-top:3px;line-height:1.6">${details.map(d=>`• ${d}`).join('<br>')}</div>` : '';
+    const bonusLine = r.bonusAmt ? `<div style="font-size:.65rem;color:#888;margin-top:3px">• ${r.bonusNote}: ${fp(r.bonusAmt)} (Call Center — all depts)</div>` : '';
+    return `<tr><td>${r.name}${detailHtml}${bonusLine}</td>${r.vals.map(x=>`<td>${x>0?fp(x):'<span class="zero">—</span>'}</td>`).join('')}<td style="font-weight:600">${fp(rowTotal)}</td></tr>`;
   }).join('');
   v.innerHTML=`
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
@@ -942,6 +994,7 @@ function rCommLeads(){
         <div style="font-weight:500">${l.tech} — ${l.customer}</div>
         <div style="font-size:.7rem;color:#999;font-family:'DM Mono',monospace">Job #${l.job} · ${l.month}</div>
       </div>
+      <div style="display:flex;gap:4px;align-items:center">
       <select style="font-size:.78rem;padding:4px 6px;border:1px solid #ddd;border-radius:6px;background:#fff;font-family:inherit"
         onchange="updateCommLead('${l.id}',this.value)">
         <option ${l.status==='Pending'?'selected':''}>Pending</option>
@@ -949,6 +1002,8 @@ function rCommLeads(){
         <option ${l.status==='Sold & Completed'?'selected':''}>Sold & Completed</option>
         <option ${l.status==='Did Not Sell'?'selected':''}>Did Not Sell — Close Lead</option>
       </select>
+      ${l.prevStatus?`<button onclick="undoCommLead('${l.id}')" style="font-size:.65rem;padding:2px 8px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;color:#666;white-space:nowrap">Undo</button>`:''}
+      </div>
       <span style="font-size:.7rem;color:#999;text-align:right">${l.status==='Sold & Completed'?'<span class="badge bok">\$100 due</span>':''}</span>
     </div>`).join('')}
   </div>
@@ -980,12 +1035,23 @@ function rCommLeads(){
 function updateCommLead(id, status){
   const lead=S.commLeads.find(l=>l.id===id);
   if(!lead) return;
+  lead.prevStatus = lead.status; // save for undo
   lead.status=status;
-  if(status==='Sold & Completed'&&!lead.paid){
+  if(status==='Sold & Completed'){
     lead.spiff=100; lead.payMonth=MONTH;
     toast(`\$100 spiff due to ${lead.tech} — will appear in accounting output.`);
   }
-  if(status==='Did Not Sell — Close Lead'){lead.spiff=0;lead.status='Did Not Sell — Close Lead';}
+  if(status==='Did Not Sell — Close Lead'){lead.spiff=0;}
+  rCommLeads();
+}
+
+function undoCommLead(id){
+  const lead=S.commLeads.find(l=>l.id===id);
+  if(!lead||!lead.prevStatus) return;
+  lead.status=lead.prevStatus;
+  lead.prevStatus=null;
+  if(lead.status!=='Sold & Completed'){lead.spiff=0;lead.payMonth='';}
+  toast('Status reverted.');
   rCommLeads();
 }
 

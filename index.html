@@ -112,37 +112,50 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#F0EDE8;min-height:10
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const SHEET_ID='1E3p3clqh1svM_F8dOXAh7pbFUqQCUFRetyHeElpDXTI';
-const API_KEY='AIzaSyCzREAilT9jEEaMtN99r6sUfeW8nIl9kMw';
+const SHEET_ID='1E3p3clqh1svM_F8dOXAh7pbFUqQCUFRetyHeElpDXTI'; // kept for reference
 const MONTH='May 2026', PREV_M='Apr 2026', NEXT_M='Jun 2026';
 let CONN_OK=false;
 
-// ── Sheets helpers ──────────────────────────────────────
+// ── Sheets helpers via Apps Script ──────────────────────
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwHV_lR6gQQGs4LOmst5JxYlg6NqDjJIhJjs0h6l4wCs8DFEtBaWQ6RfURKIVdrfkqI/exec';
+
 async function sGet(range){
   try{
-    const ctrl=new AbortController();
-    const t=setTimeout(()=>ctrl.abort(),4000);
-    const r=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?key=${API_KEY}`,{signal:ctrl.signal});
+    const sheet = range.split('!')[0];
+    const r = range.includes('!') ? range.split('!')[1] : null;
+    const params = new URLSearchParams({action:'get', sheet, ...(r && {range:r})});
+    const ctrl = new AbortController();
+    const t = setTimeout(()=>ctrl.abort(), 8000);
+    const res = await fetch(`${SCRIPT_URL}?${params}`, {signal:ctrl.signal});
     clearTimeout(t);
-    if(!r.ok)return null;
-    return (await r.json()).values||[];
-  }catch{return null;}
+    const data = await res.json();
+    return data.values || [];
+  } catch(e) { console.warn('sGet failed', e); return null; }
 }
-async function sAppend(tab,values){
+
+async function sAppend(tab, values){
   try{
-    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(tab+'!A1')}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS&key=${API_KEY}`,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({majorDimension:'ROWS',values})
+    const params = new URLSearchParams({
+      action: 'append',
+      sheet: tab,
+      values: JSON.stringify(values[0])
     });
-  }catch(e){console.warn('sAppend failed',e);}
+    await fetch(`${SCRIPT_URL}?${params}`);
+  } catch(e) { console.warn('sAppend failed', e); }
 }
-async function sPut(range,values){
+
+async function sPut(range, values){
   try{
-    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=RAW&key=${API_KEY}`,{
-      method:'PUT',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({range,majorDimension:'ROWS',values})
+    const sheet = range.split('!')[0];
+    const r = range.split('!')[1];
+    const params = new URLSearchParams({
+      action: 'put',
+      sheet,
+      range: r,
+      values: JSON.stringify(values)
     });
-  }catch(e){console.warn('sPut failed',e);}
+    await fetch(`${SCRIPT_URL}?${params}`);
+  } catch(e) { console.warn('sPut failed', e); }
 }
 
 // ── State ───────────────────────────────────────────────
@@ -1151,12 +1164,13 @@ showPin();
 (async()=>{
   const badge=document.getElementById('conn-badge');
   try{
-    const timeout=new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),5000));
+    const timeout=new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),8000));
     const connect=(async()=>{await loadSheets();})();
     await Promise.race([connect,timeout]);
     badge.textContent='Connected';badge.className='conn conn-ok';CONN_OK=true;
   }catch(e){
-    badge.textContent='Offline';badge.className='conn conn-err';
+    badge.textContent='Offline — saves disabled';badge.className='conn conn-err';
+    console.warn('Sheet offline:',e.message);
   }
 })();
 </script>

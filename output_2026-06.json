@@ -1,0 +1,1279 @@
+{
+  "month": "Jun 2026",
+  "emps": {
+    "steven": [
+      {
+        "name": "Darren Goida",
+        "svc": 500.0,
+        "ins": 225.0,
+        "plb": 0,
+        "com": 0,
+        "chs": 0,
+        "chi": 0,
+        "dups": []
+      },
+      {
+        "name": "Karl Welch",
+        "svc": 1005.0,
+        "ins": 175.0,
+        "plb": 0,
+        "com": 0,
+        "chs": 0,
+        "chi": 0,
+        "dups": []
+      },
+      {
+        "name": "Jesse Mertens",
+        "svc": 0,
+        "ins": 0,
+        "plb": 465.0,
+        "com": 0,
+        "chs": 0,
+        "chi": 0,
+        "dups": []
+      },
+      {
+        "name": "Herbie Windley",
+        "svc": 5.0,
+        "ins": 0,
+        "plb": 200.0,
+        "com": 0,
+        "chs": 0,
+        "chi": 0,
+        "dups": []
+      },
+      {
+        "name": "Nick Scarpa",
+        "svc": 0,
+        "ins": 0,
+        "plb": 0,
+        "com": 100.0,
+        "chs": 0,
+        "chi": 0,
+        "dups": []
+      }
+    ],
+    "caleb": [
+      {
+        "name": "Jay Hall",
+        "svc": 0,
+        "ins": 0,
+        "plb": 0,
+        "com": 0,
+        "chs": 1190.0,
+        "chi": 25.0,
+        "dups": []
+      },
+      {
+        "name": "Steve Gordon",
+        "svc": 0,
+        "ins": 0,
+        "plb": 0,
+        "com": 0,
+        "chs": 350.0,
+        "chi": 0,
+        "dups": []
+      },
+      {
+        "name": "Derrick Hall",
+        "svc": 0,
+        "ins": 0,
+        "plb": 0,
+        "com": 0,
+        "chs": 200.0,
+        "chi": 0,
+        "dups": []
+      }
+    ],
+    "_unclassified": []
+  },
+  "flags": {
+    "steven": [
+      {
+        "id": "s1",
+        "sev": "yellow",
+        "emp": "Kyle Freeman",
+        "ref": "Job #156731670",
+        "resolved": false,
+        "disp": "",
+        "note": "",
+        "title": "Carried-forward commercial lead still unresolved \u2014 AMC Theaters NMB",
+        "detail": "Carried forward from May 2026, marked 'Sold \u2014 Install In Progress'. No $100 commercial lead payment found on this month's Master Pay File for job #156731670. Check with Kyle Freeman and disposition: (1) sold but install not complete yet \u2014 keep carrying forward as-is; (2) still an open lead, not sold \u2014 no spiff due, update status; or (3) sold and completed \u2014 mark 'Sold & Completed' so the $100 spiff pays out."
+      },
+      {
+        "id": "s2",
+        "sev": "yellow",
+        "emp": "Javi Vazquez",
+        "ref": "Job #157867483",
+        "resolved": false,
+        "disp": "",
+        "note": "",
+        "title": "Carried-forward commercial lead still unresolved \u2014 Angel Oak Nursing & Rehab",
+        "detail": "Carried forward from May 2026, marked 'Sold \u2014 Install In Progress'. No $100 commercial lead payment found on this month's Master Pay File for job #157867483. Check with Javi Vazquez and disposition: (1) sold but install not complete yet \u2014 keep carrying forward as-is; (2) still an open lead, not sold \u2014 no spiff due, update status; or (3) sold and completed \u2014 mark 'Sold & Completed' so the $100 spiff pays out."
+      }
+    ],
+    "caleb": []
+  },
+  "spiffDetail": {
+    "steven": {
+      "Darren Goida": [
+        {
+          "date": "2026-06-03",
+          "job": "154640424",
+          "customer": "Cero, Dottie",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Cero, Dottie",
+          "spiff": 5.0
+        },
+        {
+          "date": "2026-06-09",
+          "job": "154669275",
+          "customer": "Ehrhardt, Curt",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Ehrhardt, Curt",
+          "spiff": 5.0
+        },
+        {
+          "date": "2026-06-11",
+          "job": "155817332",
+          "customer": "Dorman, Adrian",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Dorman, Adrian",
+          "spiff": 300.0
+        },
+        {
+          "date": "2026-06-13",
+          "job": "159570029",
+          "customer": "Jefferys, David",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Jefferys, David",
+          "spiff": 20.0
+        },
+        {
+          "date": "2026-06-23",
+          "job": "132874194",
+          "customer": "Ocean Keyes - 1525",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Ocean Keyes - 1525",
+          "spiff": 5.0
+        },
+        {
+          "date": "2026-06-26",
+          "job": "133885400",
+          "customer": "Branca, Frank",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Branca, Frank",
+          "spiff": 15.0
+        },
+        {
+          "date": "2026-06-30",
+          "job": "160998118",
+          "customer": "Goins, Preston",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Goins, Preston",
+          "spiff": 50.0
+        },
+        {
+          "date": "2026-06-02",
+          "job": "158465075",
+          "customer": "Noel, Janet ",
+          "type": "TGL Lead Set Res",
+          "item": "TGL Lead Set Res \u2014 Noel, Janet ",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-06-10",
+          "job": "159076193",
+          "customer": "Walsh, David",
+          "type": "TGL Lead Set Res",
+          "item": "TGL Lead Set Res \u2014 Walsh, David",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-06-11",
+          "job": "158121846",
+          "customer": "Callahan, Nienke ",
+          "type": "TGL Lead Set Res",
+          "item": "TGL Lead Set Res \u2014 Callahan, Nienke ",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-06-13",
+          "job": "159498845",
+          "customer": "Mcgalliard, Marie",
+          "type": "TGL Lead Set Res",
+          "item": "TGL Lead Set Res \u2014 Mcgalliard, Marie",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-06-17",
+          "job": "159590694",
+          "customer": "Mundy, Frank",
+          "type": "TGL Lead Set Res",
+          "item": "TGL Lead Set Res \u2014 Mundy, Frank",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-06-19",
+          "job": "159963134",
+          "customer": "Robertson, Joe",
+          "type": "TGL Lead Set Res",
+          "item": "TGL Lead Set Res \u2014 Robertson, Joe",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-06-26",
+          "job": "160450704",
+          "customer": "HB Springs - Insurance",
+          "type": "TGL Lead Set Res",
+          "item": "TGL Lead Set Res \u2014 HB Springs - Insurance",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-06-30",
+          "job": "160998523",
+          "customer": "Gore, Ruth & Crit",
+          "type": "TGL Lead Set Res",
+          "item": "TGL Lead Set Res \u2014 Gore, Ruth & Crit",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-06-18",
+          "job": "159833188",
+          "customer": "Leary, Rupert",
+          "type": "Sales Spiff",
+          "item": "Duct Cleaning (CHAC-95)",
+          "spiff": 100.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        },
+        {
+          "date": "2026-06-16",
+          "job": "",
+          "customer": "Mozingo, William",
+          "type": "TGL Lead Set Res",
+          "item": "Lead Stage 1 \u2014 quote delivered (auto-added, not on pay file)",
+          "spiff": 25.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        }
+      ],
+      "Karl Welch": [
+        {
+          "date": "2026-06-01",
+          "job": "158297831",
+          "customer": "Bell, Patricia & Scott",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Bell, Patricia & Scott",
+          "spiff": 20.0
+        },
+        {
+          "date": "2026-06-04",
+          "job": "133017110",
+          "customer": "Weipert, Susan ",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Weipert, Susan ",
+          "spiff": 300.0
+        },
+        {
+          "date": "2026-06-08",
+          "job": "155609071",
+          "customer": "Tolman, Pat",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Tolman, Pat",
+          "spiff": 5.0
+        },
+        {
+          "date": "2026-06-12",
+          "job": "133098918",
+          "customer": "Nairn, James \"JIM\"",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Nairn, James \"JIM\"",
+          "spiff": 5.0
+        },
+        {
+          "date": "2026-06-14",
+          "job": "133098950",
+          "customer": "Capuzzi, Edward",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Capuzzi, Edward",
+          "spiff": 5.0
+        },
+        {
+          "date": "2026-06-15",
+          "job": "158985214",
+          "customer": "Walker, Chuck",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Walker, Chuck",
+          "spiff": 300.0
+        },
+        {
+          "date": "2026-06-15",
+          "job": "159061879",
+          "customer": "Stachura, Deborah ",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Stachura, Deborah ",
+          "spiff": 50.0
+        },
+        {
+          "date": "2026-06-15",
+          "job": "159588602",
+          "customer": "Hanley, Joanne ",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Hanley, Joanne ",
+          "spiff": 10.0
+        },
+        {
+          "date": "2026-06-15",
+          "job": "159588602",
+          "customer": "Hanley, Joanne ",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Hanley, Joanne ",
+          "spiff": 50.0
+        },
+        {
+          "date": "2026-06-16",
+          "job": "159636443",
+          "customer": "Williamson, Kevin",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Williamson, Kevin",
+          "spiff": 20.0
+        },
+        {
+          "date": "2026-06-19",
+          "job": "133710192",
+          "customer": "Jones, Joyce",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Jones, Joyce",
+          "spiff": 20.0
+        },
+        {
+          "date": "2026-06-23",
+          "job": "157933275",
+          "customer": "Capone, Diane",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Capone, Diane",
+          "spiff": 5.0
+        },
+        {
+          "date": "2026-06-23",
+          "job": "160445932",
+          "customer": "Weaver, Jason",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Weaver, Jason",
+          "spiff": 20.0
+        },
+        {
+          "date": "2026-06-24",
+          "job": "160398555",
+          "customer": "Crist, Tara",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Crist, Tara",
+          "spiff": 10.0
+        },
+        {
+          "date": "2026-06-24",
+          "job": "160467559",
+          "customer": "Hill, Debbie",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Hill, Debbie",
+          "spiff": 20.0
+        },
+        {
+          "date": "2026-06-26",
+          "job": "160719915",
+          "customer": "Russell, Marlene",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Russell, Marlene",
+          "spiff": 20.0
+        },
+        {
+          "date": "2026-06-26",
+          "job": "160719915",
+          "customer": "Russell, Marlene",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Russell, Marlene",
+          "spiff": 50.0
+        },
+        {
+          "date": "2026-06-29",
+          "job": "154821726",
+          "customer": "Carlin, Christopher",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Carlin, Christopher",
+          "spiff": 5.0
+        },
+        {
+          "date": "2026-06-29",
+          "job": "160228621",
+          "customer": "Woods, Tim ",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Woods, Tim ",
+          "spiff": 50.0
+        },
+        {
+          "date": "2026-06-30",
+          "job": "160575459",
+          "customer": "Green, Kelli",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Green, Kelli",
+          "spiff": 20.0
+        },
+        {
+          "date": "2026-06-04",
+          "job": "158235161",
+          "customer": "O'Drobinak, Larry ",
+          "type": "TGL Lead Set Res",
+          "item": "TGL Lead Set Res \u2014 O'Drobinak, Larry ",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-06-05",
+          "job": "158878434",
+          "customer": "Morris, Tonya",
+          "type": "TGL Lead Set Res",
+          "item": "TGL Lead Set Res \u2014 Morris, Tonya",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-06-08",
+          "job": "159024101",
+          "customer": "Medlin, Robert & Donna",
+          "type": "TGL Lead Set Res",
+          "item": "TGL Lead Set Res \u2014 Medlin, Robert & Donna",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-06-15",
+          "job": "159113711",
+          "customer": "Romero, Anais ",
+          "type": "TGL Lead Set Res",
+          "item": "TGL Lead Set Res \u2014 Romero, Anais ",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-06-16",
+          "job": "159166309",
+          "customer": "Garner, Kim",
+          "type": "TGL Lead Set Res",
+          "item": "TGL Lead Set Res \u2014 Garner, Kim",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-06-24",
+          "job": "160468220",
+          "customer": "Roby, Elizabeth",
+          "type": "TGL Lead Set Res",
+          "item": "TGL Lead Set Res \u2014 Roby, Elizabeth",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-06-17",
+          "job": "",
+          "customer": "Coleman, Jeffrey",
+          "type": "Sales Spiff",
+          "item": "Standard Membership - 1 System \u2014 New Sale",
+          "spiff": 20.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        },
+        {
+          "date": "2026-06-08",
+          "job": "",
+          "customer": "Ard, Jim & Cherie",
+          "type": "TGL Lead Set Res",
+          "item": "Lead Stage 1 \u2014 quote delivered (auto-added, not on pay file)",
+          "spiff": 25.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        }
+      ],
+      "Jesse Mertens": [
+        {
+          "date": "2026-06-01",
+          "job": "156732491",
+          "customer": "Macik, Carol",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Macik, Carol",
+          "spiff": 100.0
+        },
+        {
+          "date": "2026-06-10",
+          "job": "156671969",
+          "customer": "Tourmey, Tom",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Tourmey, Tom",
+          "spiff": 100.0
+        },
+        {
+          "date": "2026-06-16",
+          "job": "157732977",
+          "customer": "Waldorf, Jimmy",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Waldorf, Jimmy",
+          "spiff": 15.0
+        },
+        {
+          "date": "2026-06-16",
+          "job": "157732977",
+          "customer": "Waldorf, Jimmy",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Waldorf, Jimmy",
+          "spiff": 100.0
+        },
+        {
+          "date": "2026-06-23",
+          "job": "132462193",
+          "customer": "Grand Strand Medical Office Building",
+          "type": "Sales Spiff",
+          "item": "WATER HEATER LEAK PROTECTION - FLOOD STOP (AC - FSWH)",
+          "spiff": 50.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        },
+        {
+          "date": "2026-06-25",
+          "job": "160290931",
+          "customer": "Hollingsworth, Trey",
+          "type": "Sales Spiff",
+          "item": "Moen Flo Water Protection (AC-34)",
+          "spiff": 100.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        }
+      ],
+      "Herbie Windley": [
+        {
+          "date": "2026-06-05",
+          "job": "158552029",
+          "customer": "McMorrow, Jeffrey Paul",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 McMorrow, Jeffrey Paul",
+          "spiff": 200.0
+        },
+        {
+          "date": "2026-06-10",
+          "job": "",
+          "customer": "Spitz, Ray & Sandy",
+          "type": "Sales Spiff",
+          "item": "Plumbing Membership - 1 Tank \u2014 Renewal",
+          "spiff": 5.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        }
+      ],
+      "Nick Scarpa": [
+        {
+          "date": "2026-06-09",
+          "job": "159159388",
+          "customer": "Elevate Eyecare",
+          "type": "Sales Spiff",
+          "item": "06 Drain Overflow Protection Upgrade (CHAC-6)",
+          "spiff": 100.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        }
+      ]
+    },
+    "caleb": {
+      "Jay Hall": [
+        {
+          "date": "2026-06-04",
+          "job": "158702939",
+          "customer": "Richburg, Jesse & Mary",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Richburg, Jesse & Mary",
+          "spiff": 20.0
+        },
+        {
+          "date": "2026-06-05",
+          "job": "158093542",
+          "customer": "Pure Property Management  of South Carolina",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Pure Property Management  of South Carolina",
+          "spiff": 50.0
+        },
+        {
+          "date": "2026-06-06",
+          "job": "158977115",
+          "customer": "King and Society PM",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 King and Society PM",
+          "spiff": 50.0
+        },
+        {
+          "date": "2026-06-11",
+          "job": "159325283",
+          "customer": "Watson, Lonnie",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Watson, Lonnie",
+          "spiff": 20.0
+        },
+        {
+          "date": "2026-06-11",
+          "job": "159364325",
+          "customer": "Ruhl, Gabe",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Ruhl, Gabe",
+          "spiff": 50.0
+        },
+        {
+          "date": "2026-06-13",
+          "job": "159568350",
+          "customer": "Lenox, Melissa",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Lenox, Melissa",
+          "spiff": 50.0
+        },
+        {
+          "date": "2026-06-30",
+          "job": "132417781",
+          "customer": "Rosebrock, George & Sharon",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Rosebrock, George & Sharon",
+          "spiff": 100.0
+        },
+        {
+          "date": "2026-06-16",
+          "job": "159744102",
+          "customer": "Martin, Kael ",
+          "type": "TGL Lead Set Res",
+          "item": "TGL Lead Set Res \u2014 Martin, Kael ",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-06-12",
+          "job": "159481862",
+          "customer": "Barron, Esteban",
+          "type": "Sales Spiff",
+          "item": "07 Compressor Protection Kit (CHAC-7)",
+          "spiff": 50.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        },
+        {
+          "date": "2026-06-15",
+          "job": "159579357",
+          "customer": "King and Society",
+          "type": "Sales Spiff",
+          "item": "07 Compressor Protection Kit (CHAC-7)",
+          "spiff": 50.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        },
+        {
+          "date": "2026-06-18",
+          "job": "159754781",
+          "customer": "Myers, Kevin & Donna",
+          "type": "Sales Spiff",
+          "item": "Surge Protection Bundle (CHAC-22)",
+          "spiff": 100.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        },
+        {
+          "date": "2026-06-19",
+          "job": "159957767",
+          "customer": "King and Society",
+          "type": "Sales Spiff",
+          "item": "07 Compressor Protection Kit (CHAC-7)",
+          "spiff": 50.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        },
+        {
+          "date": "2026-06-20",
+          "job": "160141425",
+          "customer": "Dalis, Britton",
+          "type": "Sales Spiff",
+          "item": "07 Compressor Protection Kit (CHAC-7)",
+          "spiff": 50.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        },
+        {
+          "date": "2026-06-21",
+          "job": "160038253",
+          "customer": "Hill, Donald",
+          "type": "Sales Spiff",
+          "item": "07 Compressor Protection Kit (CHAC-7)",
+          "spiff": 50.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        },
+        {
+          "date": "2026-06-24",
+          "job": "160468203",
+          "customer": "Snyder, Barbara",
+          "type": "Sales Spiff",
+          "item": "07 Compressor Protection Kit (CHAC-7)",
+          "spiff": 50.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        },
+        {
+          "date": "2026-06-25",
+          "job": "159260389",
+          "customer": "Comfort, Lyn L and Margaret",
+          "type": "Sales Spiff",
+          "item": "07 Compressor Protection Kit (CHAC-7)",
+          "spiff": 100.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        },
+        {
+          "date": "2026-06-25",
+          "job": "159260389",
+          "customer": "Comfort, Lyn L and Margaret",
+          "type": "Sales Spiff",
+          "item": "Duct Cleaning (CHAC-95)",
+          "spiff": 100.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        },
+        {
+          "date": "2026-06-25",
+          "job": "156996807",
+          "customer": "Richardson, Peter",
+          "type": "Sales Spiff",
+          "item": "07 Compressor Protection Kit (CHAC-7)",
+          "spiff": 50.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        },
+        {
+          "date": "2026-06-26",
+          "job": "160450361",
+          "customer": "Wells, Jayma",
+          "type": "Sales Spiff",
+          "item": "Duct Cleaning (CHAC-95)",
+          "spiff": 100.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        },
+        {
+          "date": "2026-06-29",
+          "job": "160842143",
+          "customer": "Corbett, Brent ",
+          "type": "Sales Spiff",
+          "item": "07 Compressor Protection Kit (CHAC-7)",
+          "spiff": 50.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        },
+        {
+          "date": "2026-07-01",
+          "job": "161110757",
+          "customer": "Jones, Elizabeth",
+          "type": "Sales Spiff",
+          "item": "07 Compressor Protection Kit (CHAC-7)",
+          "spiff": 50.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        }
+      ],
+      "Steve Gordon": [
+        {
+          "date": "2026-06-05",
+          "job": "155094958",
+          "customer": "Pure Property Management  of South Carolina",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Pure Property Management  of South Carolina",
+          "spiff": 50.0
+        },
+        {
+          "date": "2026-06-05",
+          "job": "155094958",
+          "customer": "Pure Property Management  of South Carolina",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Pure Property Management  of South Carolina",
+          "spiff": 100.0
+        },
+        {
+          "date": "2026-06-09",
+          "job": "159022587",
+          "customer": "O'Shaughnessy, Michael",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 O'Shaughnessy, Michael",
+          "spiff": 50.0
+        },
+        {
+          "date": "2026-06-15",
+          "job": "158233979",
+          "customer": "Pure Property Management  of South Carolina",
+          "type": "Sales Spiff",
+          "item": "Sales Spiff \u2014 Pure Property Management  of South Carolina",
+          "spiff": 50.0
+        },
+        {
+          "date": "2026-06-15",
+          "job": "159587465",
+          "customer": "Pure Property Management  of South Carolina",
+          "type": "Sales Spiff",
+          "item": "07 Compressor Protection Kit (CHAC-7)",
+          "spiff": 50.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        },
+        {
+          "date": "2026-06-15",
+          "job": "159636047",
+          "customer": "Terrace South Properties",
+          "type": "Sales Spiff",
+          "item": "07 Compressor Protection Kit (CHAC-7)",
+          "spiff": 50.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        }
+      ],
+      "Derrick Hall": [
+        {
+          "date": "2026-06-11",
+          "job": "158810249",
+          "customer": "Litvin, Anna ",
+          "type": "Sales Spiff",
+          "item": "142 Dehumidifier 100-2300 (CHAC-142)",
+          "spiff": 150.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        },
+        {
+          "date": "2026-06-11",
+          "job": "",
+          "customer": "Block, Carole-Anne",
+          "type": "Sales Spiff",
+          "item": "Basic Membership - 1 System \u2014 New Sale",
+          "spiff": 10.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        },
+        {
+          "date": "2026-06-30",
+          "job": "",
+          "customer": "Collie, Brian & Lauren",
+          "type": "Sales Spiff",
+          "item": "Basic Membership - 3 Systems \u2014 New Sale",
+          "spiff": 20.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        },
+        {
+          "date": "2026-06-30",
+          "job": "",
+          "customer": "Cramer, Laura",
+          "type": "Sales Spiff",
+          "item": "Basic Membership - 1 System \u2014 New Sale",
+          "spiff": 10.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        },
+        {
+          "date": "2026-06-30",
+          "job": "",
+          "customer": "Valentin, Dominique",
+          "type": "Sales Spiff",
+          "item": "Basic Membership - 1 System \u2014 New Sale",
+          "spiff": 10.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        }
+      ]
+    }
+  },
+  "officeMems": [
+    {
+      "name": "Katie Osterling",
+      "total": 245.0
+    },
+    {
+      "name": "Chris Port",
+      "total": 255.0
+    },
+    {
+      "name": "Jenny Miller",
+      "total": 120.0
+    }
+  ],
+  "commLeads": [
+    {
+      "id": "cl1",
+      "month": "May 2026",
+      "tech": "Kyle Freeman",
+      "job": "156731670",
+      "customer": "AMC Theaters NMB",
+      "status": "Sold \u2014 Install In Progress",
+      "spiff": 100,
+      "payMonth": "Jul 2026",
+      "paid": false
+    },
+    {
+      "id": "cl3",
+      "month": "May 2026",
+      "tech": "Javi Vazquez",
+      "job": "157867483",
+      "customer": "Angel Oak Nursing & Rehab",
+      "status": "Sold \u2014 Install In Progress",
+      "spiff": 100,
+      "payMonth": "Jul 2026",
+      "paid": false
+    },
+    {
+      "id": "cl_2026-06_1",
+      "month": "Jun 2026",
+      "tech": "Nick Scarpa",
+      "job": "",
+      "customer": "Rambler - Wares to Wander",
+      "status": "Pending",
+      "spiff": 0,
+      "payMonth": "",
+      "paid": false
+    },
+    {
+      "id": "cl_2026-06_2",
+      "month": "Jun 2026",
+      "tech": "Ray Lambert",
+      "job": "",
+      "customer": "Founders Group Int'l",
+      "status": "Pending",
+      "spiff": 0,
+      "payMonth": "",
+      "paid": false
+    },
+    {
+      "id": "cl_2026-06_3",
+      "month": "Jun 2026",
+      "tech": "Nick Scarpa",
+      "job": "",
+      "customer": "Sagel, Greg",
+      "status": "Pending",
+      "spiff": 0,
+      "payMonth": "",
+      "paid": false
+    },
+    {
+      "id": "cl_2026-06_4",
+      "month": "Jun 2026",
+      "tech": "Nick Scarpa",
+      "job": "",
+      "customer": "Carolina Ale House",
+      "status": "Pending",
+      "spiff": 0,
+      "payMonth": "",
+      "paid": false
+    },
+    {
+      "id": "cl_2026-06_5",
+      "month": "Jun 2026",
+      "tech": "Nick Scarpa",
+      "job": "",
+      "customer": "Coldwell Banker",
+      "status": "Pending",
+      "spiff": 0,
+      "payMonth": "",
+      "paid": false
+    },
+    {
+      "id": "cl_2026-06_6",
+      "month": "Jun 2026",
+      "tech": "Ray Lambert",
+      "job": "",
+      "customer": "Refuel Gas Stations",
+      "status": "Pending",
+      "spiff": 0,
+      "payMonth": "",
+      "paid": false
+    },
+    {
+      "id": "cl_2026-06_7",
+      "month": "Jun 2026",
+      "tech": "Nick Scarpa",
+      "job": "",
+      "customer": "Hickory Tavern",
+      "status": "Pending",
+      "spiff": 0,
+      "payMonth": "",
+      "paid": false
+    },
+    {
+      "id": "cl_2026-06_8",
+      "month": "Jun 2026",
+      "tech": "Ray Lambert",
+      "job": "",
+      "customer": "Community Kitchen",
+      "status": "Pending",
+      "spiff": 0,
+      "payMonth": "",
+      "paid": false
+    },
+    {
+      "id": "cl_2026-06_9",
+      "month": "Jun 2026",
+      "tech": "Javi Vazquez",
+      "job": "",
+      "customer": "Grube. Inc.",
+      "status": "Pending",
+      "spiff": 0,
+      "payMonth": "",
+      "paid": false
+    },
+    {
+      "id": "cl_2026-06_10",
+      "month": "Jun 2026",
+      "tech": "Kyle Freeman",
+      "job": "",
+      "customer": "Southern Crown Partners",
+      "status": "Pending",
+      "spiff": 0,
+      "payMonth": "",
+      "paid": false
+    },
+    {
+      "id": "cl_2026-06_11",
+      "month": "Jun 2026",
+      "tech": "Kyle Freeman",
+      "job": "",
+      "customer": "America First Management",
+      "status": "Pending",
+      "spiff": 0,
+      "payMonth": "",
+      "paid": false
+    },
+    {
+      "id": "cl_2026-06_12",
+      "month": "Jun 2026",
+      "tech": "Ray Lambert",
+      "job": "",
+      "customer": "Yahnis Company",
+      "status": "Pending",
+      "spiff": 0,
+      "payMonth": "",
+      "paid": false
+    },
+    {
+      "id": "cl_2026-06_13",
+      "month": "Jun 2026",
+      "tech": "Javi Vazquez",
+      "job": "",
+      "customer": "Bridgewater Academy",
+      "status": "Pending",
+      "spiff": 0,
+      "payMonth": "",
+      "paid": false
+    },
+    {
+      "id": "cl_2026-06_14",
+      "month": "Jun 2026",
+      "tech": "Javi Vazquez",
+      "job": "",
+      "customer": "Moss, Mitch",
+      "status": "Pending",
+      "spiff": 0,
+      "payMonth": "",
+      "paid": false
+    },
+    {
+      "id": "cl_2026-06_15",
+      "month": "Jun 2026",
+      "tech": "Javi Vazquez",
+      "job": "",
+      "customer": "Hall, Dana",
+      "status": "Pending",
+      "spiff": 0,
+      "payMonth": "",
+      "paid": false
+    }
+  ],
+  "carryForward": [
+    {
+      "fromMonth": "May 2026",
+      "emp": "Darren Goida",
+      "ref": "Job 157782511",
+      "type": "Lead Stage 2 \u2014 Mains, Charlie",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again."
+    },
+    {
+      "fromMonth": "May 2026",
+      "emp": "Jim LeBlanc",
+      "ref": "Job 157876582",
+      "type": "Lead Stage 2 \u2014 Parsons, Karen",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again."
+    },
+    {
+      "fromMonth": "May 2026",
+      "emp": "Jim LeBlanc",
+      "ref": "Job 158111360",
+      "type": "Lead Stage 2 \u2014 Sea-Mix LLC",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again."
+    },
+    {
+      "fromMonth": "May 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 157799674",
+      "type": "Lead Stage 2 \u2014 Cooper, Ray",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again."
+    },
+    {
+      "fromMonth": "May 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 156979623",
+      "type": "Lead Stage 2 \u2014 Ogletree, Bill",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again."
+    },
+    {
+      "fromMonth": "May 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 157783679",
+      "type": "Lead Stage 2 \u2014 Bernard, Jonathan",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again."
+    },
+    {
+      "fromMonth": "Jun 2026",
+      "emp": "Darren Goida",
+      "ref": "Job 158465075",
+      "type": "Lead Stage 2 \u2014 Noel, Janet ",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid."
+    },
+    {
+      "fromMonth": "Jun 2026",
+      "emp": "Darren Goida",
+      "ref": "Job 159076193",
+      "type": "Lead Stage 2 \u2014 Walsh, David",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid."
+    },
+    {
+      "fromMonth": "Jun 2026",
+      "emp": "Darren Goida",
+      "ref": "Job 158121846",
+      "type": "Lead Stage 2 \u2014 Callahan, Nienke ",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid."
+    },
+    {
+      "fromMonth": "Jun 2026",
+      "emp": "Darren Goida",
+      "ref": "Job 159498845",
+      "type": "Lead Stage 2 \u2014 Mcgalliard, Marie",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid."
+    },
+    {
+      "fromMonth": "Jun 2026",
+      "emp": "Darren Goida",
+      "ref": "Job 159590694",
+      "type": "Lead Stage 2 \u2014 Mundy, Frank",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid."
+    },
+    {
+      "fromMonth": "Jun 2026",
+      "emp": "Darren Goida",
+      "ref": "Job 159963134",
+      "type": "Lead Stage 2 \u2014 Robertson, Joe",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid."
+    },
+    {
+      "fromMonth": "Jun 2026",
+      "emp": "Darren Goida",
+      "ref": "Job 160450704",
+      "type": "Lead Stage 2 \u2014 HB Springs - Insurance",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid."
+    },
+    {
+      "fromMonth": "Jun 2026",
+      "emp": "Darren Goida",
+      "ref": "Job 160998523",
+      "type": "Lead Stage 2 \u2014 Gore, Ruth & Crit",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid."
+    },
+    {
+      "fromMonth": "Jun 2026",
+      "emp": "Jay Hall",
+      "ref": "Job 159744102",
+      "type": "Lead Stage 2 \u2014 Martin, Kael ",
+      "amount": 75,
+      "dept": "CH Install",
+      "reason": "Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid."
+    },
+    {
+      "fromMonth": "Jun 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 158235161",
+      "type": "Lead Stage 2 \u2014 O'Drobinak, Larry ",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid."
+    },
+    {
+      "fromMonth": "Jun 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 158878434",
+      "type": "Lead Stage 2 \u2014 Morris, Tonya",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid."
+    },
+    {
+      "fromMonth": "Jun 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 159024101",
+      "type": "Lead Stage 2 \u2014 Medlin, Robert & Donna",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid."
+    },
+    {
+      "fromMonth": "Jun 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 159113711",
+      "type": "Lead Stage 2 \u2014 Romero, Anais ",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid."
+    },
+    {
+      "fromMonth": "Jun 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 159166309",
+      "type": "Lead Stage 2 \u2014 Garner, Kim",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid."
+    },
+    {
+      "fromMonth": "Jun 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 160468220",
+      "type": "Lead Stage 2 \u2014 Roby, Elizabeth",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid."
+    },
+    {
+      "fromMonth": "Jun 2026",
+      "emp": "Karl Welch",
+      "ref": "",
+      "type": "Lead Stage 2 \u2014 Ard, Jim & Cherie",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid."
+    },
+    {
+      "fromMonth": "Jun 2026",
+      "emp": "Darren Goida",
+      "ref": "",
+      "type": "Lead Stage 2 \u2014 Mozingo, William",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid."
+    }
+  ],
+  "bonuses": [
+    {
+      "id": "rich",
+      "name": "Rich Smith",
+      "type": "Commercial Commission (3%)",
+      "amount": 406.44,
+      "dept": "MB Service Commercial",
+      "approved": false,
+      "note": "3% of 13547.96 total EstimateSalesInstalled (Sold On basis)"
+    }
+  ],
+  "unresolvedCompleters": []
+}

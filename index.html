@@ -96,7 +96,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#F0EDE8;min-height:10
   <div class="topbar">
     <div class="brand">
       <h1>Coastal Air &mdash; Spiff &amp; Bonus Processing <span class="conn conn-wait" id="conn-badge">Connecting...</span></h1>
-      <p id="month-lbl">May 2026 &middot; Processing window open</p>
+      <p id="month-lbl">Jun 2026 &middot; Processing window open</p>
     </div>
     <div class="role-wrap">
       <span>Viewing as</span>
@@ -113,7 +113,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#F0EDE8;min-height:10
 <div class="toast" id="toast"></div>
 <script>
 const SHEET_ID='1E3p3clqh1svM_F8dOXAh7pbFUqQCUFRetyHeElpDXTI'; // kept for reference
-const MONTH='May 2026', PREV_M='Apr 2026', NEXT_M='Jun 2026';
+const MONTH='Jun 2026', PREV_M='May 2026', NEXT_M='Jul 2026';
 let CONN_OK=false;
 
 // ── Sheets helpers via Apps Script ──────────────────────
@@ -173,249 +173,179 @@ const S={
     {dept:'MB Install-Commercial', goal:299381,actual:null,se:false},
   ],
   bonuses:[
-    {id:'jenny',name:'Jenny Miller',type:'CCS Supervisor Bonus',amount:720,dept:'Call Center',approved:false,note:'Per CCS Tracker May 2026: Booking $200 + Membership Renewal $200 + New Memberships $50 + Daily Goals $270'},
-    {id:'rich', name:'Rich Smith',  type:'Commercial Commission (3%)',amount:694.05,dept:'MB Service Commercial',approved:false},
+    {id:'jenny',name:'Jenny Miller',type:'CCS Supervisor Bonus',amount:0,dept:'Call Center',approved:false,note:'Pending — syncs from CCS Tracker sheet at page load'},
+    {id:"rich",name:"Rich Smith",type:"Commercial Commission (3%)",amount:406.44,dept:"MB Service Commercial",approved:false,note:"3% of 13547.96 total EstimateSalesInstalled (Sold On basis)"},
   ],
   emps:{
     steven:[
-      // Correctly split: svc=Sales Spiff only, ins=TGL leads only
-      // Darren: svc=$300(sales spiffs), ins=$50(2x TGL set @$25) + CHAC91 approved=$300 svc
-      {name:'Darren Goida',  svc:600,  ins:50, plb:0,  com:0,  chs:0,chi:0,dups:[]},
-      // Jim: svc=$1515(sales spiffs)+$75(TGL sold Prescott in svc? no — TGL goes to ins)
-      // Jim MPF: sales spiffs=$1515, TGL Lead Sold Res Prescott=$75 → ins
-      // Wait — Jim's TGL: Prescott Job 155339886 $75 TGL Sold, Job 158040292 $25 TGL Set Parsons, Job 158248294 $25 TGL Set Sea-Mix
-      // svc=$1515, ins=$125(75+25+25), manual Stage1 adds=$50 → total ins=$175
-      {name:'Jim LeBlanc',   svc:1515, ins:175,plb:0,  com:0,  chs:0,chi:0,dups:[]},
-      // Karl: svc=$1515-$75reversal=$1440, ins=$500(TGL on MPF)+$125(manual)=$625
-      {name:'Karl Welch',    svc:1440, ins:625,plb:0,  com:0,  chs:0,chi:0,dups:[]},
-      {name:'Jesse Mertens', svc:0,    ins:0,  plb:115,com:0,  chs:0,chi:0,dups:[]},
-      {name:'Herbie Windley',svc:0,    ins:0,  plb:300,com:0,  chs:0,chi:0,dups:[]},
-      {name:'Nick Scarpa',   svc:0,    ins:0,  plb:0,  com:0,  chs:0,chi:0,dups:[]},
-      // Javi: $100 commercial lead spiff (Charlotte Derm) → com
-      {name:'Javi Vazquez',  svc:0,    ins:0,  plb:0,  com:100,chs:0,chi:0,dups:[]},
-      {name:'Ray Lambert',   svc:0,    ins:0,  plb:0,  com:0,  chs:0,chi:0,dups:[]},
-      // Kyle: $100 CAC3 accessory only (top tech bonus $0 — commercial budget not met)
-      {name:'Kyle Freeman',  svc:0,    ins:0,  plb:0,  com:100,chs:0,chi:0,dups:[]},
-      {name:'Stuart Akel',   svc:0,    ins:0,  plb:0,  com:0,  chs:0,chi:0,dups:[]},
+      {name:"Darren Goida", svc:500, ins:225, plb:0, com:0, chs:0, chi:0, dups:[]},
+      {name:"Karl Welch", svc:1005, ins:175, plb:0, com:0, chs:0, chi:0, dups:[]},
+      {name:"Jesse Mertens", svc:0, ins:0, plb:465, com:0, chs:0, chi:0, dups:[]},
+      {name:"Herbie Windley", svc:5, ins:0, plb:200, com:0, chs:0, chi:0, dups:[]},
+      {name:"Nick Scarpa", svc:0, ins:0, plb:0, com:100, chs:0, chi:0, dups:[]},
     ],
     caleb:[
-      // Jay: svc=$430(MPF sales spiffs, TGL $75 Basler reversed already), chi=commission calculated separately
-      {name:'Jay Hall',     svc:0,ins:0,plb:0,com:0,chs:430,chi:0,dups:[],jayCommission:0},
-      // Steve: $150 MPF + $100 accessories approved + $25 lead = $275
-      {name:'Steve Gordon', svc:0,ins:0,plb:0,com:0,chs:250,chi:25,dups:[]},
-      {name:'Derrick Hall', svc:0,ins:0,plb:0,com:0,chs:0,  chi:0, dups:[]},
-      {name:'Quincy Fields',svc:0,ins:0,plb:0,com:0,chs:0,  chi:0, dups:[]},
-    ]
+      {name:"Jay Hall", svc:0, ins:0, plb:0, com:0, chs:1190, chi:25, dups:[]},
+      {name:"Steve Gordon", svc:0, ins:0, plb:0, com:0, chs:350, chi:0, dups:[]},
+    ],
   },
   flags:{
     steven:[
-      {id:'s1a',sev:'red',emp:'Darren Goida',ref:'Job #154957959',resolved:false,disp:'',note:'',
-       title:'Lead Stage 1 missing — Gaines, Tracy',
-       detail:'Completed lead for Gaines, Tracy (Job 154957959). No TGL on pay file — office did not link tech job to salesperson job in ST. Verify quote was delivered. If yes, add $25 manual spiff to MB Install Residential.'},
-      {id:'s1b',sev:'red',emp:'Darren Goida',ref:'Job #155863773',resolved:false,disp:'',note:'',
-       title:'Lead Stage 1 missing — Burr, Debra',
-       detail:'Completed lead for Burr, Debra (Job 155863773). No TGL on pay file. Verify quote was delivered. If yes, add $25 manual spiff to MB Install Residential.'},
-      {id:'s1c',sev:'red',emp:'Darren Goida',ref:'Job #157737957',resolved:false,disp:'',note:'',
-       title:'Lead Stage 1 missing — Provini, Drew (1 of 2)',
-       detail:'Completed lead for Provini, Drew (Job 157737957). No TGL on pay file. Verify quote was delivered. If yes, add $25 manual spiff to MB Install Residential.'},
-      {id:'s1d',sev:'red',emp:'Darren Goida',ref:'Job #158002039',resolved:false,disp:'',note:'',
-       title:'Lead Stage 1 missing — Provini, Drew (2 of 2)',
-       detail:'Second completed lead for Provini, Drew (Job 158002039). No TGL on pay file. Verify this was a separate qualifying lead. If yes, add $25 manual spiff to MB Install Residential.'},
-      {id:'s1e',sev:'red',emp:'Darren Goida',ref:'Job #157752796',resolved:false,disp:'',note:'',
-       title:'Lead Stage 1 missing — Bossert, Madison',
-       detail:'Completed lead for Bossert, Madison (Job 157752796). No TGL on pay file. Verify quote was delivered. If yes, add $25 manual spiff to MB Install Residential.'},
-      {id:'s1f',sev:'red',emp:'Darren Goida',ref:'Job #157995373',resolved:false,disp:'',note:'',
-       title:'Lead Stage 1 missing — Callahan, Nienke',
-       detail:'Completed lead for Callahan, Nienke (Job 157995373). No TGL on pay file. Verify quote was delivered. If yes, add $25 manual spiff to MB Install Residential.'},
-      {id:'s2a',sev:'red',emp:'Karl Welch',ref:'Job #133146335',resolved:false,disp:'',note:'',
-       title:'Lead Stage 1 missing — Shea, Joe',
-       detail:'Completed lead for Shea, Joe (Job 133146335). No TGL on pay file. Verify quote was delivered. If yes, add $25 manual spiff to MB Install Residential.'},
-      {id:'s2b',sev:'red',emp:'Karl Welch',ref:'Job #157601759',resolved:false,disp:'',note:'',
-       title:'Lead Stage 1 missing — Mole, Susan',
-       detail:'Completed lead for Mole, Susan (Job 157601759). No TGL on pay file. Verify quote was delivered. If yes, add $25 manual spiff to MB Install Residential.'},
-      {id:'s2c',sev:'red',emp:'Karl Welch',ref:'Job #156887931',resolved:false,disp:'',note:'',
-       title:'Lead Stage 1 missing — Drost, David',
-       detail:'Completed lead for Drost, David (Job 156887931). No TGL on pay file. Verify quote was delivered. If yes, add $25 manual spiff to MB Install Residential.'},
-      {id:'s2d',sev:'red',emp:'Karl Welch',ref:'Job #157796861',resolved:false,disp:'',note:'',
-       title:'Lead Stage 1 missing — Romero, Anais',
-       detail:'Completed lead for Romero, Anais (Job 157796861). No TGL on pay file. Verify quote was delivered. If yes, add $25 manual spiff to MB Install Residential.'},
-      {id:'s2e',sev:'red',emp:'Karl Welch',ref:'Job #158196088',resolved:false,disp:'',note:'',
-       title:"Lead Stage 1 missing — O'Drobinak, Larry",
-       detail:"Completed lead for O'Drobinak, Larry (Job 158196088). No TGL on pay file. Verify quote was delivered. If yes, add $25 manual spiff to MB Install Residential."},
-      {id:'s3a',sev:'red',emp:'Jim LeBlanc',ref:'Job #156860918',resolved:false,disp:'',note:'',
-       title:'Lead Stage 1 missing — Padgett, Debby & Tim',
-       detail:'Completed lead for Padgett, Debby & Tim (Job 156860918). No TGL on pay file. Verify quote was delivered. If yes, add $25 manual spiff to MB Install Residential.'},
-      {id:'s3b',sev:'red',emp:'Jim LeBlanc',ref:'Job #158011483',resolved:false,disp:'',note:'',
-       title:'Lead Stage 1 missing — Jonathan Harbour',
-       detail:'Completed lead for Jonathan Harbour (Job 158011483). No TGL on pay file. Verify quote was delivered. If yes, add $25 manual spiff to MB Install Residential.'},
-      {id:'s4a',sev:'red',emp:'Javi Vazquez',ref:'Job #158354782',resolved:false,disp:'',note:'',
-       title:'Lead Stage 1 missing — Eagle Beach Rentals',
-       detail:'Completed lead for Eagle Beach Rentals (Job 158354782). No TGL on pay file. Verify quote was delivered. If yes, add $25 manual spiff to MB Install Residential.'},
-      {id:'s5',sev:'yellow',emp:'Darren Goida',ref:'Job #155817332',resolved:false,disp:'',note:'',
-       title:'Accessory not on pay file — CHAC-91 $300',
-       detail:'CHAC-91 Air Scrubber ($300 spiff) sold to Dorman, Adrian not on Master Pay File. Invoice may be unpaid — move to next month if so. Otherwise investigate in ST.'},
-      {id:'s6',sev:'yellow',emp:'Kyle Freeman',ref:'Job #155953011',resolved:false,disp:'',note:'',
-       title:'Accessory not on pay file — 2x CAC3 $100 total',
-       detail:'2x CAC3 Single Phase Surge Protectors ($50 each = $100 total) at Ocean Lakes Billing not on Master Pay File. Qty 2 confirmed on Accessory Sales report. If paying, add $100 manual spiff to MB Service Commercial.'},
     ],
     caleb:[
-      {id:'c1a',sev:'red',emp:'Jay Hall',ref:'Job #155702118',resolved:false,disp:'',note:'',
-       title:'Accessory not on pay file — CHAC-7',
-       detail:'CHAC-7 Compressor Protection Kit ($50 spiff) sold to Valdez, Nick (Job 155702118). Not on Master Pay File. Invoice may be unpaid. Dept: CH Service.'},
-      {id:'c1b',sev:'red',emp:'Jay Hall',ref:'Job #157006406',resolved:false,disp:'',note:'',
-       title:'Accessory not on pay file — CHAC-7',
-       detail:'CHAC-7 Compressor Protection Kit ($50 spiff) sold to Harper, Mikell (Job 157006406). Not on Master Pay File. Dept: CH Service.'},
-      {id:'c1c',sev:'red',emp:'Jay Hall',ref:'Job #157103988',resolved:false,disp:'',note:'',
-       title:'Accessory not on pay file — CHAC-7',
-       detail:'CHAC-7 Compressor Protection Kit ($50 spiff) sold to Biggers, Sherrill (Job 157103988). Not on Master Pay File. Dept: CH Service.'},
-      {id:'c1d',sev:'red',emp:'Jay Hall',ref:'Job #157554153',resolved:false,disp:'',note:'',
-       title:'Accessory not on pay file — CHAC-7',
-       detail:'CHAC-7 Compressor Protection Kit ($50 spiff) sold to Buhan, Nick (Job 157554153). Not on Master Pay File. Dept: CH Service.'},
-      {id:'c1e',sev:'red',emp:'Jay Hall',ref:'Job #157656677',resolved:false,disp:'',note:'',
-       title:'Accessory not on pay file — CHAC-7',
-       detail:'CHAC-7 Compressor Protection Kit ($50 spiff) sold to Gethers, Shannon (Job 157656677). Not on Master Pay File. Dept: CH Service.'},
-      {id:'c2a',sev:'red',emp:'Steve Gordon',ref:'Job #156996218',resolved:false,disp:'',note:'',
-       title:'Accessory not on pay file — CHAC-7',
-       detail:'CHAC-7 Compressor Protection Kit ($50 spiff) sold to Fields, Kathy & Chris (Job 156996218). Not on Master Pay File. Dept: CH Service.'},
-      {id:'c2b',sev:'red',emp:'Steve Gordon',ref:'Job #158233979',resolved:false,disp:'',note:'',
-       title:'Accessory not on pay file — CHAC-7',
-       detail:'CHAC-7 Compressor Protection Kit ($50 spiff) sold to Pure Property Management SC (Job 158233979). Not on Master Pay File. Dept: CH Service.'},
-      {id:'c2c',sev:'red',emp:'Steve Gordon',ref:'Job #155490574',resolved:false,disp:'',note:'',
-       title:'Lead Stage 1 missing — King and Society',
-       detail:'Completed lead for King and Society (Job 155490574). No TGL on pay file. Office did not link tech job to salesperson job. Verify quote was delivered. If yes, add $25 manual spiff to CH Install.'},
-      {id:'c3',sev:'yellow',emp:'Jay Hall',ref:'Job #155755046',resolved:false,disp:'',note:'',
-       title:'Lead saved — was quote delivered?',
-       detail:'Lead for Dicenzo, Devin has Saved status (not Completed). $25 not paid. Was quote delivered? If yes, mark Completed in ST and add $25 manual spiff to CH Install.'},
-    ]
+    ],
   },
   commLeads:[
-    // Rolling log — carries month to month until sold+completed or marked dead
-    // May 2026 leads
-    {id:'cl1',month:'May 2026',tech:'Kyle Freeman',job:'156731670',customer:'AMC Theaters NMB',status:'Sold — Install In Progress',spiff:100,payMonth:'Jun 2026',paid:false},
-    {id:'cl2',month:'May 2026',tech:'Javi Vazquez',job:'158330085',customer:'Pellegrino & Sons / Cold Stone',status:'Did Not Sell',spiff:0,payMonth:'',paid:false},
-    {id:'cl3',month:'May 2026',tech:'Javi Vazquez',job:'157867483',customer:'Angel Oak Nursing & Rehab',status:'Sold — Install In Progress',spiff:100,payMonth:'Jun 2026',paid:false},
-    {id:'cl4',month:'May 2026',tech:'Javi Vazquez',job:'155302874',customer:"Chili's MB",status:'Did Not Sell',spiff:0,payMonth:'',paid:false},
-    {id:'cl5',month:'May 2026',tech:'Nick Scarpa',job:'155250984',customer:'MIYABI Japanese Steak House',status:'Did Not Sell',spiff:0,payMonth:'',paid:false},
-    {id:'cl6',month:'May 2026',tech:'Nick Scarpa',job:'155111523',customer:'America First Mgmt / Ganasa',status:'Did Not Sell',spiff:0,payMonth:'',paid:false},
-    {id:'cl7',month:'May 2026',tech:'Javi Vazquez',job:'155108334',customer:'America First Mgmt / Charlotte Derm',status:'Sold & Completed',spiff:100,payMonth:'May 2026',paid:true},
-    {id:'cl8',month:'May 2026',tech:'Ray Lambert',job:'157027975',customer:'SE Alliance Underwriters',status:'Did Not Sell',spiff:0,payMonth:'',paid:false},
-    {id:'cl9',month:'May 2026',tech:'Ray Lambert',job:'157867804',customer:'EMCOR / Ralph Lauren',status:'Did Not Sell',spiff:0,payMonth:'',paid:false},
+    {id:"cl1",month:"May 2026",tech:"Kyle Freeman",job:"156731670",customer:"AMC Theaters NMB",status:"Sold — Install In Progress",spiff:100,payMonth:"Jul 2026",paid:false},
+    {id:"cl3",month:"May 2026",tech:"Javi Vazquez",job:"157867483",customer:"Angel Oak Nursing & Rehab",status:"Sold — Install In Progress",spiff:100,payMonth:"Jul 2026",paid:false},
+    {id:"cl_2026-06_1",month:"Jun 2026",tech:"Nick Scarpa",job:"",customer:"Rambler - Wares to Wander",status:"Pending",spiff:0,payMonth:"",paid:false},
+    {id:"cl_2026-06_2",month:"Jun 2026",tech:"Ray Lambert",job:"",customer:"Founders Group Int'l",status:"Pending",spiff:0,payMonth:"",paid:false},
+    {id:"cl_2026-06_3",month:"Jun 2026",tech:"Nick Scarpa",job:"",customer:"Sagel, Greg",status:"Pending",spiff:0,payMonth:"",paid:false},
+    {id:"cl_2026-06_4",month:"Jun 2026",tech:"Nick Scarpa",job:"",customer:"Carolina Ale House",status:"Pending",spiff:0,payMonth:"",paid:false},
+    {id:"cl_2026-06_5",month:"Jun 2026",tech:"Nick Scarpa",job:"",customer:"Coldwell Banker",status:"Pending",spiff:0,payMonth:"",paid:false},
+    {id:"cl_2026-06_6",month:"Jun 2026",tech:"Ray Lambert",job:"",customer:"Refuel Gas Stations",status:"Pending",spiff:0,payMonth:"",paid:false},
+    {id:"cl_2026-06_7",month:"Jun 2026",tech:"Nick Scarpa",job:"",customer:"Hickory Tavern",status:"Pending",spiff:0,payMonth:"",paid:false},
+    {id:"cl_2026-06_8",month:"Jun 2026",tech:"Ray Lambert",job:"",customer:"Community Kitchen",status:"Pending",spiff:0,payMonth:"",paid:false},
+    {id:"cl_2026-06_9",month:"Jun 2026",tech:"Javi Vazquez",job:"",customer:"Grube. Inc.",status:"Pending",spiff:0,payMonth:"",paid:false},
+    {id:"cl_2026-06_10",month:"Jun 2026",tech:"Kyle Freeman",job:"",customer:"Southern Crown Partners",status:"Pending",spiff:0,payMonth:"",paid:false},
+    {id:"cl_2026-06_11",month:"Jun 2026",tech:"Kyle Freeman",job:"",customer:"America First Management",status:"Pending",spiff:0,payMonth:"",paid:false},
+    {id:"cl_2026-06_12",month:"Jun 2026",tech:"Ray Lambert",job:"",customer:"Yahnis Company",status:"Pending",spiff:0,payMonth:"",paid:false},
+    {id:"cl_2026-06_13",month:"Jun 2026",tech:"Javi Vazquez",job:"",customer:"Bridgewater Academy",status:"Pending",spiff:0,payMonth:"",paid:false},
+    {id:"cl_2026-06_14",month:"Jun 2026",tech:"Javi Vazquez",job:"",customer:"Moss, Mitch",status:"Pending",spiff:0,payMonth:"",paid:false},
+    {id:"cl_2026-06_15",month:"Jun 2026",tech:"Javi Vazquez",job:"",customer:"Hall, Dana",status:"Pending",spiff:0,payMonth:"",paid:false},
   ],
   carryForward:[
-    {fromMonth:'May 2026',emp:'Darren Goida',ref:'Job 157782511',type:'Lead Stage 2 — Mains, Charlie',amount:75,dept:'MB Install Residential',reason:'Stage 1 paid May. Pay $75 when sold, installed, paid.'},
-    {fromMonth:'May 2026',emp:'Jim LeBlanc', ref:'Job 157876582',type:'Lead Stage 2 — Parsons, Karen',amount:75,dept:'MB Install Residential',reason:'Stage 1 paid May. Pay $75 when sold, installed, paid.'},
-    {fromMonth:'May 2026',emp:'Jim LeBlanc', ref:'Job 158111360',type:'Lead Stage 2 — Sea-Mix LLC',amount:75,dept:'MB Install Residential',reason:'Stage 1 paid May. Pay $75 when sold, installed, paid.'},
-    {fromMonth:'May 2026',emp:'Karl Welch',  ref:'Job 157799674',type:'Lead Stage 2 — Cooper, Ray',amount:75,dept:'MB Install Residential',reason:'Stage 1 paid May. Pay $75 when sold, installed, paid.'},
-    {fromMonth:'May 2026',emp:'Karl Welch',  ref:'Job 156979623',type:'Lead Stage 2 — Ogletree, Bill',amount:75,dept:'MB Install Residential',reason:'Stage 1 paid May. Pay $75 when sold, installed, paid.'},
-    {fromMonth:'May 2026',emp:'Karl Welch',  ref:'Job 157783679',type:'Lead Stage 2 — Bernard, Jonathan',amount:75,dept:'MB Install Residential',reason:'Stage 1 paid May. Pay $75 when sold, installed, paid.'},
+    {id:"cf1",fromMonth:"May 2026",emp:"Darren Goida",ref:"Job 157782511",type:"Lead Stage 2 — Mains, Charlie",amount:75,dept:"MB Install Residential",reason:"Stage 1 paid, still pending sold/installed/paid confirmation — carried forward again.",resolved:false,disposition:"",note:""},
+    {id:"cf2",fromMonth:"May 2026",emp:"Jim LeBlanc",ref:"Job 157876582",type:"Lead Stage 2 — Parsons, Karen",amount:75,dept:"MB Install Residential",reason:"Stage 1 paid, still pending sold/installed/paid confirmation — carried forward again.",resolved:false,disposition:"",note:""},
+    {id:"cf3",fromMonth:"May 2026",emp:"Jim LeBlanc",ref:"Job 158111360",type:"Lead Stage 2 — Sea-Mix LLC",amount:75,dept:"MB Install Residential",reason:"Stage 1 paid, still pending sold/installed/paid confirmation — carried forward again.",resolved:false,disposition:"",note:""},
+    {id:"cf4",fromMonth:"May 2026",emp:"Karl Welch",ref:"Job 157799674",type:"Lead Stage 2 — Cooper, Ray",amount:75,dept:"MB Install Residential",reason:"Stage 1 paid, still pending sold/installed/paid confirmation — carried forward again.",resolved:false,disposition:"",note:""},
+    {id:"cf5",fromMonth:"May 2026",emp:"Karl Welch",ref:"Job 156979623",type:"Lead Stage 2 — Ogletree, Bill",amount:75,dept:"MB Install Residential",reason:"Stage 1 paid, still pending sold/installed/paid confirmation — carried forward again.",resolved:false,disposition:"",note:""},
+    {id:"cf6",fromMonth:"May 2026",emp:"Karl Welch",ref:"Job 157783679",type:"Lead Stage 2 — Bernard, Jonathan",amount:75,dept:"MB Install Residential",reason:"Stage 1 paid, still pending sold/installed/paid confirmation — carried forward again.",resolved:false,disposition:"",note:""},
+    {id:"cf7",fromMonth:"Jun 2026",emp:"Darren Goida",ref:"Job 158465075",type:"Lead Stage 2 — Noel, Janet ",amount:75,dept:"MB Install Residential",reason:"Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid.",resolved:false,disposition:"",note:""},
+    {id:"cf8",fromMonth:"Jun 2026",emp:"Darren Goida",ref:"Job 159076193",type:"Lead Stage 2 — Walsh, David",amount:75,dept:"MB Install Residential",reason:"Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid.",resolved:false,disposition:"",note:""},
+    {id:"cf9",fromMonth:"Jun 2026",emp:"Darren Goida",ref:"Job 158121846",type:"Lead Stage 2 — Callahan, Nienke ",amount:75,dept:"MB Install Residential",reason:"Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid.",resolved:false,disposition:"",note:""},
+    {id:"cf10",fromMonth:"Jun 2026",emp:"Darren Goida",ref:"Job 159498845",type:"Lead Stage 2 — Mcgalliard, Marie",amount:75,dept:"MB Install Residential",reason:"Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid.",resolved:false,disposition:"",note:""},
+    {id:"cf11",fromMonth:"Jun 2026",emp:"Darren Goida",ref:"Job 159590694",type:"Lead Stage 2 — Mundy, Frank",amount:75,dept:"MB Install Residential",reason:"Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid.",resolved:false,disposition:"",note:""},
+    {id:"cf12",fromMonth:"Jun 2026",emp:"Darren Goida",ref:"Job 159963134",type:"Lead Stage 2 — Robertson, Joe",amount:75,dept:"MB Install Residential",reason:"Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid.",resolved:false,disposition:"",note:""},
+    {id:"cf13",fromMonth:"Jun 2026",emp:"Darren Goida",ref:"Job 160450704",type:"Lead Stage 2 — HB Springs - Insurance",amount:75,dept:"MB Install Residential",reason:"Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid.",resolved:false,disposition:"",note:""},
+    {id:"cf14",fromMonth:"Jun 2026",emp:"Darren Goida",ref:"Job 160998523",type:"Lead Stage 2 — Gore, Ruth & Crit",amount:75,dept:"MB Install Residential",reason:"Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid.",resolved:false,disposition:"",note:""},
+    {id:"cf15",fromMonth:"Jun 2026",emp:"Jay Hall",ref:"Job 159744102",type:"Lead Stage 2 — Martin, Kael ",amount:75,dept:"CH Install",reason:"Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid.",resolved:false,disposition:"",note:""},
+    {id:"cf16",fromMonth:"Jun 2026",emp:"Karl Welch",ref:"Job 158235161",type:"Lead Stage 2 — O'Drobinak, Larry ",amount:75,dept:"MB Install Residential",reason:"Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid.",resolved:false,disposition:"",note:""},
+    {id:"cf17",fromMonth:"Jun 2026",emp:"Karl Welch",ref:"Job 158878434",type:"Lead Stage 2 — Morris, Tonya",amount:75,dept:"MB Install Residential",reason:"Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid.",resolved:false,disposition:"",note:""},
+    {id:"cf18",fromMonth:"Jun 2026",emp:"Karl Welch",ref:"Job 159024101",type:"Lead Stage 2 — Medlin, Robert & Donna",amount:75,dept:"MB Install Residential",reason:"Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid.",resolved:false,disposition:"",note:""},
+    {id:"cf19",fromMonth:"Jun 2026",emp:"Karl Welch",ref:"Job 159113711",type:"Lead Stage 2 — Romero, Anais ",amount:75,dept:"MB Install Residential",reason:"Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid.",resolved:false,disposition:"",note:""},
+    {id:"cf20",fromMonth:"Jun 2026",emp:"Karl Welch",ref:"Job 159166309",type:"Lead Stage 2 — Garner, Kim",amount:75,dept:"MB Install Residential",reason:"Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid.",resolved:false,disposition:"",note:""},
+    {id:"cf21",fromMonth:"Jun 2026",emp:"Karl Welch",ref:"Job 160468220",type:"Lead Stage 2 — Roby, Elizabeth",amount:75,dept:"MB Install Residential",reason:"Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid.",resolved:false,disposition:"",note:""},
+    {id:"cf22",fromMonth:"Jun 2026",emp:"Karl Welch",ref:"",type:"Lead Stage 2 — Ard, Jim & Cherie",amount:75,dept:"MB Install Residential",reason:"Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid.",resolved:false,disposition:"",note:""},
+    {id:"cf23",fromMonth:"Jun 2026",emp:"Darren Goida",ref:"",type:"Lead Stage 2 — Mozingo, William",amount:75,dept:"MB Install Residential",reason:"Stage 1 paid Jun 2026. Pay $75 when sold, installed, paid.",resolved:false,disposition:"",note:""},
   ],
   manuals:{steven:[],caleb:[]},
   jayJobs:[],
   officeMems:[
-    {name:'Jenny Miller',    total:105,dept:'MB Residential Service'},
-    {name:'Katie Osterling', total:85, dept:'MB Residential Service'},
-    {name:'Chris Port',      total:60, dept:'MB Residential Service'},
-    {name:'Danielle Gerthung',total:25,dept:'MB Residential Service'},
+    {name:"Katie Osterling",total:245,dept:'MB Residential Service'},
+    {name:"Chris Port",total:255,dept:'MB Residential Service'},
+    {name:"Jenny Miller",total:120,dept:'MB Residential Service'},
   ],
   spiffDetail:{
     steven:{
-      'Darren Goida':[
-        {date:'5/1',job:'155285364',customer:'DiCiccio, Michael',type:'Sales Spiff',item:'Membership renewal',spiff:10},
-        {date:'5/7',job:'131506361',customer:'White, Lynn & Valerie',type:'Sales Spiff',item:'Membership renewal',spiff:5},
-        {date:'5/7',job:'154531675',customer:'Hoeche, Janice',type:'Sales Spiff',item:'Membership renewal',spiff:5},
-        {date:'5/13',job:'155844710',customer:'Harley, Rupert & Nancy',type:'Sales Spiff',item:'CHAC-7 Compressor Kit',spiff:50},
-        {date:'5/14',job:'132933278',customer:'Budnick, Jackie',type:'Sales Spiff',item:'Membership renewal',spiff:5},
-        {date:'5/15',job:'133735051',customer:'Boyd, Lois',type:'Sales Spiff',item:'Membership renewal',spiff:5},
-        {date:'5/20',job:'157044315',customer:'Ryen, Abby',type:'Sales Spiff',item:'CHAC-7 Compressor Kit',spiff:50},
-        {date:'5/26',job:'157875692',customer:'Mains, Charlie',type:'TGL Lead Set',item:'Lead Stage 1 — quote delivered',spiff:25},
-        {date:'5/27',job:'130797831',customer:'Causey, Gregg',type:'Sales Spiff',item:'Membership',spiff:20},
-        {date:'5/27',job:'130079759',customer:'Putver, Jane',type:'Sales Spiff',item:'CHAC-95 Duct Cleaning',spiff:100},
-        {date:'5/28',job:'158014191',customer:'Juel, Sara',type:'TGL Lead Set',item:'Lead Stage 1 — quote delivered',spiff:25},
+      "Darren Goida":[
+        {date:"2026-06-03",job:"154640424",customer:"Cero, Dottie",type:"Sales Spiff",item:"Sales Spiff — Cero, Dottie",spiff:5},
+        {date:"2026-06-09",job:"154669275",customer:"Ehrhardt, Curt",type:"Sales Spiff",item:"Sales Spiff — Ehrhardt, Curt",spiff:5},
+        {date:"2026-06-11",job:"155817332",customer:"Dorman, Adrian",type:"Sales Spiff",item:"Sales Spiff — Dorman, Adrian",spiff:300},
+        {date:"2026-06-13",job:"159570029",customer:"Jefferys, David",type:"Sales Spiff",item:"Sales Spiff — Jefferys, David",spiff:20},
+        {date:"2026-06-23",job:"132874194",customer:"Ocean Keyes - 1525",type:"Sales Spiff",item:"Sales Spiff — Ocean Keyes - 1525",spiff:5},
+        {date:"2026-06-26",job:"133885400",customer:"Branca, Frank",type:"Sales Spiff",item:"Sales Spiff — Branca, Frank",spiff:15},
+        {date:"2026-06-30",job:"160998118",customer:"Goins, Preston",type:"Sales Spiff",item:"Sales Spiff — Goins, Preston",spiff:50},
+        {date:"2026-06-02",job:"158465075",customer:"Noel, Janet ",type:"TGL Lead Set Res",item:"TGL Lead Set Res — Noel, Janet ",spiff:25},
+        {date:"2026-06-10",job:"159076193",customer:"Walsh, David",type:"TGL Lead Set Res",item:"TGL Lead Set Res — Walsh, David",spiff:25},
+        {date:"2026-06-11",job:"158121846",customer:"Callahan, Nienke ",type:"TGL Lead Set Res",item:"TGL Lead Set Res — Callahan, Nienke ",spiff:25},
+        {date:"2026-06-13",job:"159498845",customer:"Mcgalliard, Marie",type:"TGL Lead Set Res",item:"TGL Lead Set Res — Mcgalliard, Marie",spiff:25},
+        {date:"2026-06-17",job:"159590694",customer:"Mundy, Frank",type:"TGL Lead Set Res",item:"TGL Lead Set Res — Mundy, Frank",spiff:25},
+        {date:"2026-06-19",job:"159963134",customer:"Robertson, Joe",type:"TGL Lead Set Res",item:"TGL Lead Set Res — Robertson, Joe",spiff:25},
+        {date:"2026-06-26",job:"160450704",customer:"HB Springs - Insurance",type:"TGL Lead Set Res",item:"TGL Lead Set Res — HB Springs - Insurance",spiff:25},
+        {date:"2026-06-30",job:"160998523",customer:"Gore, Ruth & Crit",type:"TGL Lead Set Res",item:"TGL Lead Set Res — Gore, Ruth & Crit",spiff:25},
+        {date:"2026-06-18",job:"159833188",customer:"Leary, Rupert",type:"Sales Spiff",item:"Duct Cleaning (CHAC-95)",spiff:100,note:"Auto-added — not on Master Pay File"},
+        {date:"2026-06-16",job:"",customer:"Mozingo, William",type:"TGL Lead Set Res",item:"Lead Stage 1 — quote delivered (auto-added, not on pay file)",spiff:25,note:"Auto-added — not on Master Pay File"},
       ],
-      'Jim LeBlanc':[
-        {date:'5/1',job:'132980076',customer:'Benjamin, Timothy',type:'Sales Spiff',item:'CHAC-91 Air Scrubber',spiff:300},
-        {date:'5/6',job:'130908232',customer:'Duvall, Caroline',type:'Sales Spiff',item:'Membership renewal',spiff:5},
-        {date:'5/8',job:'155606425',customer:'Nye, Sharon',type:'Sales Spiff',item:'Membership renewal',spiff:5},
-        {date:'5/11',job:'154558217',customer:'Riley, Dr. Shawn',type:'Sales Spiff',item:'Membership renewal',spiff:5},
-        {date:'5/12',job:'133157999',customer:"O'Neil, Douglas",type:'Sales Spiff',item:'CHAC-91 Air Scrubber',spiff:300},
-        {date:'5/13',job:'155252329',customer:'Shoufler, Darryl & Teresa',type:'Sales Spiff',item:'Membership renewal',spiff:5},
-        {date:'5/15',job:'155277409',customer:'Prescott, Bill',type:'Sales Spiff',item:'CHAC-91 Air Scrubber',spiff:300},
-        {date:'5/15',job:'155277409',customer:'Prescott, Bill',type:'Sales Spiff',item:'Membership',spiff:20},
-        {date:'5/15',job:'155339886',customer:'Prescott, Bill',type:'TGL Lead Sold',item:'Lead Stage 2 — sold & installed',spiff:75},
-        {date:'5/19',job:'155650425',customer:'Carr, Jason',type:'Sales Spiff',item:'Membership',spiff:15},
-        {date:'5/22',job:'155032559',customer:'Stivers, Annie',type:'Sales Spiff',item:'CHAC-91 Air Scrubber',spiff:300},
-        {date:'5/27',job:'157960539',customer:'Knight, Jeff',type:'Sales Spiff',item:'Membership renewal',spiff:10},
-        {date:'5/28',job:'158040292',customer:'Parsons, Karen',type:'TGL Lead Set',item:'Lead Stage 1 — quote delivered',spiff:25},
-        {date:'5/29',job:'158248294',customer:'Sea-Mix, LLC',type:'TGL Lead Set',item:'Lead Stage 1 — quote delivered',spiff:25},
-        {date:'5/29',job:'132988519',customer:'Rouille Jay',type:'Sales Spiff',item:'CHAC-91 Air Scrubber',spiff:300},
-        {date:'5/29',job:'157796699',customer:'Sigl, Mark',type:'Sales Spiff',item:'CHAC-91 Air Scrubber',spiff:300},
+      "Karl Welch":[
+        {date:"2026-06-01",job:"158297831",customer:"Bell, Patricia & Scott",type:"Sales Spiff",item:"Sales Spiff — Bell, Patricia & Scott",spiff:20},
+        {date:"2026-06-04",job:"133017110",customer:"Weipert, Susan ",type:"Sales Spiff",item:"Sales Spiff — Weipert, Susan ",spiff:300},
+        {date:"2026-06-08",job:"155609071",customer:"Tolman, Pat",type:"Sales Spiff",item:"Sales Spiff — Tolman, Pat",spiff:5},
+        {date:"2026-06-12",job:"133098918",customer:"Nairn, James \"JIM\"",type:"Sales Spiff",item:"Sales Spiff — Nairn, James \"JIM\"",spiff:5},
+        {date:"2026-06-14",job:"133098950",customer:"Capuzzi, Edward",type:"Sales Spiff",item:"Sales Spiff — Capuzzi, Edward",spiff:5},
+        {date:"2026-06-15",job:"158985214",customer:"Walker, Chuck",type:"Sales Spiff",item:"Sales Spiff — Walker, Chuck",spiff:300},
+        {date:"2026-06-15",job:"159061879",customer:"Stachura, Deborah ",type:"Sales Spiff",item:"Sales Spiff — Stachura, Deborah ",spiff:50},
+        {date:"2026-06-15",job:"159588602",customer:"Hanley, Joanne ",type:"Sales Spiff",item:"Sales Spiff — Hanley, Joanne ",spiff:10},
+        {date:"2026-06-15",job:"159588602",customer:"Hanley, Joanne ",type:"Sales Spiff",item:"Sales Spiff — Hanley, Joanne ",spiff:50},
+        {date:"2026-06-16",job:"159636443",customer:"Williamson, Kevin",type:"Sales Spiff",item:"Sales Spiff — Williamson, Kevin",spiff:20},
+        {date:"2026-06-19",job:"133710192",customer:"Jones, Joyce",type:"Sales Spiff",item:"Sales Spiff — Jones, Joyce",spiff:20},
+        {date:"2026-06-23",job:"157933275",customer:"Capone, Diane",type:"Sales Spiff",item:"Sales Spiff — Capone, Diane",spiff:5},
+        {date:"2026-06-23",job:"160445932",customer:"Weaver, Jason",type:"Sales Spiff",item:"Sales Spiff — Weaver, Jason",spiff:20},
+        {date:"2026-06-24",job:"160398555",customer:"Crist, Tara",type:"Sales Spiff",item:"Sales Spiff — Crist, Tara",spiff:10},
+        {date:"2026-06-24",job:"160467559",customer:"Hill, Debbie",type:"Sales Spiff",item:"Sales Spiff — Hill, Debbie",spiff:20},
+        {date:"2026-06-26",job:"160719915",customer:"Russell, Marlene",type:"Sales Spiff",item:"Sales Spiff — Russell, Marlene",spiff:20},
+        {date:"2026-06-26",job:"160719915",customer:"Russell, Marlene",type:"Sales Spiff",item:"Sales Spiff — Russell, Marlene",spiff:50},
+        {date:"2026-06-29",job:"154821726",customer:"Carlin, Christopher",type:"Sales Spiff",item:"Sales Spiff — Carlin, Christopher",spiff:5},
+        {date:"2026-06-29",job:"160228621",customer:"Woods, Tim ",type:"Sales Spiff",item:"Sales Spiff — Woods, Tim ",spiff:50},
+        {date:"2026-06-30",job:"160575459",customer:"Green, Kelli",type:"Sales Spiff",item:"Sales Spiff — Green, Kelli",spiff:20},
+        {date:"2026-06-04",job:"158235161",customer:"O'Drobinak, Larry ",type:"TGL Lead Set Res",item:"TGL Lead Set Res — O'Drobinak, Larry ",spiff:25},
+        {date:"2026-06-05",job:"158878434",customer:"Morris, Tonya",type:"TGL Lead Set Res",item:"TGL Lead Set Res — Morris, Tonya",spiff:25},
+        {date:"2026-06-08",job:"159024101",customer:"Medlin, Robert & Donna",type:"TGL Lead Set Res",item:"TGL Lead Set Res — Medlin, Robert & Donna",spiff:25},
+        {date:"2026-06-15",job:"159113711",customer:"Romero, Anais ",type:"TGL Lead Set Res",item:"TGL Lead Set Res — Romero, Anais ",spiff:25},
+        {date:"2026-06-16",job:"159166309",customer:"Garner, Kim",type:"TGL Lead Set Res",item:"TGL Lead Set Res — Garner, Kim",spiff:25},
+        {date:"2026-06-24",job:"160468220",customer:"Roby, Elizabeth",type:"TGL Lead Set Res",item:"TGL Lead Set Res — Roby, Elizabeth",spiff:25},
+        {date:"2026-06-17",job:"",customer:"Coleman, Jeffrey",type:"Sales Spiff",item:"Standard Membership - 1 System — New Sale",spiff:20,note:"Auto-added — not on Master Pay File"},
+        {date:"2026-06-08",job:"",customer:"Ard, Jim & Cherie",type:"TGL Lead Set Res",item:"Lead Stage 1 — quote delivered (auto-added, not on pay file)",spiff:25,note:"Auto-added — not on Master Pay File"},
       ],
-      'Karl Welch':[
-        {date:'5/1',job:'155027309',customer:'McDowell, Pamela',type:'Sales Spiff',item:'CHAC-7 Compressor Kit',spiff:50},
-        {date:'5/1',job:'155203305',customer:'Pure Property Mgmt',type:'TGL Lead Sold',item:'Lead Stage 2 — sold & installed',spiff:75},
-        {date:'5/5',job:'132892142',customer:'Trede, Clare',type:'Sales Spiff',item:'Membership renewal',spiff:5},
-        {date:'5/5',job:'132979646',customer:'Tessier, Gary',type:'Sales Spiff',item:'Membership renewal',spiff:10},
-        {date:'5/6',job:'155663484',customer:'Escolopio, Danny',type:'TGL Lead Set',item:'Lead Stage 1',spiff:25},
-        {date:'5/6',job:'155663484',customer:'Escolopio, Danny',type:'TGL Lead Sold',item:'Lead Stage 2',spiff:75},
-        {date:'5/6',job:'131467640',customer:'Dehart, Loretta',type:'Sales Spiff',item:'CHAC-95 Duct Cleaning',spiff:100},
-        {date:'5/7',job:'155427601',customer:'Ziccardi, John',type:'Sales Spiff',item:'CHAC-91 Air Scrubber',spiff:100},
-        {date:'5/7',job:'155427601',customer:'Ziccardi, John',type:'Sales Spiff',item:'CHAC-6/61 Drain x2',spiff:50},
-        {date:'5/7',job:'130930196',customer:'Best, David',type:'Sales Spiff',item:'Membership renewal',spiff:5},
-        {date:'5/8',job:'155609232',customer:'Newton, Charles',type:'Sales Spiff',item:'CHAC-91 Air Scrubber',spiff:300},
-        {date:'5/11',job:'129895557',customer:'Horner, Dawn',type:'Sales Spiff',item:'Membership renewal',spiff:5},
-        {date:'5/11',job:'133403772',customer:'Reichart, Ted',type:'Sales Spiff',item:'Membership renewal',spiff:5},
-        {date:'5/11',job:'155817967',customer:'Blatz, Mark',type:'Sales Spiff',item:'Membership',spiff:20},
-        {date:'5/13',job:'155650875',customer:'Pinkston, David',type:'Sales Spiff',item:'Membership',spiff:20},
-        {date:'5/15',job:'156731882',customer:'Adams, Mike',type:'Sales Spiff',item:'CHAC-4 Ecobee Lite',spiff:50},
-        {date:'5/15',job:'156742894',customer:'Garber, Jacob',type:'TGL Lead Set',item:'Lead Stage 1',spiff:25},
-        {date:'5/15',job:'156742894',customer:'Garber, Jacob',type:'TGL Lead Sold',item:'Lead Stage 2',spiff:75},
-        {date:'5/17',job:'156731914',customer:'Rader, Betty',type:'Sales Spiff',item:'CHAC-7 Compressor Kit',spiff:50},
-        {date:'5/18',job:'155646010',customer:'Escolopio, Danny',type:'TGL Lead Sold',item:'Lead Stage 2 (2nd job)',spiff:75},
-        {date:'5/18',job:'133157633',customer:'Mancuso, David',type:'Sales Spiff',item:'CHAC-91 + CHAC-1',spiff:350},
-        {date:'5/18',job:'156844782',customer:'McNeely, Brittany',type:'Sales Spiff',item:'Membership',spiff:20},
-        {date:'5/19',job:'155492353',customer:'Beaudry, Jerri',type:'TGL Lead Sold',item:'Lead Stage 2',spiff:75},
-        {date:'5/21',job:'156982402',customer:'Adams, Marilyn',type:'Sales Spiff',item:'CHAC-7 Compressor Kit',spiff:50},
-        {date:'5/26',job:'157868892',customer:'Cooper, Ray',type:'TGL Lead Set',item:'Lead Stage 1 — quote delivered',spiff:25},
-        {date:'5/27',job:'157736284',customer:'Ogletree, Bill',type:'TGL Lead Set',item:'Lead Stage 1 — quote delivered',spiff:25},
-        {date:'5/27',job:'157931997',customer:'Clark, Kennedy',type:'Sales Spiff',item:'Membership',spiff:20},
-        {date:'5/28',job:'155390059',customer:'Crowder, James',type:'Sales Spiff',item:'Membership renewal',spiff:5},
-        {date:'5/29',job:'158049666',customer:'Bernard, Jonathan',type:'TGL Lead Set',item:'Lead Stage 1 — quote delivered',spiff:25},
-        {date:'5/29',job:'154892300',customer:'Maymon, Debra',type:'Sales Spiff',item:'CHAC-91 Air Scrubber',spiff:300},
+      "Jesse Mertens":[
+        {date:"2026-06-01",job:"156732491",customer:"Macik, Carol",type:"Sales Spiff",item:"Sales Spiff — Macik, Carol",spiff:100},
+        {date:"2026-06-10",job:"156671969",customer:"Tourmey, Tom",type:"Sales Spiff",item:"Sales Spiff — Tourmey, Tom",spiff:100},
+        {date:"2026-06-16",job:"157732977",customer:"Waldorf, Jimmy",type:"Sales Spiff",item:"Sales Spiff — Waldorf, Jimmy",spiff:15},
+        {date:"2026-06-16",job:"157732977",customer:"Waldorf, Jimmy",type:"Sales Spiff",item:"Sales Spiff — Waldorf, Jimmy",spiff:100},
+        {date:"2026-06-23",job:"132462193",customer:"Grand Strand Medical Office Building",type:"Sales Spiff",item:"WATER HEATER LEAK PROTECTION - FLOOD STOP (AC - FSWH)",spiff:50,note:"Auto-added — not on Master Pay File"},
+        {date:"2026-06-25",job:"160290931",customer:"Hollingsworth, Trey",type:"Sales Spiff",item:"Moen Flo Water Protection (AC-34)",spiff:100,note:"Auto-added — not on Master Pay File"},
       ],
-      'Jesse Mertens':[
-        {date:'5/4',job:'155302756',customer:'Watkins, Hilda',type:'Sales Spiff',item:'Plumbing membership',spiff:15},
-        {date:'5/13',job:'155918825',customer:'Ogrady, Mark',type:'Sales Spiff',item:'Water heater',spiff:100},
+      "Herbie Windley":[
+        {date:"2026-06-05",job:"158552029",customer:"McMorrow, Jeffrey Paul",type:"Sales Spiff",item:"Sales Spiff — McMorrow, Jeffrey Paul",spiff:200},
+        {date:"2026-06-10",job:"",customer:"Spitz, Ray & Sandy",type:"Sales Spiff",item:"Plumbing Membership - 1 Tank — Renewal",spiff:5,note:"Auto-added — not on Master Pay File"},
       ],
-      'Herbie Windley':[
-        {date:'5/6',job:'155549672',customer:'Stipeler, Jeff',type:'Sales Spiff',item:'Water heater',spiff:100},
-        {date:'5/19',job:'156893968',customer:'Rives, Michelle',type:'Sales Spiff',item:'Water heater',spiff:100},
-        {date:'5/26',job:'155700744',customer:'Daniel Ravenel Real Estate',type:'Sales Spiff',item:'Water heater',spiff:100},
+      "Nick Scarpa":[
+        {date:"2026-06-09",job:"159159388",customer:"Elevate Eyecare",type:"Sales Spiff",item:"06 Drain Overflow Protection Upgrade (CHAC-6)",spiff:100,note:"Auto-added — not on Master Pay File"},
       ],
-      'Nick Scarpa':[],
-      'Javi Vazquez':[],
-      'Ray Lambert':[],
-      'Kyle Freeman':[
-        {date:'N/A',job:'155953011',customer:'Ocean Lakes Billing',type:'Top Tech Bonus',item:'Highest completed revenue in MB Service Commercial',spiff:300},
-      ],
-      'Stuart Akel':[],
     },
     caleb:{
-      'Jay Hall':[
-        {date:'5/5',job:'155104501',customer:'Basler, William',type:'Sales Spiff',item:'CHAC-91 Air Scrubber + Membership',spiff:110,flagged:false,flagNote:''},
-        {date:'5/5',job:'155104501',customer:'Basler, William',type:'TGL — REVERSED',item:'TGL Lead Sold fired incorrectly — Jay generated this lead himself on service call. Needs payroll reversal.',spiff:75,flagged:true,flagNote:'Jay generated own lead — not a TGL. Reverse $75 from payroll.'},
-        {date:'5/5',job:'155105398',customer:'Pavan, Ed & Nicole',type:'Sales Spiff',item:'CHAC-7 Compressor Kit',spiff:50,flagged:false,flagNote:''},
-        {date:'5/7',job:'155227880',customer:'Knight, Lydia',type:'Sales Spiff',item:'CHAC-95 Duct Cleaning',spiff:100,flagged:false,flagNote:''},
-        {date:'5/15',job:'155813725',customer:'Weakland, Christopher',type:'Sales Spiff',item:'CHAC-91 Air Scrubber',spiff:100,flagged:false,flagNote:''},
-        {date:'5/28',job:'157988837',customer:'Cline, Robert',type:'Sales Spiff',item:'CHAC-7 Compressor Kit',spiff:50,flagged:false,flagNote:''},
-        {date:'5/28',job:'157556461',customer:'Benjamin, Joanne',type:'Sales Spiff',item:'Membership',spiff:20,flagged:false,flagNote:''},
+      "Jay Hall":[
+        {date:"2026-06-04",job:"158702939",customer:"Richburg, Jesse & Mary",type:"Sales Spiff",item:"Sales Spiff — Richburg, Jesse & Mary",spiff:20},
+        {date:"2026-06-05",job:"158093542",customer:"Pure Property Management  of South Carolina",type:"Sales Spiff",item:"Sales Spiff — Pure Property Management  of South Carolina",spiff:50},
+        {date:"2026-06-06",job:"158977115",customer:"King and Society PM",type:"Sales Spiff",item:"Sales Spiff — King and Society PM",spiff:50},
+        {date:"2026-06-11",job:"159325283",customer:"Watson, Lonnie",type:"Sales Spiff",item:"Sales Spiff — Watson, Lonnie",spiff:20},
+        {date:"2026-06-11",job:"159364325",customer:"Ruhl, Gabe",type:"Sales Spiff",item:"Sales Spiff — Ruhl, Gabe",spiff:50},
+        {date:"2026-06-13",job:"159568350",customer:"Lenox, Melissa",type:"Sales Spiff",item:"Sales Spiff — Lenox, Melissa",spiff:50},
+        {date:"2026-06-30",job:"132417781",customer:"Rosebrock, George & Sharon",type:"Sales Spiff",item:"Sales Spiff — Rosebrock, George & Sharon",spiff:100},
+        {date:"2026-06-16",job:"159744102",customer:"Martin, Kael ",type:"TGL Lead Set Res",item:"TGL Lead Set Res — Martin, Kael ",spiff:25},
+        {date:"2026-06-12",job:"159481862",customer:"Barron, Esteban",type:"Sales Spiff",item:"07 Compressor Protection Kit (CHAC-7)",spiff:50,note:"Auto-added — not on Master Pay File"},
+        {date:"2026-06-15",job:"159579357",customer:"King and Society",type:"Sales Spiff",item:"07 Compressor Protection Kit (CHAC-7)",spiff:50,note:"Auto-added — not on Master Pay File"},
+        {date:"2026-06-18",job:"159754781",customer:"Myers, Kevin & Donna",type:"Sales Spiff",item:"Surge Protection Bundle (CHAC-22)",spiff:100,note:"Auto-added — not on Master Pay File"},
+        {date:"2026-06-19",job:"159957767",customer:"King and Society",type:"Sales Spiff",item:"07 Compressor Protection Kit (CHAC-7)",spiff:50,note:"Auto-added — not on Master Pay File"},
+        {date:"2026-06-20",job:"160141425",customer:"Dalis, Britton",type:"Sales Spiff",item:"07 Compressor Protection Kit (CHAC-7)",spiff:50,note:"Auto-added — not on Master Pay File"},
+        {date:"2026-06-21",job:"160038253",customer:"Hill, Donald",type:"Sales Spiff",item:"07 Compressor Protection Kit (CHAC-7)",spiff:50,note:"Auto-added — not on Master Pay File"},
+        {date:"2026-06-24",job:"160468203",customer:"Snyder, Barbara",type:"Sales Spiff",item:"07 Compressor Protection Kit (CHAC-7)",spiff:50,note:"Auto-added — not on Master Pay File"},
+        {date:"2026-06-25",job:"159260389",customer:"Comfort, Lyn L and Margaret",type:"Sales Spiff",item:"07 Compressor Protection Kit (CHAC-7)",spiff:100,note:"Auto-added — not on Master Pay File"},
+        {date:"2026-06-25",job:"159260389",customer:"Comfort, Lyn L and Margaret",type:"Sales Spiff",item:"Duct Cleaning (CHAC-95)",spiff:100,note:"Auto-added — not on Master Pay File"},
+        {date:"2026-06-25",job:"156996807",customer:"Richardson, Peter",type:"Sales Spiff",item:"07 Compressor Protection Kit (CHAC-7)",spiff:50,note:"Auto-added — not on Master Pay File"},
+        {date:"2026-06-26",job:"160450361",customer:"Wells, Jayma",type:"Sales Spiff",item:"Duct Cleaning (CHAC-95)",spiff:100,note:"Auto-added — not on Master Pay File"},
+        {date:"2026-06-29",job:"160842143",customer:"Corbett, Brent ",type:"Sales Spiff",item:"07 Compressor Protection Kit (CHAC-7)",spiff:50,note:"Auto-added — not on Master Pay File"},
+        {date:"2026-07-01",job:"161110757",customer:"Jones, Elizabeth",type:"Sales Spiff",item:"07 Compressor Protection Kit (CHAC-7)",spiff:50,note:"Auto-added — not on Master Pay File"},
       ],
-      'Steve Gordon':[
-        {date:'5/8',job:'155109262',customer:'Pure Property Mgmt',type:'Sales Spiff',item:'CHAC-7 Compressor Kit',spiff:50},
-        {date:'5/29',job:'156773625',customer:'Swinhart, Linda',type:'Sales Spiff',item:'CHAC-4 x2 Ecobee',spiff:100},
+      "Steve Gordon":[
+        {date:"2026-06-05",job:"155094958",customer:"Pure Property Management  of South Carolina",type:"Sales Spiff",item:"Sales Spiff — Pure Property Management  of South Carolina",spiff:50},
+        {date:"2026-06-05",job:"155094958",customer:"Pure Property Management  of South Carolina",type:"Sales Spiff",item:"Sales Spiff — Pure Property Management  of South Carolina",spiff:100},
+        {date:"2026-06-09",job:"159022587",customer:"O'Shaughnessy, Michael",type:"Sales Spiff",item:"Sales Spiff — O'Shaughnessy, Michael",spiff:50},
+        {date:"2026-06-15",job:"158233979",customer:"Pure Property Management  of South Carolina",type:"Sales Spiff",item:"Sales Spiff — Pure Property Management  of South Carolina",spiff:50},
+        {date:"2026-06-15",job:"159587465",customer:"Pure Property Management  of South Carolina",type:"Sales Spiff",item:"07 Compressor Protection Kit (CHAC-7)",spiff:50,note:"Auto-added — not on Master Pay File"},
+        {date:"2026-06-15",job:"159636047",customer:"Terrace South Properties",type:"Sales Spiff",item:"07 Compressor Protection Kit (CHAC-7)",spiff:50,note:"Auto-added — not on Master Pay File"},
       ],
-      'Derrick Hall':[],
-      'Quincy Fields':[],
-    }
+    },
   },
   ingestion:[
     {name:'Master Pay File',    ok:true},
@@ -462,7 +392,7 @@ function chkPin(v){
 const LEAD_ACTIVITIES = ['TGL Lead Set Res','TGL Lead Sold Res'];
 const PLUMBERS = ['Jesse Mertens','Herbie Windley'];
 const COMM_TECHS = ['Nick Scarpa','Javi Vazquez','Ray Lambert','Kyle Freeman','Stuart Akel'];
-const CH_TECHS = ['Jay Hall','Steve Gordon','Derrick Hall'];
+const CH_TECHS = ['Jay Hall','Steve Gordon'];
 
 function classifyMPFLine(name, activity) {
   const isLead = LEAD_ACTIVITIES.includes(activity);
@@ -530,6 +460,21 @@ function f$(n){if(!n&&n!==0)return'—';if(n===0)return'<span class="zero">—</
 function toast(msg,dur=3200){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),dur);}
 function empTot(e){return(e.svc||0)+(e.ins||0)+(e.plb||0)+(e.com||0)+(e.chs||0)+(e.chi||0);}
 function stevenBonus(){return S.revenue.filter(r=>r.se&&r.actual&&r.actual>=r.goal).length*350;}
+const MONTH_NAMES=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function monthIdx(label){
+  const [mon,yr]=(label||'').split(' ');
+  const m=MONTH_NAMES.indexOf(mon);
+  return m<0||!yr?null:parseInt(yr)*12+m;
+}
+function monthsAgo(fromMonthLabel){
+  const from=monthIdx(fromMonthLabel), now=monthIdx(MONTH);
+  return (from===null||now===null)?null:now-from;
+}
+function toggleDetailRow(cell){
+  const next=cell.parentElement.nextElementSibling;
+  if(!next) return;
+  next.style.display = next.style.display==='none' ? '' : 'none';
+}
 
 // ── Load from Sheets ──────────────────────────────────────
 async function loadSheets(){
@@ -929,7 +874,7 @@ function rTeam(mgr){
           </td>
           <td style="font-size:.7rem;font-family:'DM Mono',monospace;text-align:right;padding:4px 8px;color:${d.flagged?'#991b1b':'#1a1a1a'};text-decoration:${d.flagged?'line-through':'none'}">${fp(d.spiff)}</td>
         </tr>`).join('');
-        return `<tr><td style="cursor:pointer" onclick="this.parentElement.nextElementSibling&&this.parentElement.nextElementSibling.style.display=this.parentElement.nextElementSibling.style.display==='none'?'':'none'">${e.name}${dupW} <span style="font-size:.65rem;color:#999">▾ details</span></td><td>${svc>0?fp(svc):'<span class="zero">—</span>'}</td><td>${ins>0?fp(ins):'<span class="zero">—</span>'}</td><td>${e.plb>0?fp(e.plb):'<span class="zero">—</span>'}</td><td>${e.com>0?fp(e.com):'<span class="zero">—</span>'}</td><td>${manAmt>0?fp(manAmt):'<span class="zero">—</span>'}</td><td>${fp(total)}</td></tr>${detail.length?`<tr class="detail-rows" style="display:none"><td colspan="7" style="padding:0"><table style="width:100%;border-collapse:collapse">${detailRows}</table></td></tr>`:''}`;
+        return `<tr><td style="cursor:pointer" onclick="toggleDetailRow(this)">${e.name}${dupW} <span style="font-size:.65rem;color:#999">▾ details</span></td><td>${svc>0?fp(svc):'<span class="zero">—</span>'}</td><td>${ins>0?fp(ins):'<span class="zero">—</span>'}</td><td>${e.plb>0?fp(e.plb):'<span class="zero">—</span>'}</td><td>${e.com>0?fp(e.com):'<span class="zero">—</span>'}</td><td>${manAmt>0?fp(manAmt):'<span class="zero">—</span>'}</td><td>${fp(total)}</td></tr>${detail.length?`<tr class="detail-rows" style="display:none"><td colspan="7" style="padding:0"><table style="width:100%;border-collapse:collapse">${detailRows}</table></td></tr>`:''}`;
       }).join('')}</tbody>
     </table>
   </div>
@@ -1018,10 +963,13 @@ function rCommLeads(){
 
   <div class="card">
     <div class="ctitle">All active leads — update status monthly</div>
-    ${S.commLeads.filter(l=>!l.paid&&l.status!=='Did Not Sell — Close Lead').map((l,i)=>`
+    ${S.commLeads.filter(l=>!l.paid&&l.status!=='Did Not Sell — Close Lead').map((l,i)=>{
+      const age=monthsAgo(l.month);
+      const stale=age!==null&&age>=4;
+      return `
     <div style="padding:8px 0;border-bottom:1px solid #F0EDE8;display:grid;grid-template-columns:1fr 180px 100px;gap:8px;align-items:center;font-size:.82rem">
       <div>
-        <div style="font-weight:500">${l.tech} — ${l.customer}</div>
+        <div style="font-weight:500">${l.tech} — ${l.customer}${stale?` <span class="badge bdanger">⚠ ${age} months old — review for dismissal</span>`:''}</div>
         <div style="font-size:.7rem;color:#999;font-family:'DM Mono',monospace">Job #${l.job} · ${l.month}</div>
       </div>
       <div style="display:flex;gap:4px;align-items:center">
@@ -1035,7 +983,8 @@ function rCommLeads(){
       ${l.prevStatus?`<button onclick="undoCommLead('${l.id}')" style="font-size:.65rem;padding:2px 8px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;color:#666;white-space:nowrap">Undo</button>`:''}
       </div>
       <span style="font-size:.7rem;color:#999;text-align:right">${l.status==='Sold & Completed'?'<span class="badge bok">\$100 due</span>':''}</span>
-    </div>`).join('')}
+    </div>`;
+    }).join('')}
   </div>
 
   <div class="card">
@@ -1110,8 +1059,32 @@ function rFlags(mgr){
   </div>
   ${cf.length?`<div class="card" style="border-left:3px solid #3b82f6;margin-bottom:1rem">
     <div class="ctitle">Carried forward from ${PREV_M}</div>
-    ${cf.map(c=>`<div class="ri"><div class="ril"><span class="cf-badge">Carry forward</span><span style="font-size:.82rem;margin-top:3px;font-weight:500">${c.emp} — ${c.type}</span><span class="risub">${c.ref} · ${c.reason}</span></div><div style="display:flex;gap:8px;align-items:center"><span style="font-weight:600;font-family:'DM Mono',monospace">${fp(c.amount)}</span><span class="badge bwarn">Cross-ref MPF — dup risk</span></div></div>`).join('')}
-    <div style="font-size:.7rem;color:#999;margin-top:.5rem">⚠ Verify these are not also being paid by this month's Master Pay File before including.</div>
+    ${cf.map(c=>{
+      const age=monthsAgo(c.fromMonth);
+      const stale=!c.resolved&&age!==null&&age>=4;
+      return `<div class="ri" style="${c.resolved?'opacity:.5':''};align-items:flex-start">
+      <div class="ril">
+        <span class="cf-badge">Carry forward</span>
+        ${stale?`<span class="badge bdanger" style="margin-left:4px">⚠ ${age} months old — review for dismissal</span>`:''}
+        <span style="font-size:.82rem;margin-top:3px;font-weight:500">${c.emp} — ${c.type}</span>
+        <span class="risub">${c.ref} · ${c.reason}</span>
+        ${c.resolved?`<span class="risub" style="color:${c.disposition==='paid'?'#065f46':'#991b1b'}">${c.disposition==='paid'?'✓ Marked paid':'✕ Marked dead — '+c.note}</span>`:''}
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+        <span style="font-weight:600;font-family:'DM Mono',monospace">${fp(c.amount)}</span>
+        ${c.resolved?
+          `<button onclick="undoCarryForward('${mgr}','${c.id}')" style="font-size:.65rem;padding:2px 8px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;color:#666">Undo</button>`
+          :`<select id="cf-disp-${c.id}" style="font-size:.7rem;padding:3px 6px;border:1px solid #ddd;border-radius:6px;background:#fff">
+              <option value="">Select…</option>
+              <option value="paid">Mark paid</option>
+              <option value="dead">Mark dead — didn't convert</option>
+            </select>
+            <input type="text" id="cf-note-${c.id}" placeholder="Note (required for dead)" style="font-size:.7rem;padding:3px 6px;border:1px solid #ddd;border-radius:6px;width:150px">
+            <button class="btn bsm" onclick="resolveCarryForward('${mgr}','${c.id}')">Resolve</button>`}
+      </div>
+    </div>`;
+    }).join('')}
+    <div style="font-size:.7rem;color:#999;margin-top:.5rem">⚠ These are cross-checked against each month's Master Pay File automatically. Mark one "paid" or "dead" only if you've confirmed it outside that automatic check (e.g. a manual payroll adjustment, or the lead is confirmed dead and should stop carrying forward).</div>
   </div>`:''}
   ${flags.map(f=>`<div class="fb ${f.sev} ${f.resolved?'done':''}">
     <div class="fmeta">${f.emp} · ${f.ref}</div>
@@ -1252,6 +1225,30 @@ async function resolveFlag(mgr,id){
   rFlags(mgr);
   const btn=document.querySelector('button[onclick="submitWorkbook()"]');
   if(btn&&S.flags[mgr].filter(x=>!x.resolved).length===0){btn.textContent='Submit to Billy';btn.style.background='#1a1a1a';btn.style.cursor='pointer';}
+}
+
+async function resolveCarryForward(mgr,id){
+  const c=S.carryForward.find(x=>x.id===id);
+  if(!c) return;
+  const dispEl=document.getElementById(`cf-disp-${id}`);
+  const noteEl=document.getElementById(`cf-note-${id}`);
+  const disp=dispEl?dispEl.value:'';
+  const note=noteEl?noteEl.value.trim():'';
+  if(!disp){toast('Please select paid or dead.');return;}
+  if(disp==='dead'&&!note){toast('Please add a note explaining why.');return;}
+  c.resolved=true; c.disposition=disp; c.note=note;
+  await sAppend('carry_forward_resolutions',[[MONTH,mgr,id,c.emp,c.ref,c.type,c.amount,disp,note,new Date().toISOString()]]);
+  toast(disp==='paid'?'Marked paid — will not carry forward again.':'Marked dead — will not carry forward again.');
+  rFlags(mgr);
+}
+
+async function undoCarryForward(mgr,id){
+  const c=S.carryForward.find(x=>x.id===id);
+  if(!c) return;
+  c.resolved=false; c.disposition=''; c.note='';
+  await sAppend('carry_forward_resolutions',[[MONTH,mgr,id,c.emp,c.ref,c.type,c.amount,'','',new Date().toISOString()]]);
+  toast('Reopened — will carry forward again next month.');
+  rFlags(mgr);
 }
 
 // ── BOOT ────────────────────────────────────────────────

@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "static-server",
+      "runtimeExecutable": "C:\\Users\\billy\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "runtimeArgs": ["-m", "http.server", "8811"],
+      "port": 8811
+    }
+  ]
+}

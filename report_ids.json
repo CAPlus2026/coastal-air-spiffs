@@ -1,0 +1,8 @@
+{
+  "masterPayFile":        { "category": "accounting",        "reportId": 158701825, "name": "SPIFF - Master Pay File",                          "extraParams": [] },
+  "accessorySales":       { "category": "8-for-10-reports",  "reportId": 158702095, "name": "SPIFF - Accessory Sales",                           "extraParams": [] },
+  "membershipReport":     { "category": "sold-by",           "reportId": 158705633, "name": "SPIFF - Membership Report (Office Included)",       "extraParams": [] },
+  "leadRequestReport":    { "category": "technician",        "reportId": 158701826, "name": "SPIFF - Lead Request",                              "extraParams": [] },
+  "technicianPerformance":{ "category": "technician",        "reportId": 158691246, "name": "SPIFF - Technician Performance",                    "extraParams": [] },
+  "richCommissionReport": { "category": "sold-by",           "reportId": 158733964, "name": "SPIFF - Rich Commission Report",                    "extraParams": [{"name": "DateType", "value": "0"}], "_note": "DateType=0 corresponds to the 'Sold On' option in ServiceTitan's UI dropdown" }
+}

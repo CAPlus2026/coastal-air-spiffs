@@ -1,0 +1,1022 @@
+{
+  "BM-RENEWAL-1": {
+    "desc": "Basic Membership Renewal - 1 System",
+    "spiff": 5.0,
+    "active": true,
+    "category": "1 System"
+  },
+  "SM-NEW-4": {
+    "desc": "Standard Membership - 4 Systems",
+    "spiff": 35.0,
+    "active": true,
+    "category": "4 Systems"
+  },
+  "PM-NEW-2": {
+    "desc": "Premium Membership - 2 Systems",
+    "spiff": 30.0,
+    "active": true,
+    "category": "2 Systems"
+  },
+  "BM-NEW-3": {
+    "desc": "Basic Membership - 3 Systems",
+    "spiff": 20.0,
+    "active": true,
+    "category": "3 Systems"
+  },
+  "BM-RENEWAL-5": {
+    "desc": "Basic Membership Renewal - 5 Systems",
+    "spiff": 25.0,
+    "active": true,
+    "category": "5 Systems"
+  },
+  "SM-RENEWAL-2": {
+    "desc": "Standard Membership Renewal - 2 Systems",
+    "spiff": 10.0,
+    "active": true,
+    "category": "2 Systems"
+  },
+  "SM-NEW-3": {
+    "desc": "Standard Membership - 3 Systems",
+    "spiff": 30.0,
+    "active": true,
+    "category": "3 Systems"
+  },
+  "SM-RENEWAL-5": {
+    "desc": "Standard Membership Renewal - 5 Systems",
+    "spiff": 25.0,
+    "active": true,
+    "category": "5 Systems"
+  },
+  "PM-NEW-3": {
+    "desc": "Premium Membership - 3 Systems",
+    "spiff": 35.0,
+    "active": true,
+    "category": "3 Systems"
+  },
+  "PM-RENEWAL-4": {
+    "desc": "Premium Membership Renewal - 4 Systems",
+    "spiff": 20.0,
+    "active": true,
+    "category": "4 Systems"
+  },
+  "BM-NEW-4": {
+    "desc": "Basic Membership - 4 Systems",
+    "spiff": 25.0,
+    "active": true,
+    "category": "4 Systems"
+  },
+  "SM-RENEWAL-4": {
+    "desc": "Standard Membership Reneawl - 4 Systems",
+    "spiff": 20.0,
+    "active": true,
+    "category": "4 Systems"
+  },
+  "PM-RENEWAL-5": {
+    "desc": "Premium Membership Renewal - 5 Systems",
+    "spiff": 25.0,
+    "active": true,
+    "category": "5 Systems"
+  },
+  "PM-NEW-6": {
+    "desc": "Premium Membership - 6 Systems",
+    "spiff": 50.0,
+    "active": true,
+    "category": "6 Systems"
+  },
+  "SM-NEW-2": {
+    "desc": "Standard Membership - 2 Systems",
+    "spiff": 25.0,
+    "active": true,
+    "category": "2 Systems"
+  },
+  "PM-NEW-1": {
+    "desc": "Premium Membership - 1 System",
+    "spiff": 25.0,
+    "active": true,
+    "category": "1 System"
+  },
+  "SM-RENEWAL-3": {
+    "desc": "Standard Membership Renewal - 3 Systems",
+    "spiff": 15.0,
+    "active": true,
+    "category": "3 Systems"
+  },
+  "SM-RENEWAL-6": {
+    "desc": "Standard Membership Renewal - 6 Systems",
+    "spiff": 30.0,
+    "active": true,
+    "category": "6 Systems"
+  },
+  "PM-RENEWAL-2": {
+    "desc": "Premium Membership Renewal - 2 Systems",
+    "spiff": 10.0,
+    "active": true,
+    "category": "2 Systems"
+  },
+  "PM-NEW-4": {
+    "desc": "Premium Membership - 4 Systems",
+    "spiff": 40.0,
+    "active": true,
+    "category": "4 Systems"
+  },
+  "SM-NEW-6": {
+    "desc": "Standard Membership - 6 Systems",
+    "spiff": 45.0,
+    "active": true,
+    "category": "6 Systems"
+  },
+  "PM-NEW-5": {
+    "desc": "Premium Membership - 5 Systems",
+    "spiff": 45.0,
+    "active": true,
+    "category": "5 Systems"
+  },
+  "PM-RENEWAL-6": {
+    "desc": "Premium Membership Renewal - 6 Systems",
+    "spiff": 30.0,
+    "active": true,
+    "category": "6 Systems"
+  },
+  "SM-NEW-1": {
+    "desc": "Standard Membership - 1 System",
+    "spiff": 20.0,
+    "active": true,
+    "category": "1 System"
+  },
+  "SM-NEW-5": {
+    "desc": "Standard Membership - 5 Systems",
+    "spiff": 40.0,
+    "active": true,
+    "category": "5 Systems"
+  },
+  "BM-RENEWAL-2": {
+    "desc": "Basic Membership Renewal - 2 Systems",
+    "spiff": 10.0,
+    "active": true,
+    "category": "2 Systems"
+  },
+  "BM-NEW-6": {
+    "desc": "Basic Membership - 6 Systems",
+    "spiff": 35.0,
+    "active": true,
+    "category": "6 Systems"
+  },
+  "BM-NEW-1": {
+    "desc": "Basic Membership - 1 System",
+    "spiff": 10.0,
+    "active": true,
+    "category": "1 System"
+  },
+  "BM-RENEWAL-3": {
+    "desc": "Basic Membership Renewal - 3 Systems",
+    "spiff": 15.0,
+    "active": true,
+    "category": "3 Systems"
+  },
+  "BM-NEW-5": {
+    "desc": "Basic Membership - 5 Systems",
+    "spiff": 30.0,
+    "active": true,
+    "category": "5 Systems"
+  },
+  "SM-RENEWAL-1": {
+    "desc": "Standard Membership Renewal - 1 System",
+    "spiff": 5.0,
+    "active": true,
+    "category": "1 System"
+  },
+  "PM-RENEWAL-1": {
+    "desc": "Premium Membership Renewal - 1 System",
+    "spiff": 5.0,
+    "active": true,
+    "category": "1 System"
+  },
+  "SM-New-Custom": {
+    "desc": "Standard Membership",
+    "spiff": 55.0,
+    "active": true,
+    "category": null
+  },
+  "SM-RENEW-CUSTOM": {
+    "desc": "Standard Membership Renewal",
+    "spiff": 40.0,
+    "active": true,
+    "category": null
+  },
+  "BM-NEW-2": {
+    "desc": "Basic Membership - 2 Systems",
+    "spiff": 15.0,
+    "active": true,
+    "category": "2 Systems"
+  },
+  "BM-RENEWAL-4": {
+    "desc": "Basic Membership Renewal - 4 Systems",
+    "spiff": 20.0,
+    "active": true,
+    "category": "4 Systems"
+  },
+  "BM-RENEWAL-6": {
+    "desc": "Basic Membership Renewal - 6 Systems",
+    "spiff": 30.0,
+    "active": true,
+    "category": "6 Systems"
+  },
+  "PLUMB-TANKLESS-2-RENEW": {
+    "desc": "VIP Plumbig Tankless 2 Renewal",
+    "spiff": 10.0,
+    "active": true,
+    "category": "Tankless Water Heater"
+  },
+  "PLUMB-TANKLESS-2": {
+    "desc": "VIP Plumbing Tankless 2",
+    "spiff": 30.0,
+    "active": true,
+    "category": "Tankless Water Heater"
+  },
+  "VIP-DEHUM-1-NEW": {
+    "desc": "VIP DEHUM 1",
+    "spiff": 5.0,
+    "active": true,
+    "category": "Additional Services"
+  },
+  "PLUMB-TANKLESS-1": {
+    "desc": "VIP Plumbing Tankless Membership",
+    "spiff": 25.0,
+    "active": true,
+    "category": "Tankless Water Heater"
+  },
+  "PLUMB-TANKLESS-1-RENEW": {
+    "desc": "VIP Plumbing Tankless 1 Renewal",
+    "spiff": 5.0,
+    "active": true,
+    "category": "Tankless"
+  },
+  "VIP-DEHUM-2-NEW": {
+    "desc": "VIP DEHUM 2",
+    "spiff": 10.0,
+    "active": true,
+    "category": "Additional Services"
+  },
+  "VIP-DEHUM-3-NEW": {
+    "desc": "VIP DEHUM 3",
+    "spiff": 15.0,
+    "active": true,
+    "category": "Additional Services"
+  },
+  "PLUMB-TANK-1": {
+    "desc": "VIP Plumbing Tank 1",
+    "spiff": 15.0,
+    "active": true,
+    "category": "Tank Water Heater"
+  },
+  "PLUMB-TANK-2": {
+    "desc": "VIP Plumbing Tank 2",
+    "spiff": 30.0,
+    "active": true,
+    "category": "Tank Water Heater"
+  },
+  "PLUMB-TANK-2-RENEW": {
+    "desc": "VIP Plumbing Tank 2 Renewal",
+    "spiff": 10.0,
+    "active": true,
+    "category": "Tank Water Heater"
+  },
+  "WHE-1120": {
+    "desc": "50 Gal Electric Water Heater Hybrid",
+    "spiff": 200.0,
+    "active": true,
+    "category": "Electric"
+  },
+  "WHE-1024": {
+    "desc": "50 Gal Electric Water Heater (Low Boy)",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Electric"
+  },
+  "WHIND-100": {
+    "desc": "30 Gal. Indirect Water Heater Storage Tank",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Indirect"
+  },
+  "WHIND-110": {
+    "desc": "45 Gal. Indirect Water Heater Storage Tank",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Indirect"
+  },
+  "WHPRO-120": {
+    "desc": "50 Gallon Propane Water Heater Power Vent",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Propane"
+  },
+  "AC-COM-ICE": {
+    "desc": "Ice Machine Sanitizer/Purifier",
+    "spiff": 100.0,
+    "active": true,
+    "category": "MB Commercial Accessories"
+  },
+  "AC-COM-ICE - LTD1": {
+    "desc": "BiPolar Ice BPI200-110 (limited quantity while supplies last)",
+    "spiff": 50.0,
+    "active": true,
+    "category": "MB Commercial Accessories"
+  },
+  "AC-COM-ICE - LTD2": {
+    "desc": "RGF IMS-B-GA (limited quantity while supplies last)",
+    "spiff": 100.0,
+    "active": true,
+    "category": "MB Commercial Accessories"
+  },
+  "AC-45": {
+    "desc": "Smart Hot Water Circulator",
+    "spiff": 75.0,
+    "active": true,
+    "category": "MB Plumbing Accessories"
+  },
+  "CAC5": {
+    "desc": "1 PHASE MONITOR (ICM-492)",
+    "spiff": 50.0,
+    "active": true,
+    "category": "MB Commercial Accessories"
+  },
+  "AC-COM-ION": {
+    "desc": "COMMERCIAL IONIZING AIR PURIFIER",
+    "spiff": 200.0,
+    "active": true,
+    "category": "MB Commercial Accessories"
+  },
+  "CAC3": {
+    "desc": "1 PHASE SURGE PROTECTOR",
+    "spiff": 50.0,
+    "active": true,
+    "category": "MB Commercial Accessories"
+  },
+  "CAC4": {
+    "desc": "REACH IN SURGE PROTECTOR",
+    "spiff": 20.0,
+    "active": true,
+    "category": "MB Commercial Accessories"
+  },
+  "WHNG-150": {
+    "desc": "40 Gal Power Vent Natural Gas Water Heater",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Natural Gas"
+  },
+  "WHPRO-110": {
+    "desc": "50 Gallon Propane Water Heater",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Propane"
+  },
+  "WHTL-110": {
+    "desc": "Performance Plus Natural Gas Mid Efficiency Indoor Tankless Water Heater",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Tankless"
+  },
+  "WHNG-145": {
+    "desc": "40 Gal Direct Vent Natural Gas Water Heater",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Natural Gas"
+  },
+  "WHNG-120": {
+    "desc": "75 Gal Natural Gas Water Heater",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Natural Gas"
+  },
+  "WHE-100": {
+    "desc": "30 Gal Electric Water Heater (Low Boy)",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Electric"
+  },
+  "WHNG-165": {
+    "desc": "75 Gal Power Vent Natural Gas Water Heater",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Natural Gas"
+  },
+  "WHE-128": {
+    "desc": "80 Gal Electric Water Heater Hybrid",
+    "spiff": 200.0,
+    "active": true,
+    "category": "Electric"
+  },
+  "WHNG-190": {
+    "desc": "50 Gal Natural Gas Water Heater Lowboy",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Natural Gas"
+  },
+  "WHNG-130": {
+    "desc": "50 Gal Natural Gas Water Heater (Standard)",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Natural Gas"
+  },
+  "WHNG-140": {
+    "desc": "50 Gal Natural Gas Water Heater (High Recovery)",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Natural Gas"
+  },
+  "WHNG-180": {
+    "desc": "40 Gal Natural Gas Water Heater Low Boy",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Natural Gas"
+  },
+  "WHNG-100": {
+    "desc": "40 Gal Natural Gas Water Heater (Standard)",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Natural Gas"
+  },
+  "WHNG-160": {
+    "desc": "50 Gal Power Vent Natural Gas Water Heater",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Natural Gas"
+  },
+  "WHTL-100": {
+    "desc": "High Efficiency Natural Gas Tankless Water Heater with Built-in Recirculation and Pump",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Tankless"
+  },
+  "WHNG-155": {
+    "desc": "50 Gal Direct Vent Natural Gas Water Heater",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Natural Gas"
+  },
+  "WHE-110": {
+    "desc": "40 Gal Electric Water Heater",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Electric"
+  },
+  "WHNG-170": {
+    "desc": "30 Gal Natural Gas Water Heater",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Natural Gas"
+  },
+  "WHE-125": {
+    "desc": "80 Gal Electric Water Heater",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Electric"
+  },
+  "WHE-120": {
+    "desc": "50 Gal Electric Water Heater",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Electric"
+  },
+  "WHE-104": {
+    "desc": "40 Gal Electric Water Heater (Low Boy)",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Electric"
+  },
+  "WHPRO-100": {
+    "desc": "40 Gallon Propane Water Heater",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Propane"
+  },
+  "PTAC1": {
+    "desc": "PTAC 265V 12,000btu",
+    "spiff": 50.0,
+    "active": true,
+    "category": "PTAC Units"
+  },
+  "PTAC2": {
+    "desc": "PTAC 230V 12,000btu Heat Pump",
+    "spiff": 50.0,
+    "active": true,
+    "category": "PTAC Units"
+  },
+  "CHAC-143": {
+    "desc": "143 Dehumidifier 130-3000",
+    "spiff": 200.0,
+    "active": true,
+    "category": "MB Residential Accessories\nCH Residential Accessories"
+  },
+  "CHAC-1": {
+    "desc": "Indoor Unit Surge Protection",
+    "spiff": 50.0,
+    "active": true,
+    "category": "MB Residential Accessories\nCH Residential Accessories\nInstall Accessories"
+  },
+  "CHAC-5": {
+    "desc": "05 Ecobee Premium",
+    "spiff": 75.0,
+    "active": true,
+    "category": "MB Residential Accessories\nCH Residential Accessories"
+  },
+  "CHAC-2": {
+    "desc": "Outdoor Unit Surge Protection",
+    "spiff": 75.0,
+    "active": true,
+    "category": "MB Residential Accessories\nCH Residential Accessories\nInstall Accessories"
+  },
+  "CHAC-10": {
+    "desc": "Ultra Violet Lamp",
+    "spiff": 50.0,
+    "active": true,
+    "category": "MB Residential Accessories\nCH Residential Accessories\nInstall Accessories"
+  },
+  "CHAC-141": {
+    "desc": "141 Dehumidifier 80-1800",
+    "spiff": 100.0,
+    "active": true,
+    "category": "MB Residential Accessories\nCH Residential Accessories"
+  },
+  "CHAC-7": {
+    "desc": "07 Compressor Protection Kit",
+    "spiff": 50.0,
+    "active": true,
+    "category": "MB Residential Accessories\nCH Residential Accessories"
+  },
+  "CHAC-22": {
+    "desc": "Surge Protection Bundle",
+    "spiff": 100.0,
+    "active": true,
+    "category": "MB Residential Accessories\nCH Residential Accessories\nInstall Accessories"
+  },
+  "CHAC-142": {
+    "desc": "142 Dehumidifier 100-2300",
+    "spiff": 150.0,
+    "active": true,
+    "category": "MB Residential Accessories\nCH Residential Accessories"
+  },
+  "CHAC-6": {
+    "desc": "06 Drain Overflow Protection Upgrade",
+    "spiff": 50.0,
+    "active": true,
+    "category": "MB Residential Accessories\nCH Residential Accessories"
+  },
+  "CHAC-4": {
+    "desc": "04 Ecobee Lite Pro",
+    "spiff": 50.0,
+    "active": true,
+    "category": "MB Residential Accessories\nCH Residential Accessories"
+  },
+  "AC - FSWH": {
+    "desc": "WATER HEATER LEAK PROTECTION - FLOOD STOP",
+    "spiff": 50.0,
+    "active": true,
+    "category": "MB Plumbing Accessories"
+  },
+  "CAC2": {
+    "desc": "3 PHASE MONITOR (ICM-450)",
+    "spiff": 50.0,
+    "active": true,
+    "category": "MB Commercial Accessories"
+  },
+  "CAC1": {
+    "desc": "3 PHASE SURGE PROTECTOR",
+    "spiff": 50.0,
+    "active": true,
+    "category": "MB Commercial Accessories"
+  },
+  "AC-13": {
+    "desc": "13 Whole Home Air Filtration",
+    "spiff": 75.0,
+    "active": true,
+    "category": "MB Residential Accessories"
+  },
+  "ACC-18": {
+    "desc": "18 BluQR Bulb Replacement",
+    "spiff": 10.0,
+    "active": true,
+    "category": "MB Residential Accessories\nCH Residential Accessories"
+  },
+  "ACC-17": {
+    "desc": "17 DustFree Core",
+    "spiff": 15.0,
+    "active": true,
+    "category": "MB Residential Accessories"
+  },
+  "ACC-192": {
+    "desc": "192 AprilAire Merv 13 Filter",
+    "spiff": 5.0,
+    "active": true,
+    "category": "MB Residential Accessories"
+  },
+  "ACC-16": {
+    "desc": "16 DustFree Lamp Change",
+    "spiff": 5.0,
+    "active": true,
+    "category": "MB Residential Accessories"
+  },
+  "AC - ION": {
+    "desc": "Orion Ionizing Purifier - Residential",
+    "spiff": 100.0,
+    "active": true,
+    "category": "MB Residential Accessories"
+  },
+  "AC-49": {
+    "desc": "Water Shut-off Upgrade (kitchen/lavatory)",
+    "spiff": 10.0,
+    "active": true,
+    "category": "MB Plumbing Accessories"
+  },
+  "AC-50-B": {
+    "desc": "Water Booster System (Copper)",
+    "spiff": 200.0,
+    "active": true,
+    "category": "MB Plumbing Accessories"
+  },
+  "AC-50-A": {
+    "desc": "Water Booster System (Pex)",
+    "spiff": 175.0,
+    "active": true,
+    "category": "MB Plumbing Accessories"
+  },
+  "AC-47": {
+    "desc": "Washing Machine Box Upgrade",
+    "spiff": 75.0,
+    "active": true,
+    "category": "MB Plumbing Accessories"
+  },
+  "AC-48": {
+    "desc": "Carbon Monoxide Detector",
+    "spiff": 25.0,
+    "active": true,
+    "category": "MB Residential Accessories\nCH Residential Accessories\nCH Plumbing Accessories\nMB Plumbing Accessories"
+  },
+  "AC-46": {
+    "desc": "Washing Machine Hose Upgrade",
+    "spiff": 25.0,
+    "active": true,
+    "category": "MB Plumbing Accessories"
+  },
+  "AC-34-A": {
+    "desc": "Moen Smart Water Sensor Qty1",
+    "spiff": 10.0,
+    "active": true,
+    "category": "MB Plumbing Accessories"
+  },
+  "AC-51": {
+    "desc": "Halo Whole Home Filtration/Conditioner",
+    "spiff": 300.0,
+    "active": true,
+    "category": "MB Plumbing Accessories"
+  },
+  "AC-52": {
+    "desc": "Halo RO System",
+    "spiff": 100.0,
+    "active": true,
+    "category": "MB Plumbing Accessories"
+  },
+  "AC-53": {
+    "desc": "Water Quality Bundle",
+    "spiff": 400.0,
+    "active": true,
+    "category": "MB Plumbing Accessories"
+  },
+  "CHAC-61": {
+    "desc": "Drain Clog Prevention Kit (drain guard)",
+    "spiff": 25.0,
+    "active": true,
+    "category": "MB Residential Accessories\nCH Residential Accessories"
+  },
+  "AC-34": {
+    "desc": "Moen Flo Water Protection",
+    "spiff": 100.0,
+    "active": true,
+    "category": "MB Plumbing Accessories"
+  },
+  "AC-36": {
+    "desc": "Slow Close Toilet Seat",
+    "spiff": 25.0,
+    "active": true,
+    "category": "MB Plumbing Accessories"
+  },
+  "AC-37": {
+    "desc": "Laundry Pro",
+    "spiff": 100.0,
+    "active": true,
+    "category": "MB Plumbing Accessories"
+  },
+  "AC-MDC": {
+    "desc": "HEAVY DUTY DOOR CLOSER",
+    "spiff": 50.0,
+    "active": true,
+    "category": "MB Commercial Accessories"
+  },
+  "ACC - 35": {
+    "desc": "Clean Effects Installation (new or replacement)",
+    "spiff": 200.0,
+    "active": true,
+    "category": "MB Residential Accessories\nCH Residential Accessories"
+  },
+  "TSF-120(Promo)": {
+    "desc": "PROMOTION - Install Chrome Shower Head (Speakman S-2252-BN-E2 - CA+ Limited Warehouse Stock)",
+    "spiff": 20.0,
+    "active": true,
+    "category": "Tub/Shower Faucet"
+  },
+  "ACC-36": {
+    "desc": "Powered Anode Rod",
+    "spiff": 25.0,
+    "active": true,
+    "category": "MB Plumbing Accessories"
+  },
+  "CHAC-93B": {
+    "desc": "Pure & Clean (non-ozone)",
+    "spiff": 75.0,
+    "active": true,
+    "category": "MB Residential Accessories\nCH Residential Accessories"
+  },
+  "CHAC-91B": {
+    "desc": "Air Scrubber - ID5,000",
+    "spiff": 300.0,
+    "active": true,
+    "category": "MB Commercial Accessories"
+  },
+  "WH-TK-EL-10G": {
+    "desc": "Electric Tank Water Heater \u2013 10 Gallon",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Water Heaters"
+  },
+  "WH-TK-EL-20G": {
+    "desc": "Electric Tank Water Heater \u2013 20 Gallon",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Water Heaters"
+  },
+  "WH-TK-EL-30G": {
+    "desc": "Electric Tank Water Heater \u2013 30 Gallon",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Water Heaters"
+  },
+  "WH-TK-EL-40G": {
+    "desc": "Electric Tank Water Heater \u2013 40 Gallon",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Water Heaters"
+  },
+  "WH-TK-EL-50G": {
+    "desc": "Electric Tank Water Heater \u2013 50 Gallon",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Water Heaters"
+  },
+  "WH-TK-EL-LB-40G": {
+    "desc": "Electric Lowboy Tank Water Heater \u2013 40 Gallon",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Water Heaters"
+  },
+  "WH-TK-EL-LB-50G": {
+    "desc": "Electric Lowboy Tank Water Heater \u2013 50 Gallon",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Water Heaters"
+  },
+  "WH-TK-NG-ATM-30G": {
+    "desc": "Gas Tank Water Heater \u2013 Atmospheric \u2013 30 Gallon",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Water Heaters"
+  },
+  "WH-TK-NG-ATM-40G": {
+    "desc": "Gas Tank Water Heater \u2013 Atmospheric \u2013 40 Gallon",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Water Heaters"
+  },
+  "WH-TK-NG-ATM-50G": {
+    "desc": "Gas Tank Water Heater \u2013 Atmospheric \u2013 50 Gallon",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Water Heaters"
+  },
+  "WH-TK-NG-DV-30G": {
+    "desc": "Gas Tank Water Heater \u2013 Direct Vent \u2013 30 Gallon",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Water Heaters"
+  },
+  "WH-TK-NG-DV-40G": {
+    "desc": "Gas Tank Water Heater \u2013 Direct Vent \u2013 40 Gallon",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Water Heaters"
+  },
+  "WH-TK-NG-DV-50G": {
+    "desc": "Gas Tank Water Heater \u2013 Direct Vent \u2013 50 Gallon",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Water Heaters"
+  },
+  "WH-HP-EL-50G": {
+    "desc": "Heat Pump Water Heater \u2013 50 Gallon",
+    "spiff": 200.0,
+    "active": true,
+    "category": "Water Heaters"
+  },
+  "WH-HP-EL-80G": {
+    "desc": "Heat Pump Water Heater \u2013 80 Gallon",
+    "spiff": 200.0,
+    "active": true,
+    "category": "Water Heaters"
+  },
+  "WH-TL-NG-NC-199K": {
+    "desc": "Tankless Water Heater \u2013 Non-Condensing \u2013 199k BTU",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Water Heaters"
+  },
+  "WH-TL-NG-CD-199K": {
+    "desc": "Tankless Water Heater \u2013 Condensing \u2013 199k BTU",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Water Heaters"
+  },
+  "CHAC-92": {
+    "desc": "Minisplit Air Scrubber",
+    "spiff": 100.0,
+    "active": true,
+    "category": "MB Residential Accessories\nCH Residential Accessories"
+  },
+  "AC-54": {
+    "desc": "Ion6 Halo",
+    "spiff": 75.0,
+    "active": true,
+    "category": "MB Plumbing Accessories"
+  },
+  "CHAC-93": {
+    "desc": "Pure & Clean",
+    "spiff": 100.0,
+    "active": true,
+    "category": "MB Residential Accessories\nCH Residential Accessories"
+  },
+  "CHAC-95": {
+    "desc": "Duct Cleaning",
+    "spiff": 100.0,
+    "active": true,
+    "category": "MB Residential Accessories\nCH Residential Accessories"
+  },
+  "CHAC-96": {
+    "desc": "Duct Clean Seal",
+    "spiff": 300.0,
+    "active": true,
+    "category": "MB Residential Accessories\nCH Residential Accessories"
+  },
+  "CHAC-610": {
+    "desc": "Refill Kit - Drain Guard",
+    "spiff": 5.0,
+    "active": true,
+    "category": "MB Residential Accessories\nCH Residential Accessories"
+  },
+  "CHAC-101": {
+    "desc": "Clean and Clear Bundle",
+    "spiff": 100.0,
+    "active": true,
+    "category": "MB Residential Accessories\nCH Residential Accessories"
+  },
+  "CHAC-97": {
+    "desc": "AeroSeal Only",
+    "spiff": 200.0,
+    "active": true,
+    "category": "MB Residential Accessories\nCH Residential Accessories"
+  },
+  "CHAC-91": {
+    "desc": "Air Scrubber",
+    "spiff": 300.0,
+    "active": true,
+    "category": "MB Residential Accessories\nCH Residential Accessories\nInstall Accessories"
+  },
+  "CHAC-91D": {
+    "desc": "Air Scrubber - ID20,000",
+    "spiff": 300.0,
+    "active": true,
+    "category": "MB Commercial Accessories"
+  },
+  "CHAC-91C": {
+    "desc": "Air Scrubber - ID10,000",
+    "spiff": 300.0,
+    "active": true,
+    "category": "MB Commercial Accessories"
+  },
+  "WHP-15-B": {
+    "desc": "Wall Hung Heat Pump \u2013 1.5 Ton \u2013 Better (Trane 14 SEER2)",
+    "spiff": 0.01,
+    "active": true,
+    "category": "Sales Team"
+  },
+  "WHP-15-H": {
+    "desc": "Wall Hung Heat Pump \u2013 1.5 Ton \u2013 Best (Trane 15 SEER2)",
+    "spiff": 0.02,
+    "active": true,
+    "category": "Sales Team"
+  },
+  "WHP-15-T": {
+    "desc": "Wall Hung Heat Pump \u2013 1.5 Ton \u2013 Tempstar Compact (14 SEER2)",
+    "spiff": 0.03,
+    "active": true,
+    "category": "Sales Team"
+  },
+  "WHP-20-G": {
+    "desc": "Wall Hung Heat Pump \u2013 2 Ton \u2013 Good (RunTru 14 SEER2)",
+    "spiff": 0.04,
+    "active": true,
+    "category": "Sales Team"
+  },
+  "WHP-20-B": {
+    "desc": "Wall Hung Heat Pump \u2013 2 Ton \u2013 Better (Trane 14 SEER2)",
+    "spiff": 0.05,
+    "active": true,
+    "category": "Sales Team"
+  },
+  "WHP-20-H": {
+    "desc": "Wall Hung Heat Pump \u2013 2 Ton \u2013 Best (Trane 15 SEER2)",
+    "spiff": 0.06,
+    "active": true,
+    "category": "Sales Team"
+  },
+  "WHP-20-T": {
+    "desc": "Wall Hung Heat Pump \u2013 2 Ton \u2013 Tempstar Compact (14 SEER2)",
+    "spiff": 0.07,
+    "active": true,
+    "category": "Sales Team"
+  },
+  "WHP-25-G": {
+    "desc": "Wall Hung Heat Pump \u2013 2.5 Ton \u2013 Good (RunTru 14 SEER2)",
+    "spiff": 0.08,
+    "active": true,
+    "category": "Sales Team"
+  },
+  "WHP-25-B": {
+    "desc": "Wall Hung Heat Pump \u2013 2.5 Ton \u2013 Better (Trane 14 SEER2)",
+    "spiff": 0.09,
+    "active": true,
+    "category": "Sales Team"
+  },
+  "WHP-25-H": {
+    "desc": "Wall Hung Heat Pump \u2013 2.5 Ton \u2013 Best (Trane 15 SEER2)",
+    "spiff": 0.1,
+    "active": true,
+    "category": "Sales Team"
+  },
+  "WHP-25-T": {
+    "desc": "Wall Hung Heat Pump \u2013 2.5 Ton \u2013 Tempstar Compact (14 SEER2)",
+    "spiff": 0.11,
+    "active": true,
+    "category": "Sales Team"
+  },
+  "WHP-30-G": {
+    "desc": "Wall Hung Heat Pump \u2013 3 Ton \u2013 Good (RunTru 14 SEER2)",
+    "spiff": 0.12,
+    "active": true,
+    "category": "Sales Team"
+  },
+  "WHP-30-B": {
+    "desc": "Wall Hung Heat Pump \u2013 3 Ton \u2013 Better (Trane 14 SEER2)",
+    "spiff": 0.13,
+    "active": true,
+    "category": "Sales Team"
+  },
+  "WHP-30-H": {
+    "desc": "Wall Hung Heat Pump \u2013 3 Ton \u2013 Best (Trane 15 SEER2)",
+    "spiff": 0.14,
+    "active": true,
+    "category": "Sales Team"
+  },
+  "WHP-30-T": {
+    "desc": "Wall Hung Heat Pump \u2013 3 Ton \u2013 Tempstar Compact (14 SEER2)",
+    "spiff": 0.15,
+    "active": true,
+    "category": "Sales Team"
+  },
+  "WH-TK-ELOD-55G": {
+    "desc": "Essency 55-Gallon On-Demand Electric Tank Water Heater",
+    "spiff": 200.0,
+    "active": true,
+    "category": "Water Heaters"
+  },
+  "ACI-48": {
+    "desc": "Carbon Monoxide Detector",
+    "spiff": 25.0,
+    "active": true,
+    "category": "Install Accessories"
+  },
+  "ACI-13": {
+    "desc": "13 Whole Home Air Filtration",
+    "spiff": 100.0,
+    "active": true,
+    "category": "Install Accessories"
+  }
+}

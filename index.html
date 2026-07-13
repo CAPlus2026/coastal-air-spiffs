@@ -1158,7 +1158,7 @@ function rFlags(mgr){
         ${stale?`<span class="badge bdanger" style="margin-left:4px">⚠ ${age} months old — review for dismissal</span>`:''}
         <span style="font-size:.82rem;margin-top:3px;font-weight:500">${c.emp} — ${c.type}</span>
         <span class="risub">${c.ref} · ${c.reason}</span>
-        ${c.resolved?`<span class="risub" style="color:${c.disposition==='paid'?'#065f46':'#991b1b'}">${c.disposition==='paid'?'✓ Marked paid':'✕ Marked dead — '+c.note}</span>`:''}
+        ${c.resolved?`<span class="risub" style="color:${c.disposition==='paid'?'#065f46':'#991b1b'}">${c.disposition==='paid'?'✓ Paid this month':'✕ Marked dead — '+c.note}</span>`:''}
       </div>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
         <span style="font-weight:600;font-family:'DM Mono',monospace">${fp(c.amount)}</span>
@@ -1166,7 +1166,7 @@ function rFlags(mgr){
           `<button onclick="undoCarryForward('${mgr}','${c.id}')" style="font-size:.65rem;padding:2px 8px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;color:#666">Undo</button>`
           :`<select id="cf-disp-${c.id}" style="font-size:.7rem;padding:3px 6px;border:1px solid #ddd;border-radius:6px;background:#fff">
               <option value="">Select…</option>
-              <option value="paid">Mark paid</option>
+              <option value="paid">Pay this month</option>
               <option value="dead">Mark dead — didn't convert</option>
             </select>
             <input type="text" id="cf-note-${c.id}" placeholder="Note (required for dead)" style="font-size:.7rem;padding:3px 6px;border:1px solid #ddd;border-radius:6px;width:150px">

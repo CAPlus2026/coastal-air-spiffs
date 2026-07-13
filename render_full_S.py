@@ -96,9 +96,15 @@ lines.append("  ],")
 lines.append("  manuals:{steven:[],caleb:[]},")
 lines.append("  jayJobs:[],")
 
+def office_detail_line(d):
+    return (f"{{customer:{js(d['customer'])},type:{js(d['type'])},activation:{js(d['activation'])},"
+            f"soldOn:{js(d['soldOn'])},amount:{d['amount']:g}}}")
+
 lines.append("  officeMems:[")
 for m in r["officeMems"]:
-    lines.append(f"    {{name:{js(m['name'])},total:{m['total']:g},dept:'MB Residential Service'}},")
+    details = m.get("details") or []
+    details_js = "[" + ",".join(office_detail_line(d) for d in details) + "]"
+    lines.append(f"    {{name:{js(m['name'])},total:{m['total']:g},dept:'MB Residential Service',details:{details_js}}},")
 lines.append("  ],")
 
 lines.append("  spiffDetail:{")

@@ -37,7 +37,7 @@ CH_TECHS = {"Jay Hall", "Steve Gordon"}
 STEVEN_ROSTER = ["Darren Goida", "Jim LeBlanc", "Karl Welch", "Jesse Mertens", "Herbie Windley",
                  "Nick Scarpa", "Javi Vazquez", "Ray Lambert", "Kyle Freeman", "Stuart Akel"]
 CALEB_ROSTER = ["Jay Hall", "Steve Gordon", "Quincy Fields"]
-OFFICE_NAMES = {"Jenny Miller", "Katie Osterling", "Chris Port", "Danielle Gerthung"}
+OFFICE_NAMES = {"Jenny Miller", "Chris Port", "Danielle Gerthung"}
 
 # People who show up in reports but aren't part of this spiff pool at all — confirmed by Billy 2026-07-03.
 EXCLUDED_FROM_SPIFFS = {
@@ -192,6 +192,7 @@ def main():
     spiff_detail = defaultdict(list)  # name -> [{date,job,customer,type,item,spiff}]
     flags = {"steven": [], "caleb": []}
     office_mems = defaultdict(float)
+    office_mem_details = defaultdict(list)
     flag_seq = [0]
 
     def new_flag_id(mgr):
@@ -309,6 +310,10 @@ def main():
 
         if sold_by in OFFICE_NAMES:
             office_mems[sold_by] += bonus
+            office_mem_details[sold_by].append({
+                "customer": customer, "type": row.get("MembershipType") or "",
+                "activation": row.get("ActivationMethod") or "", "soldOn": sold_on, "amount": bonus,
+            })
             continue
 
         mgr = team_of(sold_by)
@@ -599,7 +604,8 @@ def main():
             "steven": {n: spiff_detail[n] for n in STEVEN_ROSTER if n in spiff_detail},
             "caleb": {n: spiff_detail[n] for n in CALEB_ROSTER if n in spiff_detail},
         },
-        "officeMems": [{"name": n, "total": round(t, 2)} for n, t in office_mems.items()],
+        "officeMems": [{"name": n, "total": round(t, 2), "details": office_mem_details.get(n, [])}
+                       for n, t in office_mems.items()],
         "commLeads": comm_leads_out,
         "carryForward": carry_forward_out,
         "bonuses": [

@@ -111,6 +111,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#F0EDE8;min-height:10
         <option value="billy">Billy (Owner)</option>
         <option value="steven">Service Manager (MB)</option>
         <option value="caleb">Location Manager (CH)</option>
+        <option value="jenny">Call Center Supervisor</option>
       </select>
     </div>
   </div>
@@ -170,8 +171,8 @@ const S={
   role:'billy',
   closedOut:{closed:false,timestamp:null,by:null},
   notes:[],
-  submissions:{steven:'not_started',caleb:'not_started'},
-  pushback:{steven:null,caleb:null},
+  submissions:{steven:'not_started',caleb:'not_started',jenny:'not_started'},
+  pushback:{steven:null,caleb:null,jenny:null},
   revenue:[
     {dept:'MB Service-Residential',goal:123437,actual:null,se:true},
     {dept:'MB Service-Commercial', goal:216964,actual:null,se:true},
@@ -251,9 +252,9 @@ const S={
   manuals:{steven:[],caleb:[]},
   jayJobs:[],
   officeMems:[
-    {name:"Katie Osterling",total:245,dept:'MB Residential Service'},
-    {name:"Chris Port",total:255,dept:'MB Residential Service'},
-    {name:"Jenny Miller",total:120,dept:'MB Residential Service'},
+    {name:"Katie Osterling",total:245,dept:'MB Residential Service',details:[{customer:"Wildman, Greg",type:"Standard Membership - 1 System",activation:"New Sale",soldOn:"2026-06-16",amount:20},{customer:"Alley, Mike",type:"Standard Membership - 1 System",activation:"Renewal",soldOn:"2026-06-17",amount:5},{customer:"Corneau, Jason",type:"Basic Membership - 1 System",activation:"Renewal",soldOn:"2026-06-15",amount:5},{customer:"Dunn, Ricky",type:"Standard Membership - 1 System",activation:"New Sale",soldOn:"2026-06-26",amount:20},{customer:"Eldreth, Sally",type:"Standard Membership - 2 Systems",activation:"Renewal",soldOn:"2026-06-03",amount:10},{customer:"Gundrum, Brad",type:"Basic Membership - 1 System",activation:"Renewal",soldOn:"2026-06-16",amount:5},{customer:"Gundrum, Brad",type:"Plumbing Membership - 1 Tank",activation:"Renewal",soldOn:"2026-06-16",amount:5},{customer:"Hanley, Joanne",type:"Standard Membership - 1 System",activation:"New Sale",soldOn:"2026-06-15",amount:20},{customer:"Harrell, Edward",type:"Basic Membership - 1 System",activation:"New Sale",soldOn:"2026-06-26",amount:10},{customer:"Holderfield, Mark",type:"Basic Membership - 2 Systems",activation:"New Sale",soldOn:"2026-06-18",amount:15},{customer:"Noel, Janet",type:"Standard Membership - 1 System",activation:"New Sale",soldOn:"2026-06-23",amount:20},{customer:"O'Brien, Michael & Laura",type:"Standard Membership - 6 Systems",activation:"Renewal",soldOn:"2026-06-01",amount:30},{customer:"Reiser, Sunday",type:"Standard Membership - 1 System",activation:"New Sale",soldOn:"2026-06-16",amount:20},{customer:"Stachura, Deborah",type:"Standard Membership - 1 System",activation:"New Sale",soldOn:"2026-06-08",amount:20},{customer:"Stahl, Jessica",type:"Standard Membership - 1 System",activation:"Renewal",soldOn:"2026-06-16",amount:5},{customer:"Trout, Ted",type:"Basic Membership - 1 System",activation:"Renewal",soldOn:"2026-06-19",amount:5},{customer:"Unrue, Cindy",type:"Basic Membership - 1 System",activation:"Renewal",soldOn:"2026-06-08",amount:5},{customer:"Wolf, Kelly",type:"Standard Membership - 2 Systems",activation:"New Sale",soldOn:"2026-06-04",amount:25}]},
+    {name:"Chris Port",total:255,dept:'MB Residential Service',details:[{customer:"Billings, Mike",type:"Basic Membership - 1 System",activation:"Renewal",soldOn:"2026-06-12",amount:5},{customer:"Coast, Bill",type:"Standard Membership - 1 System",activation:"New Sale",soldOn:"2026-06-01",amount:20},{customer:"Depasquale, Jim",type:"Basic Membership - 1 System",activation:"New Sale",soldOn:"2026-06-15",amount:10},{customer:"Depasquale, Jim",type:"Plumbing Membership - 1 Tank",activation:"New Sale",soldOn:"2026-06-15",amount:25},{customer:"Hill, Sharon",type:"Premium Membership - 1 System",activation:"Renewal",soldOn:"2026-06-08",amount:5},{customer:"Kluttz, Todd",type:"Basic Membership - 2 Systems",activation:"Renewal",soldOn:"2026-06-09",amount:10},{customer:"Kubik, Bev",type:"Basic Membership - 1 System",activation:"Renewal",soldOn:"2026-06-26",amount:5},{customer:"Losapio, Mindy",type:"Plumbing Membership - 1 Tankless",activation:"New Sale",soldOn:"2026-06-29",amount:25},{customer:"Marsi, Brian & Vicki",type:"Standard Membership - 2 Systems",activation:"New Sale",soldOn:"2026-06-11",amount:25},{customer:"McClay, Joyce",type:"Basic Membership - 1 System",activation:"Renewal",soldOn:"2026-06-12",amount:5},{customer:"Mundy, Frank",type:"Standard Membership - 1 System",activation:"New Sale",soldOn:"2026-06-15",amount:20},{customer:"Murphy, Kim",type:"Premium Membership - 1 System",activation:"Renewal",soldOn:"2026-06-26",amount:5},{customer:"Pearce, George Michael",type:"Basic Membership - 1 System",activation:"Renewal",soldOn:"2026-06-30",amount:5},{customer:"Reid, Shannon",type:"Basic Membership - 1 System",activation:"Renewal",soldOn:"2026-06-01",amount:5},{customer:"Roberts, Carl",type:"Basic Membership - 1 System",activation:"Renewal",soldOn:"2026-06-25",amount:5},{customer:"Roberts, Carl",type:"Plumbing Membership - 1 Tank",activation:"Renewal",soldOn:"2026-06-25",amount:5},{customer:"Ronan, Robert",type:"Premium Membership - 1 System",activation:"Renewal",soldOn:"2026-06-10",amount:5},{customer:"Smith, Jan",type:"Standard Membership - 1 System",activation:"Renewal",soldOn:"2026-06-09",amount:5},{customer:"Stec, Frank",type:"Standard Membership - 1 System",activation:"New Sale",soldOn:"2026-06-09",amount:20},{customer:"Thorpe, Bonnie",type:"Basic Membership - 1 System",activation:"Renewal",soldOn:"2026-06-03",amount:5},{customer:"Varian, Richard",type:"Basic Membership - 1 System",activation:"New Sale",soldOn:"2026-06-01",amount:10},{customer:"Veliky, Michael",type:"Premium Membership - 1 System",activation:"New Sale",soldOn:"2026-06-03",amount:25},{customer:"Zadrozny, Robert",type:"Basic Membership - 1 System",activation:"Renewal",soldOn:"2026-06-09",amount:5}]},
+    {name:"Jenny Miller",total:120,dept:'MB Residential Service',details:[{customer:"Cordray, Mary",type:"Standard Membership - 1 System",activation:"Renewal",soldOn:"2026-06-09",amount:5},{customer:"Cordray, Mary",type:"Standard Membership - 2 Systems",activation:"Renewal",soldOn:"2026-06-09",amount:10},{customer:"Crist, Tara",type:"Basic Membership - 1 System",activation:"Renewal",soldOn:"2026-06-17",amount:5},{customer:"Diem, John",type:"Standard Membership - 1 System",activation:"Renewal",soldOn:"2026-06-16",amount:5},{customer:"Goldberg, Dr. Ed",type:"Basic Membership - 1 System",activation:"Renewal",soldOn:"2026-06-17",amount:5},{customer:"Hay, Jackie",type:"Basic Membership - 1 System",activation:"Renewal",soldOn:"2026-06-25",amount:5},{customer:"Hite, Martha",type:"Standard Membership - 1 System",activation:"Renewal",soldOn:"2026-06-16",amount:5},{customer:"Jacuzio, Annette",type:"Standard Membership - 1 System",activation:"Renewal",soldOn:"2026-06-26",amount:5},{customer:"Lusk, Dale",type:"Basic Membership - 2 Systems",activation:"Renewal",soldOn:"2026-06-18",amount:10},{customer:"McMillan, Andy & Page, Courtney",type:"Basic Membership - 1 System",activation:"Renewal",soldOn:"2026-06-16",amount:5},{customer:"Pettis, Bob & Debbie",type:"Plumbing Membership - 1 Tank",activation:"New Sale",soldOn:"2026-06-25",amount:25},{customer:"Powers, Jerald",type:"Standard Membership - 1 System",activation:"Renewal",soldOn:"2026-06-10",amount:5},{customer:"Prescott, Bill",type:"Standard Membership - 3 Systems",activation:"Renewal",soldOn:"2026-06-09",amount:15},{customer:"Raymond James Trust",type:"Standard Membership - 1 System",activation:"Renewal",soldOn:"2026-06-22",amount:5},{customer:"Reynolds, Larry",type:"Standard Membership - 1 System",activation:"Renewal",soldOn:"2026-06-12",amount:5},{customer:"Sisson, Thelma",type:"Basic Membership - 1 System",activation:"Renewal",soldOn:"2026-06-26",amount:5}]},
   ],
   spiffDetail:{
     steven:{
@@ -368,7 +369,7 @@ const S={
 };
 
 // ── PIN ─────────────────────────────────────────────────
-const PINS={'0311':'billy','9779':'steven','1001':'caleb'};
+const PINS={'0311':'billy','9779':'steven','1001':'caleb','2200':'jenny'};
 
 function showPin(){
   document.getElementById('nav').innerHTML='';
@@ -388,7 +389,7 @@ function chkPin(v){
   if(role){
     S.role=role;
     const rs=document.getElementById('role-sel');
-    rs.value=role==='billy'?'billy':role==='steven'?'steven':'caleb';
+    rs.value=role;
     if(role==='billy') rs.style.display='';
     setRole(role);
   }else{
@@ -669,8 +670,9 @@ const NAVS={
   billy:[{id:'overview',label:'Overview'},{id:'review',label:'Manager Review'},{id:'revenue',label:'Revenue & Budgets'},{id:'bonuses',label:'Bonus Approvals'},{id:'output',label:'Accounting Output'},{id:'lookup',label:'Lookup'}],
   steven:[{id:'myteam',label:'My Team'},{id:'flags',label:'Flags to Resolve'},{id:'commleads',label:'Commercial Leads'},{id:'lookup',label:'Lookup'}],
   caleb:[{id:'myteam',label:'My Team'},{id:'flags',label:'Flags to Resolve'},{id:'lookup',label:'Lookup'}],
+  jenny:[{id:'membership',label:'Membership Review'},{id:'lookup',label:'Lookup'}],
 };
-const RENDERS={overview:rOverview,review:rReview,revenue:rRevenue,bonuses:rBonuses,output:rOutput,myteam:()=>rTeam(S.role),flags:()=>rFlags(S.role),commleads:rCommLeads,lookup:rLookup};
+const RENDERS={overview:rOverview,review:rReview,revenue:rRevenue,bonuses:rBonuses,output:rOutput,myteam:()=>rTeam(S.role),flags:()=>rFlags(S.role),commleads:rCommLeads,lookup:rLookup,membership:rMembershipReview};
 
 function setRole(role){
   S.role=role;
@@ -717,7 +719,7 @@ function rOverview(){
   <div class="sg">
     <div class="sc"><div class="sl">Est. total spiffs</div><div class="sv">${fp(grandTotal())}</div></div>
     <div class="sc"><div class="sl">Open flags</div><div class="sv">${open}</div></div>
-    <div class="sc"><div class="sl">Submissions</div><div class="sv">${subs} / 2</div></div>
+    <div class="sc"><div class="sl">Submissions</div><div class="sv">${subs} / 3</div></div>
     <div class="sc"><div class="sl">Steven bonus</div><div class="sv">${fp(stevenBonus())}</div></div>
   </div>
   <div class="card">
@@ -728,6 +730,10 @@ function rOverview(){
       const badge=s==='approved'?'<span class="badge bok">Approved</span>':s==='submitted'?'<span class="badge binfo">Submitted</span>':s==='pushed_back'?'<span class="badge bdanger">Pushed back</span>':`<span class="badge bwarn">${oc} flag${oc!==1?'s':''} open</span>`;
       return `<div class="ri"><div class="ril"><span style="font-weight:500">${lbl}</span></div>${badge}</div>`;
     }).join('')}
+    ${(()=>{const s=S.submissions.jenny;
+      const badge=s==='approved'?'<span class="badge bok">Approved</span>':s==='submitted'?'<span class="badge binfo">Submitted</span>':s==='pushed_back'?'<span class="badge bdanger">Pushed back</span>':'<span class="badge bgray">Not submitted</span>';
+      return `<div class="ri"><div class="ril"><span style="font-weight:500">Jenny — Call Center</span></div>${badge}</div>`;
+    })()}
   </div>
   <div class="card">
     <div class="ctitle">Your action items</div>
@@ -822,7 +828,32 @@ function rReview(){
       </div>`:''}
       ${s==='approved'?'<div style="margin-top:.5rem;font-size:.75rem;color:#065f46">✓ Approved</div>':''}
     </div>`;
-  }).join('');
+  }).join('') + (()=>{
+    const s=S.submissions.jenny;const canApprove=s==='submitted';
+    const total=S.officeMems.reduce((a,m)=>a+m.total,0);
+    return `<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.875rem">
+        <div class="ctitle" style="margin:0">Call Center Supervisor — Office Membership Sales</div>
+        <span class="badge ${s==='approved'?'bok':s==='submitted'?'binfo':s==='pushed_back'?'bdanger':'bgray'}">${s==='approved'?'Approved':s==='submitted'?'Submitted':s==='pushed_back'?'Pushed back':'Not submitted'}</span>
+      </div>
+      <div class="ctitle">Membership spiffs — ${MONTH}</div>
+      ${S.officeMems.length?S.officeMems.map(m=>`<div style="padding:7px 0;border-bottom:1px solid #F0EDE8;font-size:.82rem;display:flex;justify-content:space-between">
+        <span style="font-weight:500">${m.name}</span><span style="font-family:'DM Mono',monospace;font-weight:600">${fp(m.total)}</span>
+      </div>`).join(''):'<div style="font-size:.82rem;color:#999;padding:6px 0">No membership spiffs calculated yet.</div>'}
+      <div style="display:flex;justify-content:space-between;padding:9px 0;font-size:.85rem;font-weight:600">
+        <span>Total</span><span style="font-family:'DM Mono',monospace">${fp(total)}</span>
+      </div>
+      ${canApprove?`<div style="margin-top:1rem;padding-top:.75rem;border-top:1px solid #F0EDE8">
+        <div style="font-size:.75rem;color:#999;margin-bottom:.5rem">Push back or approve:</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+          <textarea id="pbn-jenny" placeholder="Push-back reason (required)..." style="font-size:.78rem;min-height:36px;flex:1;min-width:180px;padding:6px 8px;border:1px solid #ddd;border-radius:7px;background:#fff;font-family:inherit;resize:vertical"></textarea>
+          <button class="btn btnd bsm" onclick="pushBack('jenny')">Push back</button>
+          <button class="btn btnp bsm" onclick="approveSubmission('jenny')">Approve</button>
+        </div>
+      </div>`:''}
+      ${s==='approved'?'<div style="margin-top:.5rem;font-size:.75rem;color:#065f46">✓ Approved</div>':''}
+    </div>`;
+  })();
 }
 async function pushBack(mgr){
   if(guardClosed())return;
@@ -918,6 +949,66 @@ function rBonuses(){
 function toggleBonusDetail(i){
   const el=document.getElementById(`bonus-detail-${i}`);
   if(el) el.style.display = el.style.display==='none'?'':'none';
+}
+
+// ── MEMBERSHIP REVIEW (Jenny) ─────────────────────────────
+function rMembershipReview(){
+  const v=vw();
+  const sub=S.submissions.jenny;const pb=S.pushback.jenny;
+  const mems=S.officeMems;
+  const total=mems.reduce((a,m)=>a+m.total,0);
+  const btnS=sub==='approved'?'background:#d1fae5;color:#065f46;border-color:#6ee7b7;cursor:default':'background:#1a1a1a;color:#fff;border-color:#1a1a1a;cursor:pointer';
+  const btnT=sub==='approved'?'✓ Approved by Billy':sub==='submitted'?'Resubmit to Billy':'Submit to Billy';
+  v.innerHTML=`
+  ${pb?`<div class="pb-box"><div class="pb-label">Revision requested by Billy</div><div style="margin-top:4px">${pb}</div></div>`:''}
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+    <div>
+      <div style="font-size:1rem;font-weight:600">Office Membership Sales — ${MONTH}</div>
+      <div style="font-size:.75rem;color:#999;margin-top:2px">${mems.length} people · ${fp(total)} total</div>
+    </div>
+    <button class="btn" style="${btnS}" onclick="submitMembershipReview()">${btnT}</button>
+  </div>
+  <div class="card">
+    <div class="ctitle">Membership spiffs this month</div>
+    ${mems.map((m,i)=>{
+      const details=m.details||[];
+      return `<div class="ri" style="align-items:flex-start;flex-direction:column;gap:6px">
+        <div style="display:flex;justify-content:space-between;width:100%;align-items:center">
+          <span style="font-weight:500;${details.length?'cursor:pointer':''}" ${details.length?`onclick="toggleMemDetail(${i})"`:''}>${m.name}${details.length?` <span style="font-size:.65rem;color:#999">▾ ${details.length} sale${details.length!==1?'s':''}</span>`:''}</span>
+          <span style="font-weight:600;font-family:'DM Mono',monospace">${fp(m.total)}</span>
+        </div>
+        ${details.length?`<table id="mem-detail-${i}" style="display:none;width:100%;border-collapse:collapse;font-size:.72rem">
+          <thead><tr>
+            <th style="text-align:left;color:#999;padding:3px 6px;font-weight:500">Customer</th>
+            <th style="text-align:left;color:#999;padding:3px 6px;font-weight:500">Type</th>
+            <th style="text-align:left;color:#999;padding:3px 6px;font-weight:500">Activation</th>
+            <th style="text-align:left;color:#999;padding:3px 6px;font-weight:500">Sold on</th>
+            <th style="text-align:right;color:#999;padding:3px 6px;font-weight:500">Amount</th>
+          </tr></thead>
+          <tbody>${details.map(d=>`<tr style="border-top:1px solid #F0EDE8">
+            <td style="padding:3px 6px">${d.customer}</td>
+            <td style="padding:3px 6px;color:#666">${d.type}</td>
+            <td style="padding:3px 6px;color:#666">${d.activation}</td>
+            <td style="padding:3px 6px;font-family:'DM Mono',monospace;color:#666">${d.soldOn}</td>
+            <td style="padding:3px 6px;text-align:right;font-family:'DM Mono',monospace">${fp(d.amount)}</td>
+          </tr>`).join('')}</tbody>
+        </table>`:''}
+      </div>`;
+    }).join('')}
+    <div style="display:flex;justify-content:space-between;padding:9px 0;font-size:.85rem;font-weight:600;border-top:1px solid #F0EDE8;margin-top:.5rem">
+      <span>Total</span><span style="font-family:'DM Mono',monospace">${fp(total)}</span>
+    </div>
+  </div>`;
+}
+function toggleMemDetail(i){
+  const el=document.getElementById(`mem-detail-${i}`);
+  if(el) el.style.display = el.style.display==='none'?'':'none';
+}
+async function submitMembershipReview(){
+  if(guardClosed())return;
+  S.submissions.jenny='submitted';
+  await sAppend('submissions',[[MONTH,'jenny','submitted',new Date().toISOString(),'','']]);
+  toast('Submitted to Billy');rMembershipReview();
 }
 async function toggleBonus(i){
   if(guardClosed())return;

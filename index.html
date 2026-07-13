@@ -485,11 +485,13 @@ function toggleDetailRow(cell){
 
 // ── Load from Sheets ──────────────────────────────────────
 async function loadSheets(){
-  const [subs,rev,flags,mans]=await Promise.all([
+  const [subs,rev,flags,mans,corrections,cfRes]=await Promise.all([
     sGet('submissions!A2:F50'),
     sGet('revenue_actuals!A2:D50'),
     sGet('flags!A2:N500'),
     sGet('manual_adds!A2:I500'),
+    sGet('spiff_corrections!A2:G500'),
+    sGet('carry_forward_resolutions!A2:J500'),
   ]);
   if(subs)subs.forEach(r=>{
     if(r[0]===MONTH&&r[1]){const m=r[1].toLowerCase();if(m in S.submissions){S.submissions[m]=r[2]||'not_started';S.pushback[m]=(r[4]==='pushed_back'&&r[5])?r[5]:null;}}
@@ -519,6 +521,48 @@ async function loadSheets(){
       const jenny=S.bonuses.find(b=>b.id==='jenny');
       if(jenny) jenny.amount=jennyAmt;
     }
+  }
+  // Replay spiff line corrections (flag/unflag) so they survive a reload and sync
+  // across PIN sessions — sAppend only ever adds rows, so the last row per
+  // (mgr, empName, idx) is authoritative since sheet rows stay in append order.
+  if(corrections){
+    const latestCorr={};
+    corrections.forEach(r=>{
+      const [month,mgr,empName,idxStr,action,reason]=r;
+      if(month!==MONTH||!mgr||!empName)return;
+      latestCorr[`${mgr}|${empName}|${idxStr}`]={mgr,empName,idx:parseInt(idxStr),action,reason:reason||''};
+    });
+    Object.values(latestCorr).forEach(c=>{
+      const detail=(S.spiffDetail[c.mgr]||{})[c.empName];
+      if(!detail||!detail[c.idx])return;
+      const line=detail[c.idx];
+      const emp=S.emps[c.mgr].find(e=>e.name===c.empName);
+      if(c.action==='flagged'&&!line.flagged){
+        line.flagged=true;line.flagNote=c.reason;
+        if(emp){const col=spiffFieldFor(c.mgr,c.empName,line.type);emp[col]=Math.max(0,(emp[col]||0)-line.spiff);}
+      }else if(c.action==='unflagged'&&line.flagged){
+        line.flagged=false;line.flagNote='';
+        if(emp){const col=spiffFieldFor(c.mgr,c.empName,line.type);emp[col]=(emp[col]||0)+line.spiff;}
+      }
+    });
+  }
+  // Replay carry-forward resolutions (mark paid/dead) the same way.
+  if(cfRes){
+    const latestCf={};
+    cfRes.forEach(r=>{
+      const [month,mgr,id,emp,ref,type,amount,disposition,note]=r;
+      if(month!==MONTH||!id)return;
+      latestCf[id]={disposition:disposition||'',note:note||''};
+    });
+    Object.entries(latestCf).forEach(([id,c])=>{
+      const cf=S.carryForward.find(x=>x.id===id);
+      if(!cf)return;
+      if(c.disposition==='paid'||c.disposition==='dead'){
+        cf.resolved=true;cf.disposition=c.disposition;cf.note=c.note;
+      }else{
+        cf.resolved=false;cf.disposition='';cf.note='';
+      }
+    });
   }
 }
 
@@ -1149,7 +1193,7 @@ function renderJayJobs(){
   totEl.innerHTML=`<span style="font-size:.82rem">Jay Hall commission total: <strong style="font-family:'DM Mono',monospace">${fp(commission)}</strong> &nbsp;·&nbsp; Plus service spiffs: <strong style="font-family:'DM Mono',monospace">${fp(jay?jay.chs:0)}</strong> &nbsp;·&nbsp; <strong>Grand total: ${fp(commission+(jay?jay.chs:0))}</strong></span>`;
 }
 
-function flagSpiffLine(mgr,empName,idx){
+async function flagSpiffLine(mgr,empName,idx){
   const reasonId=`flag-reason-${mgr}-${empName.replace(/\s/g,'_')}-${idx}`;
   const reasonEl=document.getElementById(reasonId);
   const reason=reasonEl?reasonEl.value.trim():'';
@@ -1165,11 +1209,14 @@ function flagSpiffLine(mgr,empName,idx){
     const col=spiffFieldFor(mgr,empName,detail[idx].type);
     emp[col]=Math.max(0,(emp[col]||0)-detail[idx].spiff);
   }
+  // Persist so the correction survives a reload and syncs to other PIN sessions —
+  // without this, marking a line incorrect only ever mutated in-memory state.
+  await sAppend('spiff_corrections',[[MONTH,mgr,empName,String(idx),'flagged',reason,new Date().toISOString()]]);
   toast('Line flagged — excluded from totals. Noted for payroll reversal.');
   rTeam(mgr);
 }
 
-function unflagSpiffLine(mgr,empName,idx){
+async function unflagSpiffLine(mgr,empName,idx){
   const detail=(S.spiffDetail[mgr]||{})[empName];
   if(!detail||!detail[idx])return;
   const wasSpiff=detail[idx].spiff;
@@ -1181,6 +1228,7 @@ function unflagSpiffLine(mgr,empName,idx){
     const col=spiffFieldFor(mgr,empName,detail[idx].type);
     emp[col]=(emp[col]||0)+wasSpiff;
   }
+  await sAppend('spiff_corrections',[[MONTH,mgr,empName,String(idx),'unflagged','',new Date().toISOString()]]);
   toast('Flag removed — spiff restored to total.');
   rTeam(mgr);
 }
@@ -1258,6 +1306,11 @@ async function undoCarryForward(mgr,id){
   rFlags(mgr);
 }
 
+function rerenderCurrentView(){
+  const activeBtn=document.querySelector('.nb.on');
+  if(activeBtn&&RENDERS[activeBtn.dataset.v])RENDERS[activeBtn.dataset.v]();
+}
+
 // ── BOOT ────────────────────────────────────────────────
 showPin();
 // Try Sheet connection in background
@@ -1268,6 +1321,10 @@ showPin();
     const connect=(async()=>{await loadSheets();})();
     await Promise.race([connect,timeout]);
     badge.textContent='Connected';badge.className='conn conn-ok';CONN_OK=true;
+    // loadSheets() runs independently of PIN entry/navigation — if a manager was
+    // already viewing a tab before this resolved, re-render so synced data
+    // (corrections, resolutions, flag states, etc) actually shows up.
+    rerenderCurrentView();
   }catch(e){
     badge.textContent='Offline — saves disabled';badge.className='conn conn-err';
     console.warn('Sheet offline:',e.message);

@@ -666,11 +666,11 @@ async function loadSheets(){
 
 // ── Nav ──────────────────────────────────────────────────
 const NAVS={
-  billy:[{id:'overview',label:'Overview'},{id:'review',label:'Manager Review'},{id:'revenue',label:'Revenue & Budgets'},{id:'bonuses',label:'Bonus Approvals'},{id:'output',label:'Accounting Output'}],
-  steven:[{id:'myteam',label:'My Team'},{id:'flags',label:'Flags to Resolve'},{id:'commleads',label:'Commercial Leads'}],
-  caleb:[{id:'myteam',label:'My Team'},{id:'flags',label:'Flags to Resolve'}],
+  billy:[{id:'overview',label:'Overview'},{id:'review',label:'Manager Review'},{id:'revenue',label:'Revenue & Budgets'},{id:'bonuses',label:'Bonus Approvals'},{id:'output',label:'Accounting Output'},{id:'lookup',label:'Lookup'}],
+  steven:[{id:'myteam',label:'My Team'},{id:'flags',label:'Flags to Resolve'},{id:'commleads',label:'Commercial Leads'},{id:'lookup',label:'Lookup'}],
+  caleb:[{id:'myteam',label:'My Team'},{id:'flags',label:'Flags to Resolve'},{id:'lookup',label:'Lookup'}],
 };
-const RENDERS={overview:rOverview,review:rReview,revenue:rRevenue,bonuses:rBonuses,output:rOutput,myteam:()=>rTeam(S.role),flags:()=>rFlags(S.role),commleads:rCommLeads};
+const RENDERS={overview:rOverview,review:rReview,revenue:rRevenue,bonuses:rBonuses,output:rOutput,myteam:()=>rTeam(S.role),flags:()=>rFlags(S.role),commleads:rCommLeads,lookup:rLookup};
 
 function setRole(role){
   S.role=role;
@@ -1237,6 +1237,43 @@ async function submitWorkbook(){
   S.submissions[mgr]='submitted';
   await sAppend('submissions',[[MONTH,mgr,'submitted',new Date().toISOString(),'','']]);
   toast('Submitted to Billy');rTeam(mgr);
+}
+
+// ── LOOKUP ───────────────────────────────────────────────
+function rLookup(){
+  const v=vw();
+  v.innerHTML=`<div class="card">
+    <div class="ctitle">Look up a spiff payment</div>
+    <div style="font-size:.75rem;color:#999;margin-bottom:.875rem">Search the full payout ledger by job number or employee name — spans every month, not just ${MONTH}.</div>
+    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px"><label style="font-size:.7rem;color:#999;display:block;margin-bottom:3px">Job number or employee name</label>
+        <input type="text" id="lookup-q" placeholder="e.g. 159024101 or Karl Welch" style="width:100%;font-size:.85rem;padding:8px 10px;border:1px solid #ddd;border-radius:7px;background:#fff;font-family:inherit" onkeyup="if(event.key==='Enter')searchLedger()">
+      </div>
+      <button class="btn btnp" onclick="searchLedger()">Search</button>
+    </div>
+    <div id="lookup-results" style="margin-top:1rem"></div>
+  </div>`;
+}
+async function searchLedger(){
+  const q=(document.getElementById('lookup-q').value||'').trim().toLowerCase();
+  const resultsEl=document.getElementById('lookup-results');
+  if(!q){toast('Enter a job number or employee name.');return;}
+  resultsEl.innerHTML='<div style="font-size:.82rem;color:#999">Searching…</div>';
+  const rows=await sGet('spiff_ledger!A2:I5000');
+  if(!rows){resultsEl.innerHTML='<div style="font-size:.82rem;color:#991b1b">Could not reach the ledger — try again in a moment.</div>';return;}
+  const matches=rows.filter(r=>{
+    const [month,mgr,employee,job,customer,type,item,amount,source]=r;
+    return (job&&String(job).toLowerCase().includes(q))||(employee&&employee.toLowerCase().includes(q))||(customer&&customer.toLowerCase().includes(q));
+  });
+  if(!matches.length){resultsEl.innerHTML='<div style="font-size:.82rem;color:#999">No matches found.</div>';return;}
+  resultsEl.innerHTML=`<div class="aw"><table class="at">
+    <thead><tr><th style="text-align:left">Month</th><th style="text-align:left">Employee</th><th style="text-align:left">Job</th><th style="text-align:left">Customer</th><th style="text-align:left">Type / item</th><th>Amount</th><th style="text-align:left">Source</th></tr></thead>
+    <tbody>${matches.map(r=>{
+      const [month,mgr,employee,job,customer,type,item,amount,source]=r;
+      return `<tr><td style="text-align:left">${month}</td><td style="text-align:left">${employee}</td><td style="text-align:left;font-family:'DM Mono',monospace">${job||'—'}</td><td style="text-align:left">${customer||'—'}</td><td style="text-align:left">${item||type||''}</td><td>${fp(parseFloat(amount)||0)}</td><td style="text-align:left;font-size:.68rem;color:#999">${source||''}</td></tr>`;
+    }).join('')}</tbody>
+  </table></div>
+  <div style="font-size:.72rem;color:#999;margin-top:.5rem">${matches.length} result${matches.length!==1?'s':''}</div>`;
 }
 
 // ── FLAGS ────────────────────────────────────────────────

@@ -504,6 +504,88 @@ def main():
         for r in rich_rows
     ]
 
+    # ── 8) Payout ledger — cross-month duplicate detection + carryover history ──
+    def fmt_amt(n):
+        return f"${n:.2f}"
+
+    def build_ledger_entries():
+        entries = []
+        for mgr_ in ("steven", "caleb"):
+            for emp_name, lines in spiff_detail.get(mgr_, {}).items():
+                for line in lines:
+                    entries.append({
+                        "month": MONTH_LABEL, "mgr": mgr_, "employee": emp_name,
+                        "job": line.get("job", ""), "customer": line.get("customer", ""),
+                        "type": line.get("type", ""), "item": line.get("item", ""),
+                        "amount": line.get("spiff", 0),
+                        "source": "auto-added" if line.get("note") else "MPF",
+                    })
+        for lead in comm_leads_out:
+            if lead.get("paid"):
+                entries.append({
+                    "month": MONTH_LABEL, "mgr": team_of(lead["tech"]), "employee": lead["tech"],
+                    "job": lead.get("job", ""), "customer": lead.get("customer", ""),
+                    "type": "Commercial Lead", "item": f"Commercial lead — {lead['customer']}",
+                    "amount": lead.get("spiff", 0), "source": "commercial-lead",
+                })
+        for d in rich_details:
+            entries.append({
+                "month": MONTH_LABEL, "mgr": "", "employee": "Rich Smith",
+                "job": d["job"], "customer": d["customer"], "type": "Commission (3%)",
+                "item": d["item"], "amount": d["commission"], "source": "rich-commission",
+            })
+        for name_, total_ in office_mems.items():
+            entries.append({
+                "month": MONTH_LABEL, "mgr": "", "employee": name_,
+                "job": "", "customer": "", "type": "Membership Spiff",
+                "item": "Office membership spiffs", "amount": total_, "source": "office-membership",
+            })
+        return entries
+
+    def fetch_ledger():
+        import requests as _requests
+        try:
+            resp = _requests.get(APPS_SCRIPT_URL, params={"action": "get", "sheet": "spiff_ledger"}, timeout=15)
+            resp.raise_for_status()
+            return resp.json().get("values") or []
+        except Exception as e:
+            print(f"  (couldn't fetch spiff_ledger — skipping duplicate check: {e})")
+            return []
+
+    ledger_entries = build_ledger_entries()
+    prior_ledger = fetch_ledger()
+    prior_job_keys = set()
+    for row in prior_ledger:
+        if len(row) < 4:
+            continue
+        prior_month, _mgr, prior_emp, prior_job = row[0], row[1], row[2], row[3]
+        if prior_month != MONTH_LABEL and prior_job:
+            prior_job_keys.add((prior_emp, str(prior_job)))
+
+    for entry in ledger_entries:
+        if entry["job"] and (entry["employee"], str(entry["job"])) in prior_job_keys:
+            mgr_for_flag = entry["mgr"] or team_of(entry["employee"])
+            if mgr_for_flag in flags:
+                add_flag(mgr_for_flag, entry["employee"], f"Job #{entry['job']}",
+                          f"Possible duplicate payment — job #{entry['job']} already paid in a prior month",
+                          f"{entry['employee']} is being paid {fmt_amt(entry['amount'])} for job #{entry['job']} "
+                          f"({entry['item']}) this month, but the ledger shows this same job/employee combination "
+                          f"was already paid in a previous month. Verify this isn't a duplicate before approving.",
+                          sev="red")
+
+    try:
+        import requests as _requests
+        if ledger_entries:
+            rows_to_append = [[e["month"], e["mgr"], e["employee"], e["job"], e["customer"],
+                                e["type"], e["item"], e["amount"], e["source"]] for e in ledger_entries]
+            # Apps Script append only takes one row at a time via this backend's API shape
+            for row in rows_to_append:
+                _requests.get(APPS_SCRIPT_URL, params={"action": "append", "sheet": "spiff_ledger",
+                                                        "values": json.dumps(row)}, timeout=15)
+            print(f"  Wrote {len(rows_to_append)} entries to spiff_ledger")
+    except Exception as e:
+        print(f"  (couldn't write to spiff_ledger: {e})")
+
     # ── Output ──────────────────────────────────────────────────────
     steven_emps = [emps[n] for n in STEVEN_ROSTER if n in emps]
     caleb_emps = [emps[n] for n in CALEB_ROSTER if n in emps]

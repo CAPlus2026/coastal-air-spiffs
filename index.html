@@ -89,7 +89,13 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#F0EDE8;min-height:10
 .pin-wrap p{font-size:.8rem;color:#999;margin-bottom:1.5rem}
 .pin-input{width:100%;font-size:1.5rem;text-align:center;padding:.75rem;border:1px solid #ddd;border-radius:10px;letter-spacing:.5rem;font-family:'DM Mono',monospace;background:#fff}
 .pin-err{color:#991b1b;font-size:.78rem;margin-top:.75rem;min-height:1.2rem}
-@media print{.nav,.role-wrap,.btn,.nb{display:none!important}.card{border:1px solid #ccc;break-inside:avoid}}
+@media print{
+  .nav,.role-wrap,.btn,.nb,.conn{display:none!important}
+  .card{border:1px solid #ccc;break-inside:auto}
+  .at,.et,.rev-t{break-inside:auto}
+  .at tr,.et tr,.rev-t tr{break-inside:avoid;break-after:auto}
+  .aw{overflow:visible!important}
+}
 </style>
 </head>
 <body>
@@ -521,13 +527,15 @@ function toggleDetailRow(cell){
 
 // ── Load from Sheets ──────────────────────────────────────
 async function loadSheets(){
-  const [subs,rev,flags,mans,corrections,cfRes]=await Promise.all([
+  const [subs,rev,flags,mans,corrections,cfRes,jayJobLog,commLeadLog]=await Promise.all([
     sGet('submissions!A2:F50'),
     sGet('revenue_actuals!A2:D50'),
     sGet('flags!A2:N500'),
     sGet('manual_adds!A2:I500'),
     sGet('spiff_corrections!A2:G500'),
     sGet('carry_forward_resolutions!A2:J500'),
+    sGet('jay_jobs!A2:H500'),
+    sGet('commlead_updates!A2:I500'),
   ]);
   if(subs)subs.forEach(r=>{
     if(r[0]===MONTH&&r[1]){const m=r[1].toLowerCase();if(m in S.submissions){S.submissions[m]=r[2]||'not_started';S.pushback[m]=(r[4]==='pushed_back'&&r[5])?r[5]:null;}}
@@ -603,6 +611,33 @@ async function loadSheets(){
       }
     });
   }
+  // Replay Jay Hall's equipment commission job entries — S.jayJobs otherwise
+  // resets to empty on every load, same class of bug as the other two above.
+  if(jayJobLog){
+    const latestJJ={};
+    jayJobLog.forEach(r=>{
+      const [month,id,job,subtotal,accDeduct,type,action]=r;
+      if(month!==MONTH||!id)return;
+      latestJJ[id]={job,subtotal:parseFloat(subtotal)||0,accDeduct:parseFloat(accDeduct)||0,type,action};
+    });
+    S.jayJobs=Object.entries(latestJJ)
+      .filter(([id,j])=>j.action==='add')
+      .map(([id,j])=>({id,job:j.job,subtotal:j.subtotal,accDeduct:j.accDeduct,type:j.type}));
+  }
+  // Replay commercial lead status updates — same reasoning.
+  if(commLeadLog){
+    const latestCL={};
+    commLeadLog.forEach(r=>{
+      const [month,id,tech,customer,job,status,spiff,payMonth]=r;
+      if(month!==MONTH||!id)return;
+      latestCL[id]={status,spiff:parseFloat(spiff)||0,payMonth:payMonth||''};
+    });
+    Object.entries(latestCL).forEach(([id,c])=>{
+      const lead=S.commLeads.find(l=>l.id===id);
+      if(!lead)return;
+      lead.status=c.status;lead.spiff=c.spiff;lead.payMonth=c.payMonth;
+    });
+  }
 }
 
 // ── Nav ──────────────────────────────────────────────────
@@ -669,20 +704,38 @@ function rOverview(){
 // ── MANAGER REVIEW ────────────────────────────────────────
 function rReview(){
   const v=vw();
+  const allRows=buildRows();
   v.innerHTML=['steven','caleb'].map(mgr=>{
     const lbl=mgr==='steven'?'Service Manager (MB)':'Location Manager (CH)';
     const s=S.submissions[mgr];const rf=S.flags[mgr].filter(f=>f.resolved);
     const canApprove=s==='submitted';
+    // Same rows Accounting Output shows, scoped to this manager's own roster —
+    // includes base spiffs, commercial lead payouts, Jay's commission, carry-forward
+    // payouts, and resolved flags rolled in, so Review always matches Output exactly.
+    const teamRows=allRows.filter(r=>S.emps[mgr].some(e=>e.name===r.name));
+    const teamTotal=teamRows.reduce((a,r)=>a+r.total+(r.bonusAmt||0),0);
     return `<div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.875rem">
         <div class="ctitle" style="margin:0">${lbl}</div>
         <span class="badge ${s==='approved'?'bok':s==='submitted'?'binfo':s==='pushed_back'?'bdanger':'bgray'}">${s==='approved'?'Approved':s==='submitted'?'Submitted':s==='pushed_back'?'Pushed back':'Not submitted'}</span>
       </div>
+      <div class="ctitle">Team spiff summary — ${MONTH}</div>
+      ${teamRows.length?teamRows.map(r=>`<div style="padding:7px 0;border-bottom:1px solid #F0EDE8;font-size:.82rem">
+        <div style="display:flex;justify-content:space-between;gap:8px">
+          <span style="font-weight:500">${r.name}</span>
+          <span style="font-family:'DM Mono',monospace;font-weight:600">${fp(r.total+(r.bonusAmt||0))}</span>
+        </div>
+        ${(r.details||[]).filter(Boolean).length?`<div style="font-size:.7rem;color:#888;margin-top:3px;line-height:1.6">${r.details.filter(Boolean).map(d=>`• ${d}`).join('<br>')}</div>`:''}
+      </div>`).join(''):'<div style="font-size:.82rem;color:#999;padding:6px 0">No spiffs calculated for this team yet.</div>'}
+      <div style="display:flex;justify-content:space-between;padding:9px 0;font-size:.85rem;font-weight:600">
+        <span>Team total</span><span style="font-family:'DM Mono',monospace">${fp(teamTotal)}</span>
+      </div>
+      <div class="ctitle" style="margin-top:.875rem">Resolved flags</div>
       ${rf.length?rf.map(f=>`<div style="padding:7px 0;border-bottom:1px solid #F0EDE8;font-size:.82rem;display:flex;justify-content:space-between;gap:8px">
         <div><div style="font-weight:500">${f.title}</div><div style="font-size:.7rem;color:#999;font-family:'DM Mono',monospace">${f.emp} · ${f.ref}</div>${f.note?`<div style="font-size:.7rem;color:#999">${f.note}</div>`:''}</div>
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px">
           <span class="badge ${f.disp==='Pay this month'?'bok':f.disp==='Pay next month'?'binfo':'bdanger'}">${f.disp}</span>
-          <button onclick="undoFlag('${mgr}','${f.id}');S.submissions['${mgr}']='not_started';renderAfterUndo('${mgr}');" 
+          <button onclick="undoFlag('${mgr}','${f.id}');S.submissions['${mgr}']='not_started';renderAfterUndo('${mgr}');"
             style="font-size:.65rem;padding:2px 8px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;color:#666">
             Undo
           </button>
@@ -1007,6 +1060,7 @@ function rTeam(mgr){
     </div>
     ${adds.length?`<div style="margin-top:.75rem">${adds.map((a,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;font-size:.78rem;padding:5px 0;border-top:1px solid #F0EDE8"><span>${a.name} — ${a.reason} <span style="color:#999">(${a.dept})</span></span><span style="display:flex;gap:8px;align-items:center"><strong style="font-family:'DM Mono',monospace">${fp(a.amount)}</strong><button class="btn bsm" onclick="removeManual('${mgr}',${i})">Remove</button></span></div>`).join('')}</div>`:''}
   </div>`;
+  if(mgr==='caleb') renderJayJobs();
 }
 async function addManual(mgr){
   const name=document.getElementById('m-emp').value;
@@ -1108,7 +1162,7 @@ function rCommLeads(){
   </div>`:''}`;
 }
 
-function updateCommLead(id, status){
+async function updateCommLead(id, status){
   const lead=S.commLeads.find(l=>l.id===id);
   if(!lead) return;
   lead.prevStatus = lead.status; // save for undo
@@ -1119,9 +1173,10 @@ function updateCommLead(id, status){
   }
   if(status==='Did Not Sell — Close Lead'){lead.spiff=0;}
   rCommLeads();
+  await sAppend('commlead_updates',[[MONTH,id,lead.tech,lead.customer,lead.job,status,lead.spiff,lead.payMonth,new Date().toISOString()]]);
 }
 
-function undoCommLead(id){
+async function undoCommLead(id){
   const lead=S.commLeads.find(l=>l.id===id);
   if(!lead||!lead.prevStatus) return;
   lead.status=lead.prevStatus;
@@ -1129,6 +1184,7 @@ function undoCommLead(id){
   if(lead.status!=='Sold & Completed'){lead.spiff=0;lead.payMonth='';}
   toast('Status reverted.');
   rCommLeads();
+  await sAppend('commlead_updates',[[MONTH,id,lead.tech,lead.customer,lead.job,lead.status,lead.spiff,lead.payMonth,new Date().toISOString()]]);
 }
 
 function addCommLead(){
@@ -1279,21 +1335,28 @@ async function unflagSpiffLine(mgr,empName,idx){
   rTeam(mgr);
 }
 
-function addJayJob(){
+async function addJayJob(){
   const job=document.getElementById('jay-job').value.trim();
   const sub=parseFloat(document.getElementById('jay-sub').value)||0;
   const acc=parseFloat(document.getElementById('jay-acc').value)||0;
   const type=document.getElementById('jay-type').value;
   if(!job||sub<=0){toast('Please enter a job number and subtotal.');return;}
-  S.jayJobs.push({job,subtotal:sub,accDeduct:acc,type});
+  const id='jj_'+Date.now();
+  S.jayJobs.push({id,job,subtotal:sub,accDeduct:acc,type});
   document.getElementById('jay-job').value='';
   document.getElementById('jay-sub').value='';
   document.getElementById('jay-acc').value='';
   renderJayJobs();
+  await sAppend('jay_jobs',[[MONTH,id,job,sub,acc,type,'add',new Date().toISOString()]]);
   toast('Job added');
 }
 
-function removeJayJob(i){S.jayJobs.splice(i,1);renderJayJobs();}
+async function removeJayJob(i){
+  const j=S.jayJobs[i];
+  S.jayJobs.splice(i,1);
+  renderJayJobs();
+  if(j) await sAppend('jay_jobs',[[MONTH,j.id||'',j.job,j.subtotal,j.accDeduct,j.type,'remove',new Date().toISOString()]]);
+}
 
 function renderAfterUndo(mgr){
   // Re-render whichever view is active

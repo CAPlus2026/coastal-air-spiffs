@@ -169,6 +169,7 @@ async function sPut(range, values){
 const S={
   role:'billy',
   closedOut:{closed:false,timestamp:null,by:null},
+  notes:[],
   submissions:{steven:'not_started',caleb:'not_started'},
   pushback:{steven:null,caleb:null},
   revenue:[
@@ -528,7 +529,7 @@ function toggleDetailRow(cell){
 
 // ── Load from Sheets ──────────────────────────────────────
 async function loadSheets(){
-  const [subs,rev,flags,mans,corrections,cfRes,jayJobLog,commLeadLog,monthStatusLog]=await Promise.all([
+  const [subs,rev,flags,mans,corrections,cfRes,jayJobLog,commLeadLog,monthStatusLog,notesLog]=await Promise.all([
     sGet('submissions!A2:F50'),
     sGet('revenue_actuals!A2:D50'),
     sGet('flags!A2:N500'),
@@ -538,6 +539,7 @@ async function loadSheets(){
     sGet('jay_jobs!A2:H500'),
     sGet('commlead_updates!A2:I500'),
     sGet('month_status!A2:D50'),
+    sGet('manager_notes!A2:H1000'),
   ]);
   if(subs)subs.forEach(r=>{
     if(r[0]===MONTH&&r[1]){const m=r[1].toLowerCase();if(m in S.submissions){S.submissions[m]=r[2]||'not_started';S.pushback[m]=(r[4]==='pushed_back'&&r[5])?r[5]:null;}}
@@ -648,6 +650,17 @@ async function loadSheets(){
       const [month,action,by,timestamp]=last;
       S.closedOut={closed:action==='closed',timestamp:timestamp||null,by:by||null};
     }
+  }
+  // Replay manager notes — not scoped to MONTH, since a note can be added mid-month
+  // before that month's processing even starts and may not get verified until later.
+  if(notesLog){
+    const latestNotes={};
+    notesLog.forEach(r=>{
+      const [id,mgr,emp,text,author,timestamp,verified,verifiedNote]=r;
+      if(!id)return;
+      latestNotes[id]={id,mgr,emp,text,author,timestamp,verified:verified==='true',verifiedNote:verifiedNote||''};
+    });
+    S.notes=Object.values(latestNotes);
   }
 }
 
@@ -1066,6 +1079,7 @@ function rTeam(mgr){
   const v=vw();const d=S.emps[mgr];const pb=S.pushback[mgr];
   const sub=S.submissions[mgr];const openF=S.flags[mgr].filter(f=>!f.resolved).length;
   const adds=S.manuals[mgr]||[];
+  const teamNotes=S.notes.filter(n=>n.mgr===mgr);
   const btnS=openF>0?'background:#ccc;color:#666;border-color:#ccc;cursor:not-allowed':sub==='approved'?'background:#d1fae5;color:#065f46;border-color:#6ee7b7;cursor:default':'background:#1a1a1a;color:#fff;border-color:#1a1a1a;cursor:pointer';
   const btnT=openF>0?`${openF} flag${openF!==1?'s':''} need resolution`:sub==='approved'?'✓ Approved by Billy':sub==='submitted'?'Resubmit to Billy':'Submit to Billy';
   v.innerHTML=`
@@ -1149,6 +1163,27 @@ function rTeam(mgr){
       <div><label>&nbsp;</label><button class="btn btnp" onclick="addManual('${mgr}')">Add</button></div>
     </div>
     ${adds.length?`<div style="margin-top:.75rem">${adds.map((a,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;font-size:.78rem;padding:5px 0;border-top:1px solid #F0EDE8"><span>${a.name} — ${a.reason} <span style="color:#999">(${a.dept})</span></span><span style="display:flex;gap:8px;align-items:center"><strong style="font-family:'DM Mono',monospace">${fp(a.amount)}</strong><button class="btn bsm" onclick="removeManual('${mgr}',${i})">Remove</button></span></div>`).join('')}</div>`:''}
+  </div>
+  <div class="card">
+    <div class="ctitle">Notes</div>
+    <div style="font-size:.75rem;color:#999;margin-bottom:.5rem">Jot a note about an issue during the month (e.g. attribution problems, a customer change) so you can verify it got handled correctly when it's time to process.</div>
+    <div class="mg" style="grid-template-columns:1fr 2fr auto">
+      <div><label>Employee</label><select id="note-emp-${mgr}">${d.map(e=>`<option>${e.name}</option>`).join('')}</select></div>
+      <div><label>Note</label><input type="text" id="note-text-${mgr}" placeholder="e.g. Air scrubber + duct seal — customer backed out then re-added, check sold-by attribution"></div>
+      <div><label>&nbsp;</label><button class="btn btnp" onclick="addNote('${mgr}')">Add</button></div>
+    </div>
+    ${teamNotes.length?`<div style="margin-top:.75rem">${teamNotes.map(n=>`<div class="ri" style="${n.verified?'opacity:.5':''};align-items:flex-start">
+      <div class="ril">
+        <span style="font-weight:500">${n.emp}</span>
+        <span class="risub">${n.text}</span>
+        <span class="risub" style="font-family:'DM Mono',monospace">${n.author||'?'} · ${n.timestamp?new Date(n.timestamp).toLocaleDateString():''}</span>
+        ${n.verified?`<span class="risub" style="color:#065f46">✓ Verified${n.verifiedNote?': '+n.verifiedNote:''}</span>`:''}
+      </div>
+      <div>${n.verified?
+        `<button class="btn bsm" onclick="unverifyNote('${n.id}')">Undo</button>`
+        :`<button class="btn btnp bsm" onclick="verifyNote('${n.id}')">Mark verified</button>`}
+      </div>
+    </div>`).join('')}</div>`:'<div style="font-size:.82rem;color:#999;padding:6px 0">No notes for this team.</div>'}
   </div>`;
   if(mgr==='caleb') renderJayJobs();
 }
@@ -1164,6 +1199,37 @@ async function addManual(mgr){
   toast('Manual spiff added');rTeam(mgr);
 }
 function removeManual(mgr,i){if(guardClosed())return;S.manuals[mgr].splice(i,1);rTeam(mgr);}
+
+async function addNote(mgr){
+  const emp=document.getElementById(`note-emp-${mgr}`).value;
+  const textEl=document.getElementById(`note-text-${mgr}`);
+  const text=textEl.value.trim();
+  if(!text){toast('Please enter a note.');return;}
+  const id='note_'+Date.now();
+  const author=S.role;
+  const timestamp=new Date().toISOString();
+  S.notes.push({id,mgr,emp,text,author,timestamp,verified:false,verifiedNote:''});
+  textEl.value='';
+  await sAppend('manager_notes',[[id,mgr,emp,text,author,timestamp,'false','']]);
+  toast('Note added');
+  rTeam(mgr);
+}
+async function verifyNote(id){
+  const n=S.notes.find(x=>x.id===id);
+  if(!n)return;
+  n.verified=true;n.verifiedNote='Verified during processing';
+  await sAppend('manager_notes',[[id,n.mgr,n.emp,n.text,n.author,n.timestamp,'true',n.verifiedNote]]);
+  toast('Marked verified.');
+  rTeam(n.mgr);
+}
+async function unverifyNote(id){
+  const n=S.notes.find(x=>x.id===id);
+  if(!n)return;
+  n.verified=false;n.verifiedNote='';
+  await sAppend('manager_notes',[[id,n.mgr,n.emp,n.text,n.author,n.timestamp,'false','']]);
+  toast('Reopened.');
+  rTeam(n.mgr);
+}
 async function submitWorkbook(){
   if(guardClosed())return;
   const mgr=S.role;

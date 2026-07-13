@@ -466,6 +466,42 @@ function spiffFieldFor(mgr,empName,type){
   if(mgr==='steven') return isTGL?'ins':'svc';
   return isTGL?'chi':'chs';
 }
+function deptToCol(dept){
+  const d=(dept||'').toLowerCase();
+  if(d.includes('plumb')) return 'plb';
+  if(d.includes('commercial')) return 'com';
+  if(d.includes('ch')&&d.includes('install')) return 'chi';
+  if(d.includes('ch')) return 'chs';
+  if(d.includes('install')||d.includes('lead')) return 'ins';
+  return 'svc';
+}
+function payOutCarryForward(mgr,c){
+  // Actually add the confirmed amount into this month's payout — otherwise
+  // "Mark paid" would just dismiss the reminder without paying anyone.
+  const emp=S.emps[mgr].find(e=>e.name===c.emp);
+  if(!emp) return;
+  const col=deptToCol(c.dept);
+  emp[col]=(emp[col]||0)+c.amount;
+  if(!S.spiffDetail[mgr])S.spiffDetail[mgr]={};
+  if(!S.spiffDetail[mgr][c.emp])S.spiffDetail[mgr][c.emp]=[];
+  S.spiffDetail[mgr][c.emp].push({
+    date:'', job:c.ref, customer:c.emp, type:'Carry-forward payout',
+    item:`${c.type} — confirmed paid (carried from ${c.fromMonth})`,
+    spiff:c.amount, note:'Manually confirmed paid — not on this month\'s Master Pay File'
+  });
+}
+function reversePayoutCarryForward(mgr,c){
+  const emp=S.emps[mgr].find(e=>e.name===c.emp);
+  if(emp){
+    const col=deptToCol(c.dept);
+    emp[col]=Math.max(0,(emp[col]||0)-c.amount);
+  }
+  const detail=(S.spiffDetail[mgr]||{})[c.emp];
+  if(detail){
+    const idx=detail.findIndex(d=>d.type==='Carry-forward payout'&&d.job===c.ref);
+    if(idx>=0) detail.splice(idx,1);
+  }
+}
 function stevenBonus(){return S.revenue.filter(r=>r.se&&r.actual&&r.actual>=r.goal).length*350;}
 const MONTH_NAMES=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function monthIdx(label){
@@ -546,19 +582,22 @@ async function loadSheets(){
       }
     });
   }
-  // Replay carry-forward resolutions (mark paid/dead) the same way.
+  // Replay carry-forward resolutions (mark paid/dead) the same way — a "paid"
+  // disposition also needs to re-apply the payout, since S.emps/spiffDetail
+  // reset to the hardcoded baseline on every load.
   if(cfRes){
     const latestCf={};
     cfRes.forEach(r=>{
       const [month,mgr,id,emp,ref,type,amount,disposition,note]=r;
       if(month!==MONTH||!id)return;
-      latestCf[id]={disposition:disposition||'',note:note||''};
+      latestCf[id]={mgr,disposition:disposition||'',note:note||''};
     });
     Object.entries(latestCf).forEach(([id,c])=>{
       const cf=S.carryForward.find(x=>x.id===id);
       if(!cf)return;
       if(c.disposition==='paid'||c.disposition==='dead'){
         cf.resolved=true;cf.disposition=c.disposition;cf.note=c.note;
+        if(c.disposition==='paid') payOutCarryForward(c.mgr,cf);
       }else{
         cf.resolved=false;cf.disposition='';cf.note='';
       }
@@ -1292,14 +1331,16 @@ async function resolveCarryForward(mgr,id){
   if(!disp){toast('Please select paid or dead.');return;}
   if(disp==='dead'&&!note){toast('Please add a note explaining why.');return;}
   c.resolved=true; c.disposition=disp; c.note=note;
+  if(disp==='paid') payOutCarryForward(mgr,c);
   await sAppend('carry_forward_resolutions',[[MONTH,mgr,id,c.emp,c.ref,c.type,c.amount,disp,note,new Date().toISOString()]]);
-  toast(disp==='paid'?'Marked paid — will not carry forward again.':'Marked dead — will not carry forward again.');
+  toast(disp==='paid'?`$${c.amount} added to ${c.emp}'s total for ${MONTH}.`:'Marked dead — will not carry forward again.');
   rFlags(mgr);
 }
 
 async function undoCarryForward(mgr,id){
   const c=S.carryForward.find(x=>x.id===id);
   if(!c) return;
+  if(c.disposition==='paid') reversePayoutCarryForward(mgr,c);
   c.resolved=false; c.disposition=''; c.note='';
   await sAppend('carry_forward_resolutions',[[MONTH,mgr,id,c.emp,c.ref,c.type,c.amount,'','',new Date().toISOString()]]);
   toast('Reopened — will carry forward again next month.');

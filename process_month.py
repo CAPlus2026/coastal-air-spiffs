@@ -491,8 +491,18 @@ def main():
         })
 
     # ── 7) Rich Smith commission (3%) ──
-    rich_total_base = sum((r.get("EstimateSalesInstalled") or 0) for r in rich if r.get("SoldBy") == "Rich Smith")
+    rich_rows = [r for r in rich if r.get("SoldBy") == "Rich Smith"]
+    rich_total_base = sum((r.get("EstimateSalesInstalled") or 0) for r in rich_rows)
     rich_commission = round(rich_total_base * 0.03, 2)
+    rich_details = [
+        {
+            "job": r.get("InstallJobs") or "", "customer": r.get("LocationName") or "",
+            "item": r.get("EstimateName") or "", "soldOn": (r.get("SoldOn") or "")[:10],
+            "sale": r.get("EstimateSalesInstalled") or 0,
+            "commission": round((r.get("EstimateSalesInstalled") or 0) * 0.03, 2),
+        }
+        for r in rich_rows
+    ]
 
     # ── Output ──────────────────────────────────────────────────────
     steven_emps = [emps[n] for n in STEVEN_ROSTER if n in emps]
@@ -513,7 +523,9 @@ def main():
         "bonuses": [
             {"id": "rich", "name": "Rich Smith", "type": "Commercial Commission (3%)",
              "amount": rich_commission, "dept": "MB Service Commercial", "approved": False,
-             "note": f"3% of {rich_total_base:.2f} total EstimateSalesInstalled (Sold On basis)"},
+             "note": f"3% of {rich_total_base:.2f} total EstimateSalesInstalled (Sold On basis) — "
+                     f"recomputed fresh each month from Rich's Commission Report, does not carry forward",
+             "details": rich_details},
         ],
         "unresolvedCompleters": list(unresolved_completers),
     }

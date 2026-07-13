@@ -181,7 +181,7 @@ const S={
   ],
   bonuses:[
     {id:'jenny',name:'Jenny Miller',type:'CCS Supervisor Bonus',amount:0,dept:'Call Center',approved:false,note:'Pending — syncs from CCS Tracker sheet at page load'},
-    {id:"rich",name:"Rich Smith",type:"Commercial Commission (3%)",amount:406.44,dept:"MB Service Commercial",approved:false,note:"3% of 13547.96 total EstimateSalesInstalled (Sold On basis)"},
+    {id:"rich",name:"Rich Smith",type:"Commercial Commission (3%)",amount:406.44,dept:"MB Service Commercial",approved:false,note:"3% of 13547.96 total EstimateSalesInstalled (Sold On basis) — recomputed fresh each month from Rich's Commission Report, does not carry forward",details:[{job:"159162083",customer:"YMCA Georgetown",item:"High pressure switch",soldOn:"2026-06-09",sale:295,commission:8.85},{job:"159106589",customer:"Rambler - Wares to Wander",item:"Compressor Replacement Split System #2",soldOn:"2026-06-09",sale:5015,commission:150.45},{job:"159102210",customer:"Rambler - Wares to Wander",item:"Compressor Replacement Split System #1",soldOn:"2026-06-09",sale:5015,commission:150.45},{job:"157867804",customer:"Ralph Lauren",item:"RTU4 Leak Search, OAT Sensor, Refrigerant Recharge",soldOn:"2026-06-02",sale:2757.04,commission:82.71},{job:"158418984",customer:"Bridgewater Academy",item:"Bard Unit Serial#309J102717064-02 Add Refrigerant",soldOn:"2026-06-01",sale:465.92,commission:13.98}]},
   ],
   emps:{
     steven:[
@@ -806,16 +806,44 @@ async function saveRevenue(){
 function rBonuses(){
   const v=vw();
   v.innerHTML=`<div class="card"><div class="ctitle">Bonus approvals — ${MONTH}</div>${
-    S.bonuses.map((b,i)=>`<div class="ri">
-      <div class="ril"><span style="font-weight:500">${b.name}</span><span class="risub">${b.type} · ${b.dept}${b.note?` · ${b.note}`:''}</span></div>
-      <div style="display:flex;gap:10px;align-items:center">
-        <span style="font-size:1rem;font-weight:600;font-family:'DM Mono',monospace">${fp(b.amount)}</span>
-        <button class="btn bsm" onclick="toggleBonus(${i})" style="${b.approved?'color:#065f46;border-color:#6ee7b7':''}">
-          ${b.approved?'✓ Approved':'Approve'}
-        </button>
-      </div>
-    </div>`).join('')}
+    S.bonuses.map((b,i)=>{
+      const details=b.details||[];
+      return `<div class="ri" style="align-items:flex-start;flex-direction:column;gap:6px">
+        <div style="display:flex;justify-content:space-between;width:100%;align-items:center;gap:8px">
+          <div class="ril">
+            <span style="font-weight:500;${details.length?'cursor:pointer':''}" ${details.length?`onclick="toggleBonusDetail(${i})"`:''}>${b.name}${details.length?` <span style="font-size:.65rem;color:#999">▾ ${details.length} job${details.length!==1?'s':''}</span>`:''}</span>
+            <span class="risub">${b.type} · ${b.dept}${b.note?` · ${b.note}`:''}</span>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;white-space:nowrap">
+            <span style="font-size:1rem;font-weight:600;font-family:'DM Mono',monospace">${fp(b.amount)}</span>
+            <button class="btn bsm" onclick="toggleBonus(${i})" style="${b.approved?'color:#065f46;border-color:#6ee7b7':''}">
+              ${b.approved?'✓ Approved':'Approve'}
+            </button>
+          </div>
+        </div>
+        ${details.length?`<table id="bonus-detail-${i}" style="display:none;width:100%;border-collapse:collapse;font-size:.72rem">
+          <thead><tr>
+            <th style="text-align:left;color:#999;padding:3px 6px;font-weight:500">Job</th>
+            <th style="text-align:left;color:#999;padding:3px 6px;font-weight:500">Customer</th>
+            <th style="text-align:left;color:#999;padding:3px 6px;font-weight:500">Item</th>
+            <th style="text-align:right;color:#999;padding:3px 6px;font-weight:500">Sale</th>
+            <th style="text-align:right;color:#999;padding:3px 6px;font-weight:500">Commission</th>
+          </tr></thead>
+          <tbody>${details.map(d=>`<tr style="border-top:1px solid #F0EDE8">
+            <td style="padding:3px 6px;font-family:'DM Mono',monospace;color:#666">${d.job||'—'}</td>
+            <td style="padding:3px 6px">${d.customer}</td>
+            <td style="padding:3px 6px;color:#666">${d.item}</td>
+            <td style="padding:3px 6px;text-align:right;font-family:'DM Mono',monospace">${fp(d.sale)}</td>
+            <td style="padding:3px 6px;text-align:right;font-family:'DM Mono',monospace;font-weight:500">${fp(d.commission)}</td>
+          </tr>`).join('')}</tbody>
+        </table>`:''}
+      </div>`;
+    }).join('')}
   </div>`;
+}
+function toggleBonusDetail(i){
+  const el=document.getElementById(`bonus-detail-${i}`);
+  if(el) el.style.display = el.style.display==='none'?'':'none';
 }
 async function toggleBonus(i){
   S.bonuses[i].approved=!S.bonuses[i].approved;

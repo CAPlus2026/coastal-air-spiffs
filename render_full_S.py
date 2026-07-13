@@ -57,8 +57,14 @@ lines.append("    {dept:'MB Install-Commercial', goal:299381,actual:null,se:fals
 lines.append("  ],")
 lines.append("  bonuses:[")
 lines.append("    {id:'jenny',name:'Jenny Miller',type:'CCS Supervisor Bonus',amount:0,dept:'Call Center',approved:false,note:'Pending — syncs from CCS Tracker sheet at page load'},")
+def bonus_detail_line(d):
+    return (f"{{job:{js(d['job'])},customer:{js(d['customer'])},item:{js(d['item'])},"
+            f"soldOn:{js(d['soldOn'])},sale:{d['sale']:g},commission:{d['commission']:g}}}")
+
 for b in r["bonuses"]:
-    lines.append(f"    {{id:{js(b['id'])},name:{js(b['name'])},type:{js(b['type'])},amount:{b['amount']:g},dept:{js(b['dept'])},approved:false,note:{js(b['note'])}}},")
+    details = b.get("details") or []
+    details_js = "[" + ",".join(bonus_detail_line(d) for d in details) + "]"
+    lines.append(f"    {{id:{js(b['id'])},name:{js(b['name'])},type:{js(b['type'])},amount:{b['amount']:g},dept:{js(b['dept'])},approved:false,note:{js(b['note'])},details:{details_js}}},")
 lines.append("  ],")
 
 lines.append("  emps:{")

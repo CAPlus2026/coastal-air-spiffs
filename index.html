@@ -827,6 +827,13 @@ function buildRows(){
     addToEmp(l.tech, [0,0,0,l.spiff,0,0], `Commercial lead: ${l.customer} (Job ${l.job}) — ${fp(l.spiff)}`, '');
   });
 
+  // Carry-forward payouts — amount is already baked into the employee's base vals above
+  // (payOutCarryForward mutates S.emps directly), so this only adds a traceable note,
+  // not the dollar amount again — zero vals here is intentional, not a bug.
+  S.carryForward.filter(c=>c.resolved&&c.disposition==='paid').forEach(c=>{
+    addToEmp(c.emp, [0,0,0,0,0,0], `Carry-forward payout: ${c.type} (from ${c.fromMonth}) — ${fp(c.amount)}`, '');
+  });
+
   // Jay commission — roll into Jay's row
   if(S.jayJobs.length>0){
     let jayComm=0;

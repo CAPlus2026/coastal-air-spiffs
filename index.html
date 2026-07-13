@@ -460,6 +460,12 @@ function fp(n){return new Intl.NumberFormat('en-US',{style:'currency',currency:'
 function f$(n){if(!n&&n!==0)return'—';if(n===0)return'<span class="zero">—</span>';return fp(n);}
 function toast(msg,dur=3200){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),dur);}
 function empTot(e){return(e.svc||0)+(e.ins||0)+(e.plb||0)+(e.com||0)+(e.chs||0)+(e.chi||0);}
+function spiffFieldFor(mgr,empName,type){
+  const isTGL = !!(type&&type.includes('TGL'));
+  if(PLUMBERS.includes(empName)) return 'plb';
+  if(mgr==='steven') return isTGL?'ins':'svc';
+  return isTGL?'chi':'chs';
+}
 function stevenBonus(){return S.revenue.filter(r=>r.se&&r.actual&&r.actual>=r.goal).length*350;}
 const MONTH_NAMES=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function monthIdx(label){
@@ -1152,12 +1158,12 @@ function flagSpiffLine(mgr,empName,idx){
   if(!detail||!detail[idx])return;
   detail[idx].flagged=true;
   detail[idx].flagNote=reason;
-  // Subtract from employee total
+  // Subtract from employee total — route to the correct field based on
+  // the actual line type/department, not just which manager owns the emp
   const emp=S.emps[mgr].find(e=>e.name===empName);
   if(emp){
-    const col=detail[idx].type&&detail[idx].type.includes('TGL')?'chi':'chs';
-    if(mgr==='steven') emp.svc=Math.max(0,(emp.svc||0)-detail[idx].spiff);
-    else emp.chs=Math.max(0,(emp.chs||0)-detail[idx].spiff);
+    const col=spiffFieldFor(mgr,empName,detail[idx].type);
+    emp[col]=Math.max(0,(emp[col]||0)-detail[idx].spiff);
   }
   toast('Line flagged — excluded from totals. Noted for payroll reversal.');
   rTeam(mgr);
@@ -1169,11 +1175,11 @@ function unflagSpiffLine(mgr,empName,idx){
   const wasSpiff=detail[idx].spiff;
   detail[idx].flagged=false;
   detail[idx].flagNote='';
-  // Add back to employee total
+  // Add back to employee total — same routing logic as flagSpiffLine
   const emp=S.emps[mgr].find(e=>e.name===empName);
   if(emp){
-    if(mgr==='steven') emp.svc=(emp.svc||0)+wasSpiff;
-    else emp.chs=(emp.chs||0)+wasSpiff;
+    const col=spiffFieldFor(mgr,empName,detail[idx].type);
+    emp[col]=(emp[col]||0)+wasSpiff;
   }
   toast('Flag removed — spiff restored to total.');
   rTeam(mgr);

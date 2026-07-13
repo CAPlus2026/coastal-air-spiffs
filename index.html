@@ -698,8 +698,39 @@ function rOverview(){
   <div class="card">
     <div class="ctitle">Data ingestion — ${MONTH}</div>
     ${S.ingestion.map(i=>`<div class="ri"><span>${i.name}${i.note?` <span style="font-size:.7rem;color:#999">— ${i.note}</span>`:''}</span><span class="badge ${i.ok?'bok':'bwarn'}">${i.ok?'Auto-pulled':'Pending'}</span></div>`).join('')}
+  </div>
+  <div class="card">
+    <div class="ctitle">Manual spiff additions (Owner)</div>
+    <div style="font-size:.75rem;color:#999;margin-bottom:.5rem">Add a one-off spiff for any employee across both teams.</div>
+    <div class="mg">
+      <div><label>Employee</label><select id="om-emp">${[...S.emps.steven,...S.emps.caleb].map(e=>`<option>${e.name}</option>`).join('')}</select></div>
+      <div><label>Reason</label><input type="text" id="om-rsn" placeholder="e.g. Lead Stage 1 — Gaines Tracy"></div>
+      <div><label>Amount ($)</label><input type="number" id="om-amt" min="0" step="0.01" placeholder="0.00"></div>
+      <div><label>Dept pays</label><select id="om-dept"><option>MB Residential Service</option><option>MB Install Residential</option><option>MB Plumbing</option><option>MB Service Commercial</option><option>CH Service</option><option>CH Install</option></select></div>
+      <div><label>&nbsp;</label><button class="btn btnp" onclick="addManualOwner()">Add</button></div>
+    </div>
+    ${(()=>{const all=[...S.manuals.steven.map((a,i)=>({...a,mgr:'steven',i})),...S.manuals.caleb.map((a,i)=>({...a,mgr:'caleb',i}))];
+      return all.length?`<div style="margin-top:.75rem">${all.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;font-size:.78rem;padding:5px 0;border-top:1px solid #F0EDE8"><span>${a.name} — ${a.reason} <span style="color:#999">(${a.dept} · ${a.mgr==='steven'?'MB':'CH'})</span></span><span style="display:flex;gap:8px;align-items:center"><strong style="font-family:'DM Mono',monospace">${fp(a.amount)}</strong><button class="btn bsm" onclick="removeManualOwner('${a.mgr}',${a.i})">Remove</button></span></div>`).join('')}</div>`:'';})()}
   </div>`;
 }
+function mgrForEmployee(name){
+  if(S.emps.steven.some(e=>e.name===name)) return 'steven';
+  if(S.emps.caleb.some(e=>e.name===name)) return 'caleb';
+  return null;
+}
+async function addManualOwner(){
+  const name=document.getElementById('om-emp').value;
+  const reason=document.getElementById('om-rsn').value.trim();
+  const amount=parseFloat(document.getElementById('om-amt').value)||0;
+  const dept=document.getElementById('om-dept').value;
+  if(!reason||amount<=0){toast('Please enter a reason and amount.');return;}
+  const mgr=mgrForEmployee(name);
+  if(!mgr){toast('Could not determine this employee\'s team.');return;}
+  S.manuals[mgr].push({name,reason,amount,dept});
+  await sAppend('manual_adds',[[MONTH,mgr,name,reason,amount,dept,S.role,new Date().toISOString(),'pending']]);
+  toast('Manual spiff added');rOverview();
+}
+function removeManualOwner(mgr,i){S.manuals[mgr].splice(i,1);rOverview();}
 
 // ── MANAGER REVIEW ────────────────────────────────────────
 function rReview(){

@@ -168,6 +168,7 @@ async function sPut(range, values){
 // ── State ───────────────────────────────────────────────
 const S={
   role:'billy',
+  closedOut:{closed:false,timestamp:null,by:null},
   submissions:{steven:'not_started',caleb:'not_started'},
   pushback:{steven:null,caleb:null},
   revenue:[
@@ -527,7 +528,7 @@ function toggleDetailRow(cell){
 
 // ── Load from Sheets ──────────────────────────────────────
 async function loadSheets(){
-  const [subs,rev,flags,mans,corrections,cfRes,jayJobLog,commLeadLog]=await Promise.all([
+  const [subs,rev,flags,mans,corrections,cfRes,jayJobLog,commLeadLog,monthStatusLog]=await Promise.all([
     sGet('submissions!A2:F50'),
     sGet('revenue_actuals!A2:D50'),
     sGet('flags!A2:N500'),
@@ -536,6 +537,7 @@ async function loadSheets(){
     sGet('carry_forward_resolutions!A2:J500'),
     sGet('jay_jobs!A2:H500'),
     sGet('commlead_updates!A2:I500'),
+    sGet('month_status!A2:D50'),
   ]);
   if(subs)subs.forEach(r=>{
     if(r[0]===MONTH&&r[1]){const m=r[1].toLowerCase();if(m in S.submissions){S.submissions[m]=r[2]||'not_started';S.pushback[m]=(r[4]==='pushed_back'&&r[5])?r[5]:null;}}
@@ -638,6 +640,15 @@ async function loadSheets(){
       lead.status=c.status;lead.spiff=c.spiff;lead.payMonth=c.payMonth;
     });
   }
+  // Replay month close-out status — last row for this MONTH wins.
+  if(monthStatusLog){
+    const rowsThisMonth=monthStatusLog.filter(r=>r[0]===MONTH);
+    if(rowsThisMonth.length){
+      const last=rowsThisMonth[rowsThisMonth.length-1];
+      const [month,action,by,timestamp]=last;
+      S.closedOut={closed:action==='closed',timestamp:timestamp||null,by:by||null};
+    }
+  }
 }
 
 // ── Nav ──────────────────────────────────────────────────
@@ -675,6 +686,21 @@ function rOverview(){
   const open=allF.filter(f=>!f.resolved).length;
   const subs=Object.values(S.submissions).filter(s=>s==='submitted'||s==='approved').length;
   v.innerHTML=`
+  <div class="card" style="border-left:3px solid ${isClosed()?'#065f46':'#f59e0b'}">
+    <div class="ctitle">Month status</div>
+    ${isClosed()?`
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div><span class="badge bok">✓ Closed out</span> <span style="font-size:.75rem;color:#999;margin-left:6px">by ${S.closedOut.by||'?'}${S.closedOut.timestamp?' on '+new Date(S.closedOut.timestamp).toLocaleString():''}</span></div>
+        <button class="btn btnd bsm" onclick="reopenMonth()">Reopen month</button>
+      </div>
+      <div style="font-size:.75rem;color:#999;margin-top:.5rem">Manual adds, flag/carry-forward resolution, bonus approval, and revenue entry are locked. Ready to send to accounting.</div>
+    `:`
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div style="font-size:.82rem;color:#999">Once everything looks right, close out the month to lock it and signal it's ready for accounting.</div>
+        <button class="btn btnp bsm" onclick="closeOutMonth()">Close out month</button>
+      </div>
+    `}
+  </div>
   <div class="sg">
     <div class="sc"><div class="sl">Est. total spiffs</div><div class="sv">${fp(grandTotal())}</div></div>
     <div class="sc"><div class="sl">Open flags</div><div class="sv">${open}</div></div>
@@ -719,6 +745,7 @@ function mgrForEmployee(name){
   return null;
 }
 async function addManualOwner(){
+  if(guardClosed())return;
   const name=document.getElementById('om-emp').value;
   const reason=document.getElementById('om-rsn').value.trim();
   const amount=parseFloat(document.getElementById('om-amt').value)||0;
@@ -730,7 +757,7 @@ async function addManualOwner(){
   await sAppend('manual_adds',[[MONTH,mgr,name,reason,amount,dept,S.role,new Date().toISOString(),'pending']]);
   toast('Manual spiff added');rOverview();
 }
-function removeManualOwner(mgr,i){S.manuals[mgr].splice(i,1);rOverview();}
+function removeManualOwner(mgr,i){if(guardClosed())return;S.manuals[mgr].splice(i,1);rOverview();}
 
 // ── MANAGER REVIEW ────────────────────────────────────────
 function rReview(){
@@ -785,6 +812,7 @@ function rReview(){
   }).join('');
 }
 async function pushBack(mgr){
+  if(guardClosed())return;
   const note=document.getElementById('pbn-'+mgr).value.trim();
   if(!note){toast('Please add a note.');return;}
   S.submissions[mgr]='pushed_back';S.pushback[mgr]=note;
@@ -792,6 +820,7 @@ async function pushBack(mgr){
   toast('Pushed back');rReview();
 }
 async function approveSubmission(mgr){
+  if(guardClosed())return;
   S.submissions[mgr]='approved';S.pushback[mgr]=null;
   await sAppend('submissions',[[MONTH,mgr,'approved',new Date().toISOString(),'approved','']]);
   toast(`${mgr==='steven'?'Steven':'Caleb'} approved`);rReview();rOverview();
@@ -828,6 +857,7 @@ function rRevenue(){
   </div>`;
 }
 async function saveRevenue(){
+  if(guardClosed())return;
   const rows=S.revenue.map(r=>[MONTH,r.dept,r.goal,r.actual||'']);
   await sPut(`revenue_actuals!A2:D${rows.length+1}`,rows);
   toast('Actuals saved');
@@ -877,6 +907,7 @@ function toggleBonusDetail(i){
   if(el) el.style.display = el.style.display==='none'?'':'none';
 }
 async function toggleBonus(i){
+  if(guardClosed())return;
   S.bonuses[i].approved=!S.bonuses[i].approved;
   await sAppend('flags',[[MONTH,'billy','bonus-'+S.bonuses[i].id,'','','','','','',S.bonuses[i].approved?'approved':'','',String(S.bonuses[i].approved),new Date().toISOString()]]);
   rBonuses();
@@ -1122,6 +1153,7 @@ function rTeam(mgr){
   if(mgr==='caleb') renderJayJobs();
 }
 async function addManual(mgr){
+  if(guardClosed())return;
   const name=document.getElementById('m-emp').value;
   const reason=document.getElementById('m-rsn').value.trim();
   const amount=parseFloat(document.getElementById('m-amt').value)||0;
@@ -1131,8 +1163,9 @@ async function addManual(mgr){
   await sAppend('manual_adds',[[MONTH,mgr,name,reason,amount,dept,S.role,new Date().toISOString(),'pending']]);
   toast('Manual spiff added');rTeam(mgr);
 }
-function removeManual(mgr,i){S.manuals[mgr].splice(i,1);rTeam(mgr);}
+function removeManual(mgr,i){if(guardClosed())return;S.manuals[mgr].splice(i,1);rTeam(mgr);}
 async function submitWorkbook(){
+  if(guardClosed())return;
   const mgr=S.role;
   if(S.flags[mgr].filter(f=>!f.resolved).length>0)return;
   S.submissions[mgr]='submitted';
@@ -1222,6 +1255,7 @@ function rCommLeads(){
 }
 
 async function updateCommLead(id, status){
+  if(guardClosed())return;
   const lead=S.commLeads.find(l=>l.id===id);
   if(!lead) return;
   lead.prevStatus = lead.status; // save for undo
@@ -1236,6 +1270,7 @@ async function updateCommLead(id, status){
 }
 
 async function undoCommLead(id){
+  if(guardClosed())return;
   const lead=S.commLeads.find(l=>l.id===id);
   if(!lead||!lead.prevStatus) return;
   lead.status=lead.prevStatus;
@@ -1247,6 +1282,7 @@ async function undoCommLead(id){
 }
 
 function addCommLead(){
+  if(guardClosed())return;
   const tech=document.getElementById('cl-tech').value;
   const cust=document.getElementById('cl-cust').value.trim();
   const job=document.getElementById('cl-job').value.trim();
@@ -1355,6 +1391,7 @@ function renderJayJobs(){
 }
 
 async function flagSpiffLine(mgr,empName,idx){
+  if(guardClosed())return;
   const reasonId=`flag-reason-${mgr}-${empName.replace(/\s/g,'_')}-${idx}`;
   const reasonEl=document.getElementById(reasonId);
   const reason=reasonEl?reasonEl.value.trim():'';
@@ -1378,6 +1415,7 @@ async function flagSpiffLine(mgr,empName,idx){
 }
 
 async function unflagSpiffLine(mgr,empName,idx){
+  if(guardClosed())return;
   const detail=(S.spiffDetail[mgr]||{})[empName];
   if(!detail||!detail[idx])return;
   const wasSpiff=detail[idx].spiff;
@@ -1395,6 +1433,7 @@ async function unflagSpiffLine(mgr,empName,idx){
 }
 
 async function addJayJob(){
+  if(guardClosed())return;
   const job=document.getElementById('jay-job').value.trim();
   const sub=parseFloat(document.getElementById('jay-sub').value)||0;
   const acc=parseFloat(document.getElementById('jay-acc').value)||0;
@@ -1411,6 +1450,7 @@ async function addJayJob(){
 }
 
 async function removeJayJob(i){
+  if(guardClosed())return;
   const j=S.jayJobs[i];
   S.jayJobs.splice(i,1);
   renderJayJobs();
@@ -1424,6 +1464,7 @@ function renderAfterUndo(mgr){
 }
 
 async function undoFlag(mgr,id){
+  if(guardClosed())return;
   const f=S.flags[mgr].find(x=>x.id===id);
   if(!f) return;
   f.resolved=false; f.disp=''; f.note='';
@@ -1437,6 +1478,7 @@ async function undoFlag(mgr,id){
 }
 
 async function resolveFlag(mgr,id){
+  if(guardClosed())return;
   const f=S.flags[mgr].find(x=>x.id===id);
   if(!f||!f.disp){toast('Please select an action first.');return;}
   if(f.disp==='Not paid'&&!f.note.trim()){toast("Please add a note explaining why.");return;}
@@ -1451,6 +1493,7 @@ async function resolveFlag(mgr,id){
 }
 
 async function resolveCarryForward(mgr,id){
+  if(guardClosed())return;
   const c=S.carryForward.find(x=>x.id===id);
   if(!c) return;
   const dispEl=document.getElementById(`cf-disp-${id}`);
@@ -1467,6 +1510,7 @@ async function resolveCarryForward(mgr,id){
 }
 
 async function undoCarryForward(mgr,id){
+  if(guardClosed())return;
   const c=S.carryForward.find(x=>x.id===id);
   if(!c) return;
   if(c.disposition==='paid') reversePayoutCarryForward(mgr,c);
@@ -1479,6 +1523,27 @@ async function undoCarryForward(mgr,id){
 function rerenderCurrentView(){
   const activeBtn=document.querySelector('.nb.on');
   if(activeBtn&&RENDERS[activeBtn.dataset.v])RENDERS[activeBtn.dataset.v]();
+}
+
+// ── Month close-out ──────────────────────────────────────
+function isClosed(){return !!(S.closedOut&&S.closedOut.closed);}
+function guardClosed(){
+  if(isClosed()){toast(`${MONTH} is closed out — reopen it first to make changes.`);return true;}
+  return false;
+}
+async function closeOutMonth(){
+  if(!confirm(`Close out ${MONTH}? This locks all manual adds, flag/carry-forward resolution, bonus approval, and revenue entry until reopened.`))return;
+  S.closedOut={closed:true,timestamp:new Date().toISOString(),by:S.role};
+  await sAppend('month_status',[[MONTH,'closed',S.role,new Date().toISOString()]]);
+  toast('Month closed out — locked for editing.');
+  rerenderCurrentView();
+}
+async function reopenMonth(){
+  if(!confirm(`Reopen ${MONTH} for editing?`))return;
+  S.closedOut={closed:false,timestamp:new Date().toISOString(),by:S.role};
+  await sAppend('month_status',[[MONTH,'reopened',S.role,new Date().toISOString()]]);
+  toast('Month reopened for editing.');
+  rerenderCurrentView();
 }
 
 // ── BOOT ────────────────────────────────────────────────

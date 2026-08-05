@@ -1,0 +1,171 @@
+code,description,stored_spiff,live_bonus,status,active
+AC-13,13 Whole Home Air Filtration,75.0,45.0,drifted,True
+AC-34,Moen Flo Water Protection,100.0,50.0,drifted,True
+AC-34-A,Moen Smart Water Sensor Qty1,10.0,50.0,drifted,True
+AC-36,Slow Close Toilet Seat,25.0,25.0,match,True
+AC-37,Laundry Pro,100.0,50.0,drifted,True
+AC-45,Smart Hot Water Circulator,75.0,50.0,drifted,True
+AC-46,Washing Machine Hose Upgrade,25.0,50.0,drifted,True
+AC-47,Washing Machine Box Upgrade,75.0,50.0,drifted,True
+AC-48,Carbon Monoxide Detector,25.0,25.0,match,True
+AC-49,Water Shut-off Upgrade (kitchen/lavatory),10.0,50.0,drifted,True
+AC-50-A,Water Booster System (Pex),175.0,50.0,drifted,True
+AC-50-B,Water Booster System (Copper),200.0,50.0,drifted,True
+AC-51,Halo Whole Home Filtration/Conditioner,300.0,50.0,drifted,True
+AC-52,Halo RO System,100.0,50.0,drifted,True
+AC-53,Water Quality Bundle,400.0,50.0,drifted,True
+AC-54,Ion6 Halo,75.0,50.0,drifted,True
+AC-COM-ICE,Ice Machine Sanitizer/Purifier,100.0,100.0,match,True
+AC-COM-ICE-LTD1,BiPolar Ice BPI200-110 (limited quantity while supplies last),50.0,50.0,match,True
+AC-COM-ICE-LTD2,RGF IMS-B-GA (limited quantity while supplies last),100.0,100.0,match,True
+AC-COM-ION,COMMERCIAL IONIZING AIR PURIFIER,200.0,200.0,match,True
+AC-FSWH,WATER HEATER LEAK PROTECTION - FLOOD STOP,50.0,50.0,match,True
+AC-ION,Orion Ionizing Purifier - Residential,100.0,0.0,LIVE=0 (would zero out real spiff),True
+AC-MDC,HEAVY DUTY DOOR CLOSER,50.0,50.0,match,True
+ACC-16,16 DustFree Lamp Change,5.0,5.0,match,True
+ACC-17,17 DustFree Core,15.0,15.0,match,True
+ACC-18,18 BluQR Bulb Replacement,10.0,5.0,drifted,True
+ACC-192,192 AprilAire Merv 13 Filter,5.0,5.0,match,True
+ACC-35,Clean Effects Installation (new or replacement),200.0,200.0,match,True
+ACC-36,Powered Anode Rod,25.0,0.0,LIVE=0 (would zero out real spiff),True
+ACI-13,13 Whole Home Air Filtration,100.0,45.0,drifted,True
+ACI-48,Carbon Monoxide Detector,25.0,25.0,match,True
+BM-NEW-1,Basic Membership - 1 System,10.0,10.0,match,True
+BM-NEW-2,Basic Membership - 2 Systems,15.0,15.0,match,True
+BM-NEW-3,Basic Membership - 3 Systems,20.0,20.0,match,True
+BM-NEW-4,Basic Membership - 4 Systems,25.0,25.0,match,True
+BM-NEW-5,Basic Membership - 5 Systems,30.0,30.0,match,True
+BM-NEW-6,Basic Membership - 6 Systems,35.0,35.0,match,True
+BM-RENEWAL-1,Basic Membership Renewal - 1 System,5.0,5.0,match,True
+BM-RENEWAL-2,Basic Membership Renewal - 2 Systems,10.0,10.0,match,True
+BM-RENEWAL-3,Basic Membership Renewal - 3 Systems,15.0,15.0,match,True
+BM-RENEWAL-4,Basic Membership Renewal - 4 Systems,20.0,20.0,match,True
+BM-RENEWAL-5,Basic Membership Renewal - 5 Systems,25.0,25.0,match,True
+BM-RENEWAL-6,Basic Membership Renewal - 6 Systems,30.0,30.0,match,True
+CAC1,3 PHASE SURGE PROTECTOR,50.0,50.0,match,True
+CAC2,3 PHASE MONITOR (ICM-450),50.0,50.0,match,True
+CAC3,1 PHASE SURGE PROTECTOR,50.0,50.0,match,True
+CAC4,REACH IN SURGE PROTECTOR,20.0,20.0,match,True
+CAC5,1 PHASE MONITOR (ICM-492),50.0,50.0,match,True
+CHAC-1,Indoor Unit Surge Protection,50.0,50.0,match,True
+CHAC-10,Ultra Violet Lamp,50.0,50.0,match,True
+CHAC-101,Clean and Clear Bundle,100.0,50.0,drifted,True
+CHAC-141,141 Dehumidifier 80-1800,100.0,100.0,match,True
+CHAC-142,142 Dehumidifier 100-2300,150.0,150.0,match,True
+CHAC-143,143 Dehumidifier 130-3000,200.0,200.0,match,True
+CHAC-2,Outdoor Unit Surge Protection,75.0,75.0,match,True
+CHAC-22,Surge Protection Bundle,100.0,100.0,match,True
+CHAC-4,04 Ecobee Lite Pro,50.0,50.0,match,True
+CHAC-5,05 Ecobee Premium,75.0,75.0,match,True
+CHAC-6,06 Drain Overflow Protection Upgrade,50.0,50.0,match,True
+CHAC-61,Drain Clog Prevention Kit (drain guard),25.0,50.0,drifted,True
+CHAC-610,Refill Kit - Drain Guard,5.0,50.0,drifted,True
+CHAC-7,07 Compressor Protection Kit,50.0,50.0,match,True
+CHAC-91,Air Scrubber,300.0,200.0,drifted,True
+CHAC-91B,"Air Scrubber - ID5,000",300.0,200.0,drifted,True
+CHAC-91C,"Air Scrubber - ID10,000",300.0,200.0,drifted,True
+CHAC-91D,"Air Scrubber - ID20,000",300.0,200.0,drifted,True
+CHAC-92,Minisplit Air Scrubber,100.0,200.0,drifted,True
+CHAC-93,Pure & Clean,100.0,200.0,drifted,True
+CHAC-93B,Pure & Clean (non-ozone),75.0,200.0,drifted,True
+CHAC-95,Duct Cleaning,100.0,200.0,drifted,True
+CHAC-96,Duct Clean Seal,300.0,200.0,drifted,True
+CHAC-97,AeroSeal Only,200.0,200.0,match,True
+PLUMB-TANK-1,VIP Plumbing Tank 1,15.0,25.0,drifted,True
+PLUMB-TANK-2,VIP Plumbing Tank 2,30.0,30.0,match,True
+PLUMB-TANK-2-RENEW,VIP Plumbing Tank 2 Renewal,10.0,10.0,match,True
+PLUMB-TANKLESS-1,VIP Plumbing Tankless Membership,25.0,25.0,match,True
+PLUMB-TANKLESS-1-RENEW,VIP Plumbing Tankless 1 Renewal,5.0,5.0,match,True
+PLUMB-TANKLESS-2,VIP Plumbing Tankless 2,30.0,30.0,match,True
+PLUMB-TANKLESS-2-RENEW,VIP Plumbig Tankless 2 Renewal,10.0,10.0,match,True
+PM-NEW-1,Premium Membership - 1 System,25.0,25.0,match,True
+PM-NEW-2,Premium Membership - 2 Systems,30.0,30.0,match,True
+PM-NEW-3,Premium Membership - 3 Systems,35.0,35.0,match,True
+PM-NEW-4,Premium Membership - 4 Systems,40.0,40.0,match,True
+PM-NEW-5,Premium Membership - 5 Systems,45.0,45.0,match,True
+PM-NEW-6,Premium Membership - 6 Systems,50.0,50.0,match,True
+PM-RENEWAL-1,Premium Membership Renewal - 1 System,5.0,5.0,match,True
+PM-RENEWAL-2,Premium Membership Renewal - 2 Systems,10.0,10.0,match,True
+PM-RENEWAL-4,Premium Membership Renewal - 4 Systems,20.0,20.0,match,True
+PM-RENEWAL-5,Premium Membership Renewal - 5 Systems,25.0,25.0,match,True
+PM-RENEWAL-6,Premium Membership Renewal - 6 Systems,30.0,30.0,match,True
+PTAC1,"PTAC 265V 12,000btu",50.0,0.0,LIVE=0 (would zero out real spiff),True
+PTAC2,"PTAC 230V 12,000btu Heat Pump",50.0,0.0,LIVE=0 (would zero out real spiff),True
+SM-NEW-1,Standard Membership - 1 System,20.0,20.0,match,True
+SM-NEW-2,Standard Membership - 2 Systems,25.0,25.0,match,True
+SM-NEW-3,Standard Membership - 3 Systems,30.0,30.0,match,True
+SM-NEW-4,Standard Membership - 4 Systems,35.0,35.0,match,True
+SM-NEW-5,Standard Membership - 5 Systems,40.0,40.0,match,True
+SM-NEW-6,Standard Membership - 6 Systems,45.0,45.0,match,True
+SM-NEW-CUSTOM,Standard Membership,55.0,55.0,match,True
+SM-RENEW-CUSTOM,Standard Membership Renewal,40.0,0.0,LIVE=0 (would zero out real spiff),True
+SM-RENEWAL-1,Standard Membership Renewal - 1 System,5.0,5.0,match,True
+SM-RENEWAL-2,Standard Membership Renewal - 2 Systems,10.0,10.0,match,True
+SM-RENEWAL-3,Standard Membership Renewal - 3 Systems,15.0,15.0,match,True
+SM-RENEWAL-4,Standard Membership Reneawl - 4 Systems,20.0,20.0,match,True
+SM-RENEWAL-5,Standard Membership Renewal - 5 Systems,25.0,25.0,match,True
+SM-RENEWAL-6,Standard Membership Renewal - 6 Systems,30.0,30.0,match,True
+TSF-120(PROMO),PROMOTION - Install Chrome Shower Head (Speakman S-2252-BN-E2 - CA+ Limited Warehouse Stock),20.0,0.0,LIVE=0 (would zero out real spiff),True
+VIP-DEHUM-1-NEW,VIP DEHUM 1,5.0,5.0,match,True
+VIP-DEHUM-2-NEW,VIP DEHUM 2,10.0,10.0,match,True
+VIP-DEHUM-3-NEW,VIP DEHUM 3,15.0,15.0,match,True
+WH-HP-EL-50G,Heat Pump Water Heater – 50 Gallon,200.0,0.0,LIVE=0 (would zero out real spiff),True
+WH-HP-EL-80G,Heat Pump Water Heater – 80 Gallon,200.0,0.0,LIVE=0 (would zero out real spiff),True
+WH-TK-EL-10G,Electric Tank Water Heater – 10 Gallon,100.0,0.0,LIVE=0 (would zero out real spiff),True
+WH-TK-EL-20G,Electric Tank Water Heater – 20 Gallon,100.0,0.0,LIVE=0 (would zero out real spiff),True
+WH-TK-EL-30G,Electric Tank Water Heater – 30 Gallon,100.0,0.0,LIVE=0 (would zero out real spiff),True
+WH-TK-EL-40G,Electric Tank Water Heater – 40 Gallon,100.0,0.0,LIVE=0 (would zero out real spiff),True
+WH-TK-EL-50G,Electric Tank Water Heater – 50 Gallon,100.0,0.0,LIVE=0 (would zero out real spiff),True
+WH-TK-EL-LB-40G,Electric Lowboy Tank Water Heater – 40 Gallon,100.0,0.0,LIVE=0 (would zero out real spiff),True
+WH-TK-EL-LB-50G,Electric Lowboy Tank Water Heater – 50 Gallon,100.0,0.0,LIVE=0 (would zero out real spiff),True
+WH-TK-ELOD-55G,Essency 55-Gallon On-Demand Electric Tank Water Heater,200.0,0.0,LIVE=0 (would zero out real spiff),True
+WH-TK-NG-ATM-30G,Gas Tank Water Heater – Atmospheric – 30 Gallon,100.0,0.0,LIVE=0 (would zero out real spiff),True
+WH-TK-NG-ATM-40G,Gas Tank Water Heater – Atmospheric – 40 Gallon,100.0,0.0,LIVE=0 (would zero out real spiff),True
+WH-TK-NG-ATM-50G,Gas Tank Water Heater – Atmospheric – 50 Gallon,100.0,0.0,LIVE=0 (would zero out real spiff),True
+WH-TK-NG-DV-30G,Gas Tank Water Heater – Direct Vent – 30 Gallon,100.0,0.0,LIVE=0 (would zero out real spiff),True
+WH-TK-NG-DV-40G,Gas Tank Water Heater – Direct Vent – 40 Gallon,100.0,0.0,LIVE=0 (would zero out real spiff),True
+WH-TK-NG-DV-50G,Gas Tank Water Heater – Direct Vent – 50 Gallon,100.0,0.0,LIVE=0 (would zero out real spiff),True
+WH-TL-NG-CD-199K,Tankless Water Heater – Condensing – 199k BTU,100.0,0.0,LIVE=0 (would zero out real spiff),True
+WH-TL-NG-NC-199K,Tankless Water Heater – Non-Condensing – 199k BTU,100.0,0.0,LIVE=0 (would zero out real spiff),True
+WHE-100,30 Gal Electric Water Heater (Low Boy),100.0,50.0,drifted,True
+WHE-1024,50 Gal Electric Water Heater (Low Boy),100.0,100.0,match,True
+WHE-104,40 Gal Electric Water Heater (Low Boy),100.0,100.0,match,True
+WHE-110,40 Gal Electric Water Heater,100.0,100.0,match,True
+WHE-1120,50 Gal Electric Water Heater Hybrid,200.0,200.0,match,True
+WHE-120,50 Gal Electric Water Heater,100.0,100.0,match,True
+WHE-125,80 Gal Electric Water Heater,100.0,100.0,match,True
+WHE-128,80 Gal Electric Water Heater Hybrid,200.0,200.0,match,True
+WHIND-100,30 Gal. Indirect Water Heater Storage Tank,100.0,0.0,LIVE=0 (would zero out real spiff),True
+WHIND-110,45 Gal. Indirect Water Heater Storage Tank,100.0,0.0,LIVE=0 (would zero out real spiff),True
+WHNG-100,40 Gal Natural Gas Water Heater (Standard),100.0,100.0,match,True
+WHNG-120,75 Gal Natural Gas Water Heater,100.0,100.0,match,True
+WHNG-130,50 Gal Natural Gas Water Heater (Standard),100.0,100.0,match,True
+WHNG-140,50 Gal Natural Gas Water Heater (High Recovery),100.0,100.0,match,True
+WHNG-145,40 Gal Direct Vent Natural Gas Water Heater,100.0,100.0,match,True
+WHNG-150,40 Gal Power Vent Natural Gas Water Heater,100.0,100.0,match,True
+WHNG-155,50 Gal Direct Vent Natural Gas Water Heater,100.0,100.0,match,True
+WHNG-160,50 Gal Power Vent Natural Gas Water Heater,100.0,100.0,match,True
+WHNG-165,75 Gal Power Vent Natural Gas Water Heater,100.0,100.0,match,True
+WHNG-170,30 Gal Natural Gas Water Heater,100.0,100.0,match,True
+WHNG-180,40 Gal Natural Gas Water Heater Low Boy,100.0,100.0,match,True
+WHNG-190,50 Gal Natural Gas Water Heater Lowboy,100.0,100.0,match,True
+WHP-15-B,Wall Hung Heat Pump – 1.5 Ton – Better (Trane 14 SEER2),0.01,0.0,LIVE=0 (would zero out real spiff),True
+WHP-15-H,Wall Hung Heat Pump – 1.5 Ton – Best (Trane 15 SEER2),0.02,0.0,LIVE=0 (would zero out real spiff),True
+WHP-15-T,Wall Hung Heat Pump – 1.5 Ton – Tempstar Compact (14 SEER2),0.03,0.0,LIVE=0 (would zero out real spiff),True
+WHP-20-B,Wall Hung Heat Pump – 2 Ton – Better (Trane 14 SEER2),0.05,0.0,LIVE=0 (would zero out real spiff),True
+WHP-20-G,Wall Hung Heat Pump – 2 Ton – Good (RunTru 14 SEER2),0.04,0.0,LIVE=0 (would zero out real spiff),True
+WHP-20-H,Wall Hung Heat Pump – 2 Ton – Best (Trane 15 SEER2),0.06,0.0,LIVE=0 (would zero out real spiff),True
+WHP-20-T,Wall Hung Heat Pump – 2 Ton – Tempstar Compact (14 SEER2),0.07,0.0,LIVE=0 (would zero out real spiff),True
+WHP-25-B,Wall Hung Heat Pump – 2.5 Ton – Better (Trane 14 SEER2),0.09,0.0,LIVE=0 (would zero out real spiff),True
+WHP-25-G,Wall Hung Heat Pump – 2.5 Ton – Good (RunTru 14 SEER2),0.08,0.0,LIVE=0 (would zero out real spiff),True
+WHP-25-H,Wall Hung Heat Pump – 2.5 Ton – Best (Trane 15 SEER2),0.1,0.0,LIVE=0 (would zero out real spiff),True
+WHP-25-T,Wall Hung Heat Pump – 2.5 Ton – Tempstar Compact (14 SEER2),0.11,0.0,LIVE=0 (would zero out real spiff),True
+WHP-30-B,Wall Hung Heat Pump – 3 Ton – Better (Trane 14 SEER2),0.13,0.0,LIVE=0 (would zero out real spiff),True
+WHP-30-G,Wall Hung Heat Pump – 3 Ton – Good (RunTru 14 SEER2),0.12,0.0,LIVE=0 (would zero out real spiff),True
+WHP-30-H,Wall Hung Heat Pump – 3 Ton – Best (Trane 15 SEER2),0.14,0.0,LIVE=0 (would zero out real spiff),True
+WHP-30-T,Wall Hung Heat Pump – 3 Ton – Tempstar Compact (14 SEER2),0.15,0.0,LIVE=0 (would zero out real spiff),True
+WHPRO-100,40 Gallon Propane Water Heater,100.0,100.0,match,True
+WHPRO-110,50 Gallon Propane Water Heater,100.0,100.0,match,True
+WHPRO-120,50 Gallon Propane Water Heater Power Vent,100.0,0.0,LIVE=0 (would zero out real spiff),True
+WHTL-100,High Efficiency Natural Gas Tankless Water Heater with Built-in Recirculation and Pump,100.0,200.0,drifted,True
+WHTL-110,Performance Plus Natural Gas Mid Efficiency Indoor Tankless Water Heater,100.0,100.0,match,True

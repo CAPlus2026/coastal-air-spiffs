@@ -13,6 +13,7 @@ we can't classify, username that doesn't resolve, etc).
 Usage: python process_month.py
 """
 import json
+import os
 import re
 import sys
 from collections import defaultdict
@@ -28,6 +29,9 @@ TO_DATE = "2026-06-30"
 
 # Same Apps Script Web App URL embedded in index.html — already public there, not a secret.
 APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHV_lR6gQQGs4LOmst5JxYlg6NqDjJIhJjs0h6l4wCs8DFEtBaWQ6RfURKIVdrfkqI/exec"
+# Not yet enforced by the backend (see apps-script/Lib.js checkSharedKey_) — sending it now
+# just gets this caller ready ahead of the eventual flip.
+SHARED_KEY = os.environ.get("SPIFFS_SHARED_KEY", "")
 
 # ── Static rosters (fallback only — dynamic classification below is primary) ──
 LEAD_ACTIVITIES = {"TGL Lead Set Res", "TGL Lead Sold Res"}
@@ -391,7 +395,7 @@ def main():
     def fetch_carry_forward_resolutions():
         import requests as _requests
         try:
-            resp = _requests.get(APPS_SCRIPT_URL, params={"action": "get", "sheet": "carry_forward_resolutions"}, timeout=10)
+            resp = _requests.get(APPS_SCRIPT_URL, params={"action": "get", "sheet": "carry_forward_resolutions", "key": SHARED_KEY}, timeout=10)
             resp.raise_for_status()
             data = resp.json().get("values") or []
         except Exception as e:
@@ -550,7 +554,7 @@ def main():
     def fetch_ledger():
         import requests as _requests
         try:
-            resp = _requests.get(APPS_SCRIPT_URL, params={"action": "get", "sheet": "spiff_ledger"}, timeout=15)
+            resp = _requests.get(APPS_SCRIPT_URL, params={"action": "get", "sheet": "spiff_ledger", "key": SHARED_KEY}, timeout=15)
             resp.raise_for_status()
             return resp.json().get("values") or []
         except Exception as e:
@@ -578,8 +582,7 @@ def main():
                           f"was already paid in a previous month. Verify this isn't a duplicate before approving.",
                           sev="red")
 
-    import os as _os
-    if _os.environ.get("ORACLE_DRY_RUN"):
+    if os.environ.get("ORACLE_DRY_RUN"):
         print(f"  [ORACLE_DRY_RUN] Skipping spiff_ledger write ({len(ledger_entries)} entries would have been sent)")
     else:
         try:
@@ -590,7 +593,7 @@ def main():
                 # Apps Script append only takes one row at a time via this backend's API shape
                 for row in rows_to_append:
                     _requests.get(APPS_SCRIPT_URL, params={"action": "append", "sheet": "spiff_ledger",
-                                                            "values": json.dumps(row)}, timeout=15)
+                                                            "values": json.dumps(row), "key": SHARED_KEY}, timeout=15)
                 print(f"  Wrote {len(rows_to_append)} entries to spiff_ledger")
         except Exception as e:
             print(f"  (couldn't write to spiff_ledger: {e})")

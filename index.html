@@ -126,12 +126,16 @@ let CONN_OK=false;
 
 // ── Sheets helpers via Apps Script ──────────────────────
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwHV_lR6gQQGs4LOmst5JxYlg6NqDjJIhJjs0h6l4wCs8DFEtBaWQ6RfURKIVdrfkqI/exec';
+// Not yet enforced by the backend — sending it now gets this caller ready ahead of the
+// eventual flip. Visible in page source by design (see apps-script/Lib.js checkSharedKey_);
+// it stops casual access, it is not a hard security boundary.
+const SHARED_KEY = '684f00e3b85b76a4af6992a3d0ed3968';
 
 async function sGet(range){
   try{
     const sheet = range.split('!')[0];
     const r = range.includes('!') ? range.split('!')[1] : null;
-    const params = new URLSearchParams({action:'get', sheet, ...(r && {range:r})});
+    const params = new URLSearchParams({action:'get', sheet, key:SHARED_KEY, ...(r && {range:r})});
     const ctrl = new AbortController();
     const t = setTimeout(()=>ctrl.abort(), 8000);
     const res = await fetch(`${SCRIPT_URL}?${params}`, {signal:ctrl.signal});
@@ -146,7 +150,8 @@ async function sAppend(tab, values){
     const params = new URLSearchParams({
       action: 'append',
       sheet: tab,
-      values: JSON.stringify(values[0])
+      values: JSON.stringify(values[0]),
+      key: SHARED_KEY
     });
     await fetch(`${SCRIPT_URL}?${params}`);
   } catch(e) { console.warn('sAppend failed', e); }
@@ -160,7 +165,8 @@ async function sPut(range, values){
       action: 'put',
       sheet,
       range: r,
-      values: JSON.stringify(values)
+      values: JSON.stringify(values),
+      key: SHARED_KEY
     });
     await fetch(`${SCRIPT_URL}?${params}`);
   } catch(e) { console.warn('sPut failed', e); }

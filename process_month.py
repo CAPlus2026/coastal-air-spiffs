@@ -578,18 +578,22 @@ def main():
                           f"was already paid in a previous month. Verify this isn't a duplicate before approving.",
                           sev="red")
 
-    try:
-        import requests as _requests
-        if ledger_entries:
-            rows_to_append = [[e["month"], e["mgr"], e["employee"], e["job"], e["customer"],
-                                e["type"], e["item"], e["amount"], e["source"]] for e in ledger_entries]
-            # Apps Script append only takes one row at a time via this backend's API shape
-            for row in rows_to_append:
-                _requests.get(APPS_SCRIPT_URL, params={"action": "append", "sheet": "spiff_ledger",
-                                                        "values": json.dumps(row)}, timeout=15)
-            print(f"  Wrote {len(rows_to_append)} entries to spiff_ledger")
-    except Exception as e:
-        print(f"  (couldn't write to spiff_ledger: {e})")
+    import os as _os
+    if _os.environ.get("ORACLE_DRY_RUN"):
+        print(f"  [ORACLE_DRY_RUN] Skipping spiff_ledger write ({len(ledger_entries)} entries would have been sent)")
+    else:
+        try:
+            import requests as _requests
+            if ledger_entries:
+                rows_to_append = [[e["month"], e["mgr"], e["employee"], e["job"], e["customer"],
+                                    e["type"], e["item"], e["amount"], e["source"]] for e in ledger_entries]
+                # Apps Script append only takes one row at a time via this backend's API shape
+                for row in rows_to_append:
+                    _requests.get(APPS_SCRIPT_URL, params={"action": "append", "sheet": "spiff_ledger",
+                                                            "values": json.dumps(row)}, timeout=15)
+                print(f"  Wrote {len(rows_to_append)} entries to spiff_ledger")
+        except Exception as e:
+            print(f"  (couldn't write to spiff_ledger: {e})")
 
     # ── Output ──────────────────────────────────────────────────────
     steven_emps = [emps[n] for n in STEVEN_ROSTER if n in emps]

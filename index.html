@@ -175,6 +175,8 @@ async function sPut(range, values){
 // ── State ───────────────────────────────────────────────
 const S={
   role:'billy',
+  notes:[], // replaced by loadSheets()'s replay once it resolves — must exist before then, since
+            // rTeam() reads S.notes.filter(...) and a manager can open "My Team" before that load finishes
   submissions:{steven:'not_started',caleb:'not_started'},
   pushback:{steven:null,caleb:null},
   revenue:[
@@ -306,7 +308,7 @@ const S={
     {id:"cf_2026-07_24",fromMonth:"Jul 2026",emp:"Karl Welch",ref:"",type:"Lead Stage 2 — Birchenough, Dave",amount:75,dept:"MB Install Residential",reason:"Stage 1 paid Jul 2026. Pay $75 when sold, installed, paid.",resolved:false,disposition:'',note:''},
     {id:"cf_2026-07_25",fromMonth:"Jul 2026",emp:"Karl Welch",ref:"",type:"Lead Stage 2 — Rodriguez, Lupe",amount:75,dept:"MB Install Residential",reason:"Stage 1 paid Jul 2026. Pay $75 when sold, installed, paid.",resolved:false,disposition:'',note:''},
   ],
-  manuals:{steven:[],caleb:[]},
+  manuals:{steven:[],caleb:[],jenny:[]},
   jayJobs:[],
   officeMems:[
     {name:"Jenny Miller",total:170,dept:'MB Residential Service',details:[{customer:"Allred, Robert & Carol",type:"Standard Membership - 1 System",activation:"Renewal",soldOn:"2026-07-28",amount:5},{customer:"Banov, Michael",type:"Standard Membership - 3 Systems",activation:"Renewal",soldOn:"2026-07-28",amount:15},{customer:"Brittain, Rand",type:"Standard Membership - 2 Systems",activation:"Renewal",soldOn:"2026-07-13",amount:10},{customer:"Campbell, Danielle",type:"Standard Membership - 1 System",activation:"Renewal",soldOn:"2026-07-21",amount:5},{customer:"Conary, Tom",type:"Standard Membership - 1 System",activation:"Renewal",soldOn:"2026-07-24",amount:5},{customer:"Doan, Vinh",type:"Basic Membership - 1 System",activation:"Renewal",soldOn:"2026-07-21",amount:5},{customer:"Earl, Stan",type:"Premium Membership - 3 Systems",activation:"Renewal",soldOn:"2026-07-27",amount:15},{customer:"Hagarty, Brian",type:"Basic Membership - 1 System",activation:"Renewal",soldOn:"2026-07-21",amount:5},{customer:"Horman, Fred",type:"Basic Membership - 1 System",activation:"Renewal",soldOn:"2026-07-21",amount:5},{customer:"Koteras, Nancy",type:"Premium Membership - 1 System",activation:"Renewal",soldOn:"2026-07-31",amount:5},{customer:"Paleo, Nicole",type:"Standard Membership - 1 System",activation:"New Sale",soldOn:"2026-07-09",amount:20},{customer:"Plakias, Marci",type:"Standard Membership - 1 System",activation:"Renewal",soldOn:"2026-07-21",amount:5},{customer:"Pugar, Marianne",type:"Basic Membership - 1 System",activation:"Renewal",soldOn:"2026-07-30",amount:5},{customer:"Singleton, Sidney",type:"Basic Membership - 1 System",activation:"New Sale",soldOn:"2026-07-03",amount:10},{customer:"Smith, Clay & Charlene",type:"Premium Membership - 3 Systems",activation:"New Sale",soldOn:"2026-07-30",amount:35},{customer:"Tang, Yin (Sherry)",type:"Standard Membership - 1 System",activation:"New Sale",soldOn:"2026-07-07",amount:20}]},
@@ -570,6 +572,17 @@ function deptToCol(dept){
   if(d.includes('install')||d.includes('lead')) return 'ins';
   return 'svc';
 }
+// Single source of truth for Jay Hall's equipment-commission total — used by buildRows(),
+// rTeam(), and renderJayJobs() so the three views can never disagree on this number again.
+function jayJobAmt(j){
+  const base=j.subtotal-j.accDeduct;
+  if(j.type==='Commission sale (2%)') return base*0.02;
+  if(j.type==='Lead spiff Stage 1+2 ($100)') return 100;
+  if(j.type==='Lead spiff Stage 1 only ($25)') return 25;
+  if(j.type==='Lead spiff Stage 2 only ($75)') return 75;
+  return 0;
+}
+function jayCommissionTotal(){return S.jayJobs.reduce((a,j)=>a+jayJobAmt(j),0);}
 function payOutCarryForward(mgr,c){
   // Actually add the confirmed amount into this month's payout — otherwise
   // "Mark paid" would just dismiss the reminder without paying anyone.
@@ -597,6 +610,31 @@ function reversePayoutCarryForward(mgr,c){
     if(idx>=0) detail.splice(idx,1);
   }
 }
+// Same pattern as carry-forward payouts — bakes the $100 directly into S.emps/spiffDetail so
+// it shows up in the tech's own "My Team" row and detail breakdown immediately, not just in
+// Accounting Output. Commercial techs are always on Steven's roster today, so mgr is always
+// 'steven', but this resolves it generically via mgrForEmployee() rather than hardcoding that.
+function payOutCommLead(mgr,l){
+  const emp=S.emps[mgr]&&S.emps[mgr].find(e=>e.name===l.tech);
+  if(!emp) return;
+  emp.com=(emp.com||0)+l.spiff;
+  if(!S.spiffDetail[mgr])S.spiffDetail[mgr]={};
+  if(!S.spiffDetail[mgr][l.tech])S.spiffDetail[mgr][l.tech]=[];
+  S.spiffDetail[mgr][l.tech].push({
+    date:'', job:l.job, customer:l.customer, type:'Commercial Lead',
+    item:`Commercial lead — ${l.customer}`, spiff:l.spiff,
+    note:'Marked sold & completed — commercial lead payout'
+  });
+}
+function reversePayoutCommLead(mgr,l){
+  const emp=S.emps[mgr]&&S.emps[mgr].find(e=>e.name===l.tech);
+  if(emp) emp.com=Math.max(0,(emp.com||0)-l.spiff);
+  const detail=(S.spiffDetail[mgr]||{})[l.tech];
+  if(detail){
+    const idx=detail.findIndex(d=>d.type==='Commercial Lead'&&d.job===l.job&&d.customer===l.customer);
+    if(idx>=0) detail.splice(idx,1);
+  }
+}
 function stevenBonus(){return S.revenue.filter(r=>r.se&&r.actual&&r.actual>=r.goal).length*350;}
 const MONTH_NAMES=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function monthIdx(label){
@@ -620,11 +658,11 @@ async function loadSheets(){
     sGet('submissions!A2:F50'),
     sGet('revenue_actuals!A2:D50'),
     sGet('flags!A2:N500'),
-    sGet('manual_adds!A2:I500'),
+    sGet('manual_adds!A2:J500'),
     sGet('spiff_corrections!A2:G500'),
     sGet('carry_forward_resolutions!A2:J500'),
     sGet('jay_jobs!A2:H500'),
-    sGet('commlead_updates!A2:I500'),
+    sGet('commlead_updates!A2:K500'),
     sGet('month_status!A2:D50'),
     sGet('manager_notes!A2:H1000'),
   ]);
@@ -638,7 +676,22 @@ async function loadSheets(){
     const fl=S.flags[mgr].find(f=>f.id===r[2]);
     if(fl){fl.disp=r[9]||'';fl.note=r[10]||'';fl.resolved=r[11]==='true';}
   });
-  if(mans)mans.forEach(r=>{if(r[0]===MONTH&&r[1]&&S.manuals[r[1]])S.manuals[r[1]].push({name:r[2],reason:r[3],amount:parseFloat(r[4])||0,dept:r[5]});});
+  // Manual adds — last row per id wins (id is column J; rows written before this fix have no
+  // id, so fall back to a content-derived key so a "removed" row can still match them, letting
+  // a legacy Remove-button click actually persist across reload for the first time).
+  if(mans){
+    const manualKey=r=>r[9]||[r[0],r[1],r[2],r[3],r[4],r[5]].join('|');
+    const latestManual={};
+    mans.forEach(r=>{
+      if(r[0]!==MONTH||!r[1])return;
+      const id=manualKey(r);
+      latestManual[id]={mgr:r[1],name:r[2],reason:r[3],amount:parseFloat(r[4])||0,dept:r[5],status:r[8]||'added',id};
+    });
+    Object.values(latestManual).forEach(m=>{
+      if(m.status==='removed')return;
+      if(S.manuals[m.mgr]) S.manuals[m.mgr].push({id:m.id,name:m.name,reason:m.reason,amount:m.amount,dept:m.dept});
+    });
+  }
   // Load bonus approvals from Sheet (approved state only — amounts stay hardcoded)
   if(flags)flags.forEach(r=>{
     if(r[0]!==MONTH||r[1]!=='billy') return;
@@ -715,18 +768,30 @@ async function loadSheets(){
       .filter(([id,j])=>j.action==='add')
       .map(([id,j])=>({id,job:j.job,subtotal:j.subtotal,accDeduct:j.accDeduct,type:j.type}));
   }
-  // Replay commercial lead status updates — same reasoning.
+  // Replay commercial lead status updates — same reasoning. Also CREATES a lead if its id
+  // isn't already in the baseline (fixes addCommLead() previously not persisting at all —
+  // a manually-added lead has no baseline entry, only rows in this log), and re-applies the
+  // payout for a "Sold & Completed" lead the same way carry-forward payouts get re-applied,
+  // since S.emps/spiffDetail reset to the hardcoded baseline on every load.
   if(commLeadLog){
     const latestCL={};
     commLeadLog.forEach(r=>{
-      const [month,id,tech,customer,job,status,spiff,payMonth]=r;
+      const [month,id,tech,customer,job,status,spiff,payMonth,ts,disposition,note]=r;
       if(month!==MONTH||!id)return;
-      latestCL[id]={status,spiff:parseFloat(spiff)||0,payMonth:payMonth||''};
+      latestCL[id]={tech,customer,job,status,spiff:parseFloat(spiff)||0,payMonth:payMonth||'',disposition:disposition||'',note:note||''};
     });
     Object.entries(latestCL).forEach(([id,c])=>{
-      const lead=S.commLeads.find(l=>l.id===id);
-      if(!lead)return;
+      let lead=S.commLeads.find(l=>l.id===id);
+      if(!lead){
+        lead={id,month:MONTH,tech:c.tech,job:c.job,customer:c.customer,status:'Pending',spiff:0,payMonth:'',paid:false};
+        S.commLeads.push(lead);
+      }
       lead.status=c.status;lead.spiff=c.spiff;lead.payMonth=c.payMonth;
+      lead.disposition=c.disposition;lead.note=c.note;
+      if(lead.status==='Sold & Completed'){
+        const mgr=mgrForEmployee(lead.tech);
+        if(mgr){payOutCommLead(mgr,lead);lead.paid=true;}
+      }
     });
   }
   // Replay month close-out status — last row for this MONTH wins.
@@ -787,6 +852,7 @@ function rOverview(){
   const open=allF.filter(f=>!f.resolved).length;
   const subs=Object.values(S.submissions).filter(s=>s==='submitted'||s==='approved').length;
   v.innerHTML=`
+  <datalist id="all-names">${allKnownNames().map(n=>`<option value="${n}">`).join('')}</datalist>
   <div class="card" style="border-left:3px solid ${isClosed()?'#065f46':'#f59e0b'}">
     <div class="ctitle">Month status</div>
     ${isClosed()?`
@@ -832,37 +898,60 @@ function rOverview(){
   </div>
   <div class="card">
     <div class="ctitle">Manual spiff additions (Owner)</div>
-    <div style="font-size:.75rem;color:#999;margin-bottom:.5rem">Add a one-off spiff for any employee across both teams.</div>
-    <div class="mg">
-      <div><label>Employee</label><select id="om-emp">${[...S.emps.steven,...S.emps.caleb].map(e=>`<option>${e.name}</option>`).join('')}</select></div>
+    <div style="font-size:.75rem;color:#999;margin-bottom:.5rem">Add a one-off spiff for anyone — technicians, office/call-center staff, or a name not yet on any roster.</div>
+    <div class="mg" style="grid-template-columns:1.5fr 1fr 1.5fr 90px 1fr auto">
+      <div><label>Employee</label><input type="text" id="om-emp" list="all-names" placeholder="Type a name" oninput="autoSelectTeam('om-emp','om-mgr')"></div>
+      <div><label>Team</label><select id="om-mgr"><option value="">Select…</option><option value="steven">Myrtle Beach (Steven)</option><option value="caleb">Charleston (Caleb)</option><option value="jenny">Office / Call Center (Jenny)</option></select></div>
       <div><label>Reason</label><input type="text" id="om-rsn" placeholder="e.g. Lead Stage 1 — Gaines Tracy"></div>
       <div><label>Amount ($)</label><input type="number" id="om-amt" min="0" step="0.01" placeholder="0.00"></div>
       <div><label>Dept pays</label><select id="om-dept"><option>MB Residential Service</option><option>MB Install Residential</option><option>MB Plumbing</option><option>MB Service Commercial</option><option>CH Service</option><option>CH Install</option></select></div>
       <div><label>&nbsp;</label><button class="btn btnp" onclick="addManualOwner()">Add</button></div>
     </div>
-    ${(()=>{const all=[...S.manuals.steven.map((a,i)=>({...a,mgr:'steven',i})),...S.manuals.caleb.map((a,i)=>({...a,mgr:'caleb',i}))];
-      return all.length?`<div style="margin-top:.75rem">${all.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;font-size:.78rem;padding:5px 0;border-top:1px solid #F0EDE8"><span>${a.name} — ${a.reason} <span style="color:#999">(${a.dept} · ${a.mgr==='steven'?'MB':'CH'})</span></span><span style="display:flex;gap:8px;align-items:center"><strong style="font-family:'DM Mono',monospace">${fp(a.amount)}</strong><button class="btn bsm" onclick="removeManualOwner('${a.mgr}',${a.i})">Remove</button></span></div>`).join('')}</div>`:'';})()}
+    ${(()=>{const all=[...S.manuals.steven.map((a,i)=>({...a,mgr:'steven',i})),...S.manuals.caleb.map((a,i)=>({...a,mgr:'caleb',i})),...S.manuals.jenny.map((a,i)=>({...a,mgr:'jenny',i}))];
+      const mgrLbl={steven:'MB',caleb:'CH',jenny:'Office'};
+      return all.length?`<div style="margin-top:.75rem">${all.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;font-size:.78rem;padding:5px 0;border-top:1px solid #F0EDE8"><span>${a.name} — ${a.reason} <span style="color:#999">(${a.dept} · ${mgrLbl[a.mgr]})</span></span><span style="display:flex;gap:8px;align-items:center"><strong style="font-family:'DM Mono',monospace">${fp(a.amount)}</strong><button class="btn bsm" onclick="removeManualOwner('${a.mgr}',${a.i})">Remove</button></span></div>`).join('')}</div>`:'';})()}
   </div>`;
+}
+function allKnownNames(){
+  return [...new Set([...S.emps.steven.map(e=>e.name),...S.emps.caleb.map(e=>e.name),...S.officeMems.map(m=>m.name)])];
 }
 function mgrForEmployee(name){
   if(S.emps.steven.some(e=>e.name===name)) return 'steven';
   if(S.emps.caleb.some(e=>e.name===name)) return 'caleb';
+  if(S.officeMems.some(m=>m.name===name)) return 'jenny';
   return null;
 }
+// Convenience only — pre-fills the Team select when a typed name matches a known roster
+// entry, but never overrides a value the person already chose.
+function autoSelectTeam(nameId,selId){
+  const sel=document.getElementById(selId);
+  if(!sel||sel.value)return;
+  const mgr=mgrForEmployee(document.getElementById(nameId).value.trim());
+  if(mgr)sel.value=mgr;
+}
+function manualAddId(){return 'ma_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 async function addManualOwner(){
   if(guardClosed())return;
-  const name=document.getElementById('om-emp').value;
+  const name=document.getElementById('om-emp').value.trim();
+  const mgr=document.getElementById('om-mgr').value;
   const reason=document.getElementById('om-rsn').value.trim();
   const amount=parseFloat(document.getElementById('om-amt').value)||0;
   const dept=document.getElementById('om-dept').value;
+  if(!name){toast('Please enter an employee name.');return;}
+  if(!mgr){toast('Please select which team this employee is on.');return;}
   if(!reason||amount<=0){toast('Please enter a reason and amount.');return;}
-  const mgr=mgrForEmployee(name);
-  if(!mgr){toast('Could not determine this employee\'s team.');return;}
-  S.manuals[mgr].push({name,reason,amount,dept});
-  await sAppend('manual_adds',[[MONTH,mgr,name,reason,amount,dept,S.role,new Date().toISOString(),'pending']]);
+  const id=manualAddId();
+  S.manuals[mgr].push({id,name,reason,amount,dept});
+  await sAppend('manual_adds',[[MONTH,mgr,name,reason,amount,dept,S.role,new Date().toISOString(),'added',id]]);
   toast('Manual spiff added');rOverview();
 }
-function removeManualOwner(mgr,i){if(guardClosed())return;S.manuals[mgr].splice(i,1);rOverview();}
+async function removeManualOwner(mgr,i){
+  if(guardClosed())return;
+  const m=S.manuals[mgr][i]; if(!m)return;
+  S.manuals[mgr].splice(i,1);
+  await sAppend('manual_adds',[[MONTH,mgr,m.name,m.reason,m.amount,m.dept,S.role,new Date().toISOString(),'removed',m.id]]);
+  rOverview();
+}
 
 // ── MANAGER REVIEW ────────────────────────────────────────
 function rReview(){
@@ -1086,6 +1175,19 @@ function rMembershipReview(){
     <div style="display:flex;justify-content:space-between;padding:9px 0;font-size:.85rem;font-weight:600;border-top:1px solid #F0EDE8;margin-top:.5rem">
       <span>Total</span><span style="font-family:'DM Mono',monospace">${fp(total)}</span>
     </div>
+  </div>
+  <div class="card">
+    <div class="ctitle">Manual spiff additions</div>
+    <div style="font-size:.75rem;color:#999;margin-bottom:.5rem">Add one-off spiffs not captured automatically.</div>
+    <div class="mg">
+      <div><label>Employee</label><input type="text" id="m-emp" list="all-names" placeholder="Type a name"></div>
+      <div><label>Reason</label><input type="text" id="m-rsn" placeholder="e.g. Membership sale missed on report"></div>
+      <div><label>Amount ($)</label><input type="number" id="m-amt" min="0" step="0.01" placeholder="0.00"></div>
+      <div><label>Dept pays</label><select id="m-dept"><option>MB Residential Service</option><option>MB Install Residential</option><option>MB Plumbing</option><option>MB Service Commercial</option><option>CH Service</option><option>CH Install</option></select></div>
+      <div><label>&nbsp;</label><button class="btn btnp" onclick="addManual('jenny')">Add</button></div>
+      <datalist id="all-names">${allKnownNames().map(n=>`<option value="${n}">`).join('')}</datalist>
+    </div>
+    ${(S.manuals.jenny||[]).length?`<div style="margin-top:.75rem">${S.manuals.jenny.map((a,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;font-size:.78rem;padding:5px 0;border-top:1px solid #F0EDE8"><span>${a.name} — ${a.reason} <span style="color:#999">(${a.dept})</span></span><span style="display:flex;gap:8px;align-items:center"><strong style="font-family:'DM Mono',monospace">${fp(a.amount)}</strong><button class="btn bsm" onclick="removeManual('jenny',${i})">Remove</button></span></div>`).join('')}</div>`:''}
   </div>`;
 }
 function toggleMemDetail(i){
@@ -1107,6 +1209,8 @@ async function toggleBonus(i){
 
 // ── ACCOUNTING OUTPUT ─────────────────────────────────────
 const DCOLS=['MB Resi Svc','MB Install Resi','MB Plumbing','MB Svc Comm','CH Service','CH Install'];
+const COL_KEYS=['svc','ins','plb','com','chs','chi']; // same order as DCOLS/vals
+function colIdx(dept){const i=COL_KEYS.indexOf(deptToCol(dept));return i>=0?i:0;}
 function buildRows(){
   // Build a map keyed by employee name so resolved flags roll up
   const empMap = {};
@@ -1127,12 +1231,19 @@ function buildRows(){
     if(baseTotal>0||manAmt>0){
       addToEmp(e.name, vals, null, '');
       if(manAmt>0){
-        const mVals=[0,0,0,0,0,0];
         (S.manuals[mgr]||[]).filter(m=>m.name===e.name).forEach(m=>{
-          addToEmp(e.name, [0,0,0,0,0,0], `Manual add: ${m.reason} — ${fp(m.amount)} (${m.dept})`, '');
+          const v=[0,0,0,0,0,0]; v[colIdx(m.dept)]=m.amount;
+          addToEmp(e.name, v, `Manual add: ${m.reason} — ${fp(m.amount)} (${m.dept})`, '');
         });
       }
     }
+  });
+
+  // Manual adds for non-technicians (office/call-center staff, added via Jenny's or the
+  // Owner's manual-add form) — same routing, but these people have no base MPF row above.
+  (S.manuals.jenny||[]).forEach(m=>{
+    const v=[0,0,0,0,0,0]; v[colIdx(m.dept)]=m.amount;
+    addToEmp(m.name, v, `Manual add: ${m.reason} — ${fp(m.amount)} (${m.dept})`, '');
   });
 
   // Roll resolved flags into the employee's row
@@ -1157,9 +1268,11 @@ function buildRows(){
     addToEmp(f.emp, v, `Resolved: ${f.title} — ${fp(amt)}`, '');
   });
 
-  // Commercial lead spiffs — roll into tech's row
+  // Commercial lead spiffs — amount is already baked into the tech's base vals above
+  // (payOutCommLead mutates S.emps directly, same pattern as carry-forward payouts below),
+  // so this only adds a traceable note, not the dollar amount again.
   S.commLeads.filter(l=>l.status==='Sold & Completed'&&l.payMonth===MONTH).forEach(l=>{
-    addToEmp(l.tech, [0,0,0,l.spiff,0,0], `Commercial lead: ${l.customer} (Job ${l.job}) — ${fp(l.spiff)}`, '');
+    addToEmp(l.tech, [0,0,0,0,0,0], `Commercial lead: ${l.customer} (Job ${l.job}) — ${fp(l.spiff)}`, '');
   });
 
   // Carry-forward payouts — amount is already baked into the employee's base vals above
@@ -1171,18 +1284,8 @@ function buildRows(){
 
   // Jay commission — roll into Jay's row
   if(S.jayJobs.length>0){
-    let jayComm=0;
-    const jayDetails=[];
-    S.jayJobs.forEach(j=>{
-      const base=j.subtotal-j.accDeduct;
-      let amt=0;
-      if(j.type==='Commission sale (2%)'){amt=base*0.02;}
-      else if(j.type==='Lead spiff Stage 1+2 ($100)'){amt=100;}
-      else if(j.type==='Lead spiff Stage 1 only ($25)'){amt=25;}
-      else if(j.type==='Lead spiff Stage 2 only ($75)'){amt=75;}
-      jayComm+=amt;
-      jayDetails.push(`Job ${j.job}: ${j.type} — ${fp(amt)}`);
-    });
+    const jayComm=jayCommissionTotal();
+    const jayDetails=S.jayJobs.map(j=>`Job ${j.job}: ${j.type} — ${fp(jayJobAmt(j))}`);
     if(jayComm>0){
       addToEmp('Jay Hall',[0,0,0,0,0,jayComm], `Equipment commission: ${jayDetails.join('; ')}`, '');
     }
@@ -1217,21 +1320,28 @@ function buildRows(){
 }
 function grandTotal(){return buildRows().reduce((a,r)=>a+r.total+(r.bonusAmt||0),0);}
 
+let outputMode='detailed'; // 'detailed' shows the per-line audit trail under each name; 'summary' is just the numbers
+function setOutputMode(m){outputMode=m;rOutput();}
 function rOutput(){
   const v=vw();const rows=buildRows();const ct=[0,0,0,0,0,0];let gt=0;
+  const simple=outputMode==='summary';
   const tbody=rows.map(r=>{
     r.vals.forEach((x,i)=>ct[i]+=x);
     const rowTotal = r.total + (r.bonusAmt||0);
     gt+=rowTotal;
-    const details = (r.details||[]).filter(Boolean);
+    const details = simple?[]:(r.details||[]).filter(Boolean);
     const detailHtml = details.length ? `<div style="font-size:.65rem;color:#888;margin-top:3px;line-height:1.6">${details.map(d=>`• ${d}`).join('<br>')}</div>` : '';
-    const bonusLine = r.bonusAmt ? `<div style="font-size:.65rem;color:#888;margin-top:3px">• ${r.bonusNote}: ${fp(r.bonusAmt)} (Call Center — all depts)</div>` : '';
+    const bonusLine = (!simple&&r.bonusAmt) ? `<div style="font-size:.65rem;color:#888;margin-top:3px">• ${r.bonusNote}: ${fp(r.bonusAmt)} (Call Center — all depts)</div>` : '';
     return `<tr><td>${r.name}${detailHtml}${bonusLine}</td>${r.vals.map(x=>`<td>${x>0?fp(x):'<span class="zero">—</span>'}</td>`).join('')}<td style="font-weight:600">${fp(rowTotal)}</td></tr>`;
   }).join('');
   v.innerHTML=`
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
     <div style="font-size:1rem;font-weight:600">Accounting output — ${MONTH}</div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;align-items:center">
+      <div class="nav" style="margin-bottom:0">
+        <button class="nb${simple?'':' on'}" onclick="setOutputMode('detailed')">Detailed</button>
+        <button class="nb${simple?' on':''}" onclick="setOutputMode('summary')">Summary</button>
+      </div>
       <button class="btn" onclick="window.print()">Print</button>
       <button class="btn btnp" onclick="dlCSV()">Download CSV</button>
     </div>
@@ -1239,10 +1349,12 @@ function rOutput(){
   <div class="card"><div class="aw"><table class="at">
     <thead><tr><th style="text-align:left">Employee</th>${DCOLS.map(d=>`<th>${d}</th>`).join('')}<th>Total due</th></tr></thead>
     <tbody>${tbody}</tbody>
-    <tfoot>
+  </table></div></div>
+  <div class="card" style="break-inside:avoid"><div class="aw"><table class="at">
+    <tbody>
       <tr class="dtrow"><td style="text-align:left;font-weight:600">Dept total</td>${ct.map(x=>`<td style="font-weight:600">${x>0?fp(x):'<span class="zero">—</span>'}</td>`).join('')}<td style="font-weight:600">${fp(gt)}</td></tr>
       <tr class="gtrow"><td style="text-align:left">Grand total — ${MONTH}</td>${ct.map(()=>'<td></td>').join('')}<td>${fp(gt)}</td></tr>
-    </tfoot>
+    </tbody>
   </table></div></div>`;
 }
 function dlCSV(){
@@ -1277,7 +1389,8 @@ function rTeam(mgr){
       <tbody>${d.map(e=>{
         const manAmt=adds.filter(a=>a.name===e.name).reduce((s,a)=>s+a.amount,0);
         const svc=(e.svc||0)+(e.chs||0);const ins=(e.ins||0)+(e.chi||0);
-        const total=empTot(e)+manAmt;
+        const jayComm=e.name==='Jay Hall'?jayCommissionTotal():0;
+        const total=empTot(e)+manAmt+jayComm;
         if(total===0&&!manAmt)return'';
         const dupW=(e.dups||[]).length?`<div class="dup-warn">⚠ Possible duplicate — check flags</div>`:'';
         const detail=(S.spiffDetail[mgr]||{})[e.name]||[];
@@ -1335,11 +1448,12 @@ function rTeam(mgr){
     <div class="ctitle">Manual spiff additions</div>
     <div style="font-size:.75rem;color:#999;margin-bottom:.5rem">Add one-off spiffs not captured automatically.</div>
     <div class="mg">
-      <div><label>Employee</label><select id="m-emp">${d.map(e=>`<option>${e.name}</option>`).join('')}</select></div>
+      <div><label>Employee</label><input type="text" id="m-emp" list="team-names-${mgr}" placeholder="Type a name"></div>
       <div><label>Reason</label><input type="text" id="m-rsn" placeholder="e.g. Lead Stage 1 — Gaines Tracy"></div>
       <div><label>Amount ($)</label><input type="number" id="m-amt" min="0" step="0.01" placeholder="0.00"></div>
       <div><label>Dept pays</label><select id="m-dept"><option>MB Residential Service</option><option>MB Install Residential</option><option>MB Plumbing</option><option>MB Service Commercial</option><option>CH Service</option><option>CH Install</option></select></div>
       <div><label>&nbsp;</label><button class="btn btnp" onclick="addManual('${mgr}')">Add</button></div>
+      <datalist id="team-names-${mgr}">${d.map(e=>`<option value="${e.name}">`).join('')}</datalist>
     </div>
     ${adds.length?`<div style="margin-top:.75rem">${adds.map((a,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;font-size:.78rem;padding:5px 0;border-top:1px solid #F0EDE8"><span>${a.name} — ${a.reason} <span style="color:#999">(${a.dept})</span></span><span style="display:flex;gap:8px;align-items:center"><strong style="font-family:'DM Mono',monospace">${fp(a.amount)}</strong><button class="btn bsm" onclick="removeManual('${mgr}',${i})">Remove</button></span></div>`).join('')}</div>`:''}
   </div>
@@ -1366,18 +1480,29 @@ function rTeam(mgr){
   </div>`;
   if(mgr==='caleb') renderJayJobs();
 }
+function rerenderManualAddView(mgr){
+  if(mgr==='jenny') rMembershipReview(); else rTeam(mgr);
+}
 async function addManual(mgr){
   if(guardClosed())return;
-  const name=document.getElementById('m-emp').value;
+  const name=document.getElementById('m-emp').value.trim();
   const reason=document.getElementById('m-rsn').value.trim();
   const amount=parseFloat(document.getElementById('m-amt').value)||0;
   const dept=document.getElementById('m-dept').value;
+  if(!name){toast('Please enter an employee name.');return;}
   if(!reason||amount<=0){toast('Please enter a reason and amount.');return;}
-  S.manuals[mgr].push({name,reason,amount,dept});
-  await sAppend('manual_adds',[[MONTH,mgr,name,reason,amount,dept,S.role,new Date().toISOString(),'pending']]);
-  toast('Manual spiff added');rTeam(mgr);
+  const id=manualAddId();
+  S.manuals[mgr].push({id,name,reason,amount,dept});
+  await sAppend('manual_adds',[[MONTH,mgr,name,reason,amount,dept,S.role,new Date().toISOString(),'added',id]]);
+  toast('Manual spiff added');rerenderManualAddView(mgr);
 }
-function removeManual(mgr,i){if(guardClosed())return;S.manuals[mgr].splice(i,1);rTeam(mgr);}
+async function removeManual(mgr,i){
+  if(guardClosed())return;
+  const m=S.manuals[mgr][i]; if(!m)return;
+  S.manuals[mgr].splice(i,1);
+  await sAppend('manual_adds',[[MONTH,mgr,m.name,m.reason,m.amount,m.dept,S.role,new Date().toISOString(),'removed',m.id]]);
+  rerenderManualAddView(mgr);
+}
 
 async function addNote(mgr){
   const emp=document.getElementById(`note-emp-${mgr}`).value;
@@ -1456,11 +1581,12 @@ async function searchLedger(){
 }
 
 // ── FLAGS ────────────────────────────────────────────────
+const CL_DISMISS_REASONS={did_not_sell:'Did not sell',duplicate:'Duplicate entry',already_paid:'Already paid another way',other:'Other'};
 function rCommLeads(){
   const v=vw();
   const active=S.commLeads.filter(l=>l.status==='Sold — Install In Progress'&&!l.paid);
   const pending=S.commLeads.filter(l=>l.status==='Pending');
-  const done=S.commLeads.filter(l=>l.paid||l.status==='Did Not Sell — Close Lead');
+  const resolved=S.commLeads.filter(l=>l.paid||l.status==='Dismissed');
 
   v.innerHTML=`
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
@@ -1488,26 +1614,35 @@ function rCommLeads(){
 
   <div class="card">
     <div class="ctitle">All active leads — update status monthly</div>
-    ${S.commLeads.filter(l=>!l.paid&&l.status!=='Did Not Sell — Close Lead').map((l,i)=>{
+    ${S.commLeads.filter(l=>!l.paid&&l.status!=='Dismissed').map((l,i)=>{
       const age=monthsAgo(l.month);
       const stale=age!==null&&age>=4;
       return `
-    <div style="padding:8px 0;border-bottom:1px solid #F0EDE8;display:grid;grid-template-columns:1fr 180px 100px;gap:8px;align-items:center;font-size:.82rem">
-      <div>
-        <div style="font-weight:500">${l.tech} — ${l.customer}${stale?` <span class="badge bdanger">⚠ ${age} months old — review for dismissal</span>`:''}</div>
-        <div style="font-size:.7rem;color:#999;font-family:'DM Mono',monospace">Job #${l.job} · ${l.month}</div>
+    <div style="padding:8px 0;border-bottom:1px solid #F0EDE8;font-size:.82rem">
+      <div style="display:grid;grid-template-columns:1fr 180px 100px;gap:8px;align-items:center">
+        <div>
+          <div style="font-weight:500">${l.tech} — ${l.customer}${stale?` <span class="badge bdanger">⚠ ${age} months old — review for dismissal</span>`:''}</div>
+          <div style="font-size:.7rem;color:#999;font-family:'DM Mono',monospace">Job #${l.job} · ${l.month}</div>
+        </div>
+        <div style="display:flex;gap:4px;align-items:center">
+        <select style="font-size:.78rem;padding:4px 6px;border:1px solid #ddd;border-radius:6px;background:#fff;font-family:inherit"
+          onchange="updateCommLead('${l.id}',this.value)">
+          <option ${l.status==='Pending'?'selected':''}>Pending</option>
+          <option ${l.status==='Sold — Install In Progress'?'selected':''}>Sold — Install In Progress</option>
+          <option ${l.status==='Sold & Completed'?'selected':''}>Sold & Completed</option>
+        </select>
+        ${l.prevStatus?`<button onclick="undoCommLead('${l.id}')" style="font-size:.65rem;padding:2px 8px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;color:#666;white-space:nowrap">Undo</button>`:''}
+        </div>
+        <span style="font-size:.7rem;color:#999;text-align:right">${l.status==='Sold & Completed'?'<span class="badge bok">\$100 due</span>':''}</span>
       </div>
-      <div style="display:flex;gap:4px;align-items:center">
-      <select style="font-size:.78rem;padding:4px 6px;border:1px solid #ddd;border-radius:6px;background:#fff;font-family:inherit"
-        onchange="updateCommLead('${l.id}',this.value)">
-        <option ${l.status==='Pending'?'selected':''}>Pending</option>
-        <option ${l.status==='Sold — Install In Progress'?'selected':''}>Sold — Install In Progress</option>
-        <option ${l.status==='Sold & Completed'?'selected':''}>Sold & Completed</option>
-        <option ${l.status==='Did Not Sell'?'selected':''}>Did Not Sell — Close Lead</option>
-      </select>
-      ${l.prevStatus?`<button onclick="undoCommLead('${l.id}')" style="font-size:.65rem;padding:2px 8px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;color:#666;white-space:nowrap">Undo</button>`:''}
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px">
+        <select id="cl-disp-${l.id}" style="font-size:.7rem;padding:3px 6px;border:1px solid #ddd;border-radius:6px;background:#fff">
+          <option value="">Dismiss — select reason…</option>
+          ${Object.entries(CL_DISMISS_REASONS).map(([k,lbl])=>`<option value="${k}">${lbl}</option>`).join('')}
+        </select>
+        <input type="text" id="cl-note-${l.id}" placeholder="Note (required)" style="font-size:.7rem;padding:3px 6px;border:1px solid #ddd;border-radius:6px;width:200px">
+        <button class="btn bsm" onclick="dismissCommLead('${l.id}')">Dismiss</button>
       </div>
-      <span style="font-size:.7rem;color:#999;text-align:right">${l.status==='Sold & Completed'?'<span class="badge bok">\$100 due</span>':''}</span>
     </div>`;
     }).join('')}
   </div>
@@ -1528,52 +1663,95 @@ function rCommLeads(){
     </div>
   </div>
 
-  ${done.length?`
+  ${resolved.length?`
   <div class="card" style="opacity:.6">
     <div class="ctitle">Resolved this month</div>
-    ${done.map(l=>`<div class="ri"><div class="ril"><span>${l.tech} — ${l.customer}</span><span class="risub">Job #${l.job}</span></div>
-      <span class="badge ${l.paid?'bok':'bgray'}">${l.paid?'Paid \$100':l.status}</span></div>`).join('')}
+    ${resolved.map(l=>`<div class="ri"><div class="ril"><span>${l.tech} — ${l.customer}</span><span class="risub">Job #${l.job}${l.note?' · '+l.note:''}</span></div>
+      <span style="display:flex;gap:6px;align-items:center">
+        <span class="badge ${l.paid?'bok':'bgray'}">${l.paid?'Paid \$100':CL_DISMISS_REASONS[l.disposition]||l.status}</span>
+        ${l.prevStatus?`<button onclick="undoCommLead('${l.id}')" style="font-size:.65rem;padding:2px 8px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;color:#666">Undo</button>`:''}
+      </span></div>`).join('')}
   </div>`:''}`;
 }
 
+// Bakes the $100 into S.emps/spiffDetail (payOutCommLead) so it shows on the tech's own "My
+// Team" row immediately — previously this only ever reached Accounting Output, so a manager
+// reviewing a specific tech's numbers right after marking a lead sold wouldn't see it there.
 async function updateCommLead(id, status){
   if(guardClosed())return;
   const lead=S.commLeads.find(l=>l.id===id);
   if(!lead) return;
+  const mgr=mgrForEmployee(lead.tech);
+  if(lead.paid&&mgr){reversePayoutCommLead(mgr,lead);lead.paid=false;}
   lead.prevStatus = lead.status; // save for undo
   lead.status=status;
+  lead.disposition=''; lead.note='';
   if(status==='Sold & Completed'){
     lead.spiff=100; lead.payMonth=MONTH;
-    toast(`\$100 spiff due to ${lead.tech} — will appear in accounting output.`);
+    if(mgr){payOutCommLead(mgr,lead);lead.paid=true;}
+    toast(`\$100 spiff due to ${lead.tech} — added to their total for ${MONTH}.`);
+  }else{
+    lead.spiff=0; lead.payMonth='';
   }
-  if(status==='Did Not Sell — Close Lead'){lead.spiff=0;}
   rCommLeads();
-  await sAppend('commlead_updates',[[MONTH,id,lead.tech,lead.customer,lead.job,status,lead.spiff,lead.payMonth,new Date().toISOString()]]);
+  await sAppend('commlead_updates',[[MONTH,id,lead.tech,lead.customer,lead.job,status,lead.spiff,lead.payMonth,new Date().toISOString(),'','']]);
+}
+
+// Separate from the status progression above — for a lead that's being closed out WITHOUT
+// payment for a reason other than "didn't sell" (duplicate entry, already paid another way),
+// mirroring the carry-forward disposition+note pattern rather than overloading one status list.
+async function dismissCommLead(id){
+  if(guardClosed())return;
+  const lead=S.commLeads.find(l=>l.id===id);
+  if(!lead) return;
+  const dispEl=document.getElementById(`cl-disp-${id}`);
+  const noteEl=document.getElementById(`cl-note-${id}`);
+  const disp=dispEl?dispEl.value:'';
+  const note=noteEl?noteEl.value.trim():'';
+  if(!disp){toast('Please select a reason.');return;}
+  if(!note){toast('Please add a note explaining why.');return;}
+  const mgr=mgrForEmployee(lead.tech);
+  if(lead.paid&&mgr){reversePayoutCommLead(mgr,lead);lead.paid=false;}
+  lead.prevStatus=lead.status;
+  lead.status='Dismissed';lead.disposition=disp;lead.note=note;lead.spiff=0;lead.payMonth='';
+  toast('Lead dismissed — will not carry forward again.');
+  rCommLeads();
+  await sAppend('commlead_updates',[[MONTH,id,lead.tech,lead.customer,lead.job,lead.status,lead.spiff,lead.payMonth,new Date().toISOString(),disp,note]]);
 }
 
 async function undoCommLead(id){
   if(guardClosed())return;
   const lead=S.commLeads.find(l=>l.id===id);
   if(!lead||!lead.prevStatus) return;
+  const mgr=mgrForEmployee(lead.tech);
+  if(lead.paid&&mgr){reversePayoutCommLead(mgr,lead);lead.paid=false;}
   lead.status=lead.prevStatus;
   lead.prevStatus=null;
-  if(lead.status!=='Sold & Completed'){lead.spiff=0;lead.payMonth='';}
+  lead.disposition=''; lead.note='';
+  if(lead.status==='Sold & Completed'){
+    lead.spiff=100; lead.payMonth=MONTH;
+    if(mgr){payOutCommLead(mgr,lead);lead.paid=true;}
+  }else{
+    lead.spiff=0;lead.payMonth='';
+  }
   toast('Status reverted.');
   rCommLeads();
-  await sAppend('commlead_updates',[[MONTH,id,lead.tech,lead.customer,lead.job,lead.status,lead.spiff,lead.payMonth,new Date().toISOString()]]);
+  await sAppend('commlead_updates',[[MONTH,id,lead.tech,lead.customer,lead.job,lead.status,lead.spiff,lead.payMonth,new Date().toISOString(),'','']]);
 }
 
-function addCommLead(){
+async function addCommLead(){
   if(guardClosed())return;
   const tech=document.getElementById('cl-tech').value;
   const cust=document.getElementById('cl-cust').value.trim();
   const job=document.getElementById('cl-job').value.trim();
   if(!cust||!job){toast('Please enter customer and job number.');return;}
-  const id='cl'+Date.now();
+  const id='cl_'+Date.now();
   S.commLeads.push({id,month:MONTH,tech,job,customer:cust,status:'Pending',spiff:0,payMonth:'',paid:false});
   document.getElementById('cl-cust').value='';
   document.getElementById('cl-job').value='';
-  sAppend('flags',[[MONTH,'steven',id,'info','info',tech,job,'',cust,'Pending','','false','']]);
+  // Write to commlead_updates (not flags — that was a bug: leads never persisted, so a new
+  // lead added here would silently vanish on reload).
+  await sAppend('commlead_updates',[[MONTH,id,tech,cust,job,'Pending',0,'',new Date().toISOString(),'','']]);
   toast('Commercial lead added to log.');
   rCommLeads();
 }
@@ -1644,15 +1822,10 @@ function renderJayJobs(){
   const list=document.getElementById('jay-jobs-list');
   const totEl=document.getElementById('jay-total');
   if(!list||!totEl)return;
-  let commission=0;
+  const commission=jayCommissionTotal();
   const rows=S.jayJobs.map((j,i)=>{
-    let amt=0;
+    const amt=jayJobAmt(j);
     const base=j.subtotal-j.accDeduct;
-    if(j.type==='Commission sale (2%)'){amt=base*0.02;}
-    else if(j.type==='Lead spiff Stage 1+2 ($100)'){amt=100;}
-    else if(j.type==='Lead spiff Stage 1 only ($25)'){amt=25;}
-    else if(j.type==='Lead spiff Stage 2 only ($75)'){amt=75;}
-    commission+=amt;
     return `<div style="display:flex;justify-content:space-between;align-items:flex-start;font-size:.78rem;padding:6px 0;border-top:1px solid #F0EDE8">
       <div>
         <span style="font-family:'DM Mono',monospace;color:#999">Job ${j.job}</span>
@@ -1666,10 +1839,10 @@ function renderJayJobs(){
     </div>`;
   }).join('');
   list.innerHTML=rows;
-  // Update Jay's commission in emps
   const jay=S.emps.caleb.find(e=>e.name==='Jay Hall');
-  if(jay){jay.jayCommission=commission;}
-  totEl.innerHTML=`<span style="font-size:.82rem">Jay Hall commission total: <strong style="font-family:'DM Mono',monospace">${fp(commission)}</strong> &nbsp;·&nbsp; Plus service spiffs: <strong style="font-family:'DM Mono',monospace">${fp(jay?jay.chs:0)}</strong> &nbsp;·&nbsp; <strong>Grand total: ${fp(commission+(jay?jay.chs:0))}</strong></span>`;
+  const manAmt=(S.manuals.caleb||[]).filter(m=>m.name==='Jay Hall').reduce((s,m)=>s+m.amount,0);
+  const svc=jay?empTot(jay):0;
+  totEl.innerHTML=`<span style="font-size:.82rem">Jay Hall commission total: <strong style="font-family:'DM Mono',monospace">${fp(commission)}</strong> &nbsp;·&nbsp; Plus service spiffs: <strong style="font-family:'DM Mono',monospace">${fp(svc)}</strong>${manAmt?` &nbsp;·&nbsp; Plus manual adds: <strong style="font-family:'DM Mono',monospace">${fp(manAmt)}</strong>`:''} &nbsp;·&nbsp; <strong>Grand total: ${fp(commission+svc+manAmt)}</strong></span>`;
 }
 
 async function flagSpiffLine(mgr,empName,idx){
@@ -1818,17 +1991,24 @@ async function closeOutMonth(){
   S.closedOut={closed:true,timestamp:new Date().toISOString(),by:S.role};
   await sAppend('month_status',[[MONTH,'closed',S.role,new Date().toISOString()]]);
   toast('Month closed out — locked for editing.');
-  rerenderCurrentView();
+  updateMonthLabel();rerenderCurrentView();
 }
 async function reopenMonth(){
   if(!confirm(`Reopen ${MONTH} for editing?`))return;
   S.closedOut={closed:false,timestamp:new Date().toISOString(),by:S.role};
   await sAppend('month_status',[[MONTH,'reopened',S.role,new Date().toISOString()]]);
   toast('Month reopened for editing.');
-  rerenderCurrentView();
+  updateMonthLabel();rerenderCurrentView();
 }
 
 // ── BOOT ────────────────────────────────────────────────
+// month-lbl was a static "Jun 2026 · Processing window open" string that JS never touched —
+// it would show a stale month forever, out of sync with MONTH and S.closedOut below it.
+function updateMonthLabel(){
+  const el=document.getElementById('month-lbl');
+  if(el) el.textContent=`${MONTH} · ${isClosed()?'Closed out':'Processing window open'}`;
+}
+updateMonthLabel();
 showPin();
 // Try Sheet connection in background
 (async()=>{
@@ -1838,6 +2018,7 @@ showPin();
     const connect=(async()=>{await loadSheets();})();
     await Promise.race([connect,timeout]);
     badge.textContent='Connected';badge.className='conn conn-ok';CONN_OK=true;
+    updateMonthLabel();
     // loadSheets() runs independently of PIN entry/navigation — if a manager was
     // already viewing a tab before this resolved, re-render so synced data
     // (corrections, resolutions, flag states, etc) actually shows up.

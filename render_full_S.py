@@ -44,6 +44,7 @@ def carry_forward_line(c):
 lines = []
 lines.append("const S={")
 lines.append("  role:'billy',")
+lines.append("  notes:[],")  # must exist before loadSheets()' replay resolves — see index.html comment
 lines.append("  submissions:{steven:'not_started',caleb:'not_started'},")
 lines.append("  pushback:{steven:null,caleb:null},")
 lines.append("  revenue:[")
@@ -93,7 +94,7 @@ for c in r["carryForward"]:
     lines.append(f"    {carry_forward_line(c)},")
 lines.append("  ],")
 
-lines.append("  manuals:{steven:[],caleb:[]},")
+lines.append("  manuals:{steven:[],caleb:[],jenny:[]},")
 lines.append("  jayJobs:[],")
 
 def office_detail_line(d):

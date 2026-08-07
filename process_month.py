@@ -243,8 +243,11 @@ def main():
 
         bu_hint = business_unit_by_name.get(name, "")
         col = classify_mpf_line(name, activity, bu_hint)
-        add_spiff(name, col, float(pay), date, job, customer, activity,
-                  f"{activity} — {customer}")
+        # MPF has no item/code field (only EmployeeName/Activity/Date/JobNumber/GrossPay/
+        # CustomerName/LocationName/LaborTypeCode — confirmed via a live field dump) — item is
+        # just the customer name, not `f"{activity} — {customer}"`, which duplicated "Sales
+        # Spiff" as both type and item and rendered as "Sales Spiff — Sales Spiff — <customer>".
+        add_spiff(name, col, float(pay), date, job, customer, activity, customer)
         mpf_job_keys.add((name, str(job)))
         lnk = last_name_key(customer)
         mpf_customer_keys[name].add(lnk)

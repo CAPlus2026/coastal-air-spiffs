@@ -1,0 +1,53 @@
+name: Process Spiffs
+
+# Billy's "Unlock payroll" button in the app appends a row to the run_requests Sheet tab; this
+# workflow polls for it every 5 minutes and processes it end to end. Also runnable by hand from
+# the Actions tab (workflow_dispatch) for testing or a manual re-run.
+#
+# `concurrency` ensures at most one run of this workflow executes at a time — if the schedule
+# fires again while a previous run is still going, the new one waits rather than racing it.
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: process-spiffs
+  cancel-in-progress: false
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Process queued month, if any
+        env:
+          ST_CLIENT_ID: ${{ secrets.ST_CLIENT_ID }}
+          ST_CLIENT_SECRET: ${{ secrets.ST_CLIENT_SECRET }}
+          ST_APP_KEY: ${{ secrets.ST_APP_KEY }}
+          ST_TENANT_ID: ${{ secrets.ST_TENANT_ID }}
+          SPIFFS_SHARED_KEY: ${{ secrets.SPIFFS_SHARED_KEY }}
+        run: python run_requested_month.py
+
+      - name: Commit and push if index.html changed
+        run: |
+          git config user.name "Coastal Air Spiffs Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html output_*.json
+          git diff --staged --quiet && echo "No changes to commit." && exit 0
+          git commit -m "Automated: process spiffs month via self-service runner"
+          git push

@@ -1,10 +1,21 @@
-"""Assemble the complete `const S = {...}` block for index.html from output_2026-06.json,
+"""Assemble the complete `const S = {...}` block for index.html from output_<month>.json,
 keeping the parts that don't change month-to-month (revenue goals, manuals, jayJobs, role state)
 and replacing the parts that do (emps, flags, spiffDetail, commLeads, carryForward, officeMems, bonuses).
+
+Usage: python render_full_S.py "Sep 2026"   (reads output_2026-09.json)
 """
 import json
+import sys
 
-with open("output_2026-08.json") as f:
+if len(sys.argv) < 2:
+    print('Usage: python render_full_S.py "Sep 2026"')
+    sys.exit(1)
+
+_MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+_mon_str, _year_str = sys.argv[1].split()
+_output_file = f"output_{_year_str}-{_MONTH_NAMES.index(_mon_str) + 1:02d}.json"
+
+with open(_output_file) as f:
     r = json.load(f)
 
 
@@ -45,6 +56,7 @@ lines = []
 lines.append("const S={")
 lines.append("  role:'billy',")
 lines.append("  notes:[],")  # must exist before loadSheets()' replay resolves — see index.html comment
+lines.append("  runStatus:{month:null,status:null,message:'',at:null},")
 lines.append("  submissions:{steven:'not_started',caleb:'not_started'},")
 lines.append("  pushback:{steven:null,caleb:null},")
 lines.append("  revenue:[")

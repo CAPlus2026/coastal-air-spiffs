@@ -10,8 +10,14 @@ Auto-resolve anything we can compute confidently; only raise a flag for
 genuinely broken/contradictory data (unrecognized accessory code, employee
 we can't classify, username that doesn't resolve, etc).
 
-Usage: python process_month.py
+Usage: python process_month.py "Sep 2026"
+
+The month is a required argument (no default) — this is deliberate. A
+hardcoded default was the single most common source of error in this
+pipeline's history (easy to forget to update, easy to silently re-run last
+month). The runner (run_requested_month.py) always passes it explicitly too.
 """
+import calendar
 import json
 import os
 import re
@@ -22,12 +28,35 @@ import requests
 
 from st_client import ServiceTitanClient
 
+_MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+
+def month_config(label):
+    """Given 'Sep 2026', return (from_date, to_date, prev_label, next_label)."""
+    mon_str, year_str = label.split()
+    idx = _MONTH_NAMES.index(mon_str)
+    year = int(year_str)
+    last_day = calendar.monthrange(year, idx + 1)[1]
+    from_date = f"{year}-{idx + 1:02d}-01"
+    to_date = f"{year}-{idx + 1:02d}-{last_day:02d}"
+    prev_idx, prev_year = (idx - 1, year) if idx > 0 else (11, year - 1)
+    next_idx, next_year = (idx + 1, year) if idx < 11 else (0, year + 1)
+    prev_label = f"{_MONTH_NAMES[prev_idx]} {prev_year}"
+    next_label = f"{_MONTH_NAMES[next_idx]} {next_year}"
+    return from_date, to_date, prev_label, next_label
+
+
 # ── Month config ─────────────────────────────────────────────────────
-MONTH_LABEL = "Aug 2026"
-PREV_LABEL = "Jul 2026"
-NEXT_LABEL = "Sep 2026"
-FROM_DATE = "2026-08-01"
-TO_DATE = "2026-08-31"
+# None until configure_month() runs — deliberately not read until main() is actually called, so
+# other scripts (run_requested_month.py) can `import process_month` for its helper functions
+# (sheet_get, month_config, norm_month, ...) without being forced to supply a month up front.
+MONTH_LABEL = PREV_LABEL = NEXT_LABEL = FROM_DATE = TO_DATE = None
+
+
+def configure_month(month_label):
+    global MONTH_LABEL, PREV_LABEL, NEXT_LABEL, FROM_DATE, TO_DATE
+    MONTH_LABEL = month_label
+    FROM_DATE, TO_DATE, PREV_LABEL, NEXT_LABEL = month_config(month_label)
 
 # Same Apps Script Web App URL embedded in index.html — already public there, not a secret.
 APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHV_lR6gQQGs4LOmst5JxYlg6NqDjJIhJjs0h6l4wCs8DFEtBaWQ6RfURKIVdrfkqI/exec"
@@ -130,7 +159,6 @@ def last_name_key(customer):
 
 
 # ── Sheet read/write helpers (for self-service: auto-seeding + result delivery) ──
-_MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 _ISO_MONTH_RE = re.compile(r"^(\d{4})-(\d{2})-\d{2}T")
 
 
@@ -760,4 +788,8 @@ def main():
 
 
 if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print('Usage: python process_month.py "Sep 2026"')
+        sys.exit(1)
+    configure_month(sys.argv[1])
     main()

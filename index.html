@@ -176,6 +176,7 @@ async function sPut(range, values){
 const S={
   role:'billy',
   notes:[],
+  runStatus:{month:null,status:null,message:'',at:null}, // replaced by loadSheets() from run_requests
   submissions:{steven:'not_started',caleb:'not_started'},
   pushback:{steven:null,caleb:null},
   revenue:[
@@ -631,7 +632,7 @@ function toggleDetailRow(cell){
 
 // ── Load from Sheets ──────────────────────────────────────
 async function loadSheets(){
-  const [subs,rev,flags,mans,corrections,cfRes,jayJobLog,commLeadLog,monthStatusLog,notesLog]=await Promise.all([
+  const [subs,rev,flags,mans,corrections,cfRes,jayJobLog,commLeadLog,monthStatusLog,notesLog,runReqLog]=await Promise.all([
     sGet('submissions!A2:F50'),
     sGet('revenue_actuals!A2:D50'),
     sGet('flags!A2:N500'),
@@ -642,6 +643,7 @@ async function loadSheets(){
     sGet('commlead_updates!A2:K500'),
     sGet('month_status!A2:D50'),
     sGet('manager_notes!A2:H1000'),
+    sGet('run_requests!A2:E200'),
   ]);
   if(subs)subs.forEach(r=>{
     if(normMonth(r[0])===MONTH&&r[1]){const m=r[1].toLowerCase();if(m in S.submissions){S.submissions[m]=r[2]||'not_started';S.pushback[m]=(r[4]==='pushed_back'&&r[5])?r[5]:null;}}
@@ -791,6 +793,16 @@ async function loadSheets(){
     });
     S.notes=Object.values(latestNotes);
   }
+  // Replay self-service run status — run_requests is append-only (month, status, requestedBy,
+  // requestedAt, message); the runner (run_requested_month.py, via GitHub Actions) appends
+  // queued→running→complete|failed rows as it works. Track only the single most recent row
+  // overall, so the Overview card always reflects whatever's currently in flight (or the last
+  // thing that happened), regardless of which month it was for.
+  if(runReqLog&&runReqLog.length){
+    const last=runReqLog[runReqLog.length-1];
+    const [month,status,requestedBy,at,message]=last;
+    if(month){S.runStatus={month:normMonth(month),status:status||null,message:message||'',at:at||null};}
+  }
 }
 
 // ── Nav ──────────────────────────────────────────────────
@@ -828,8 +840,36 @@ function rOverview(){
   const allF=[...S.flags.steven,...S.flags.caleb];
   const open=allF.filter(f=>!f.resolved).length;
   const subs=Object.values(S.submissions).filter(s=>s==='submitted'||s==='approved').length;
+  const rs=S.runStatus||{};
+  const rsForNext=rs.month===NEXT_M;
+  const rsActive=rsForNext&&(rs.status==='queued'||rs.status==='running');
   v.innerHTML=`
   <datalist id="all-names">${allKnownNames().map(n=>`<option value="${n}">`).join('')}</datalist>
+  <div class="card" style="border-left:3px solid ${rsActive?'#3b82f6':rsForNext&&rs.status==='failed'?'#ef4444':'#999'}">
+    <div class="ctitle">Self-service run</div>
+    ${rsActive?`
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div><span class="badge binfo">${rs.status==='queued'?'Queued':'Running'}</span> <span style="font-size:.82rem;margin-left:6px">Processing ${rs.month} — usually done within a few minutes.</span></div>
+      </div>
+      <div style="font-size:.75rem;color:#999;margin-top:.5rem">Picked up automatically by a check that runs every 5 minutes. This page checks back on its own — no need to keep reloading.</div>
+    `:rsForNext&&rs.status==='complete'?`
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div><span class="badge bok">✓ Complete</span> <span style="font-size:.82rem;margin-left:6px">${rs.month} was processed successfully.</span></div>
+        <button class="btn btnp bsm" onclick="location.reload()">Reload to see it</button>
+      </div>
+      <div style="font-size:.75rem;color:#999;margin-top:.5rem">The site takes a minute or two to redeploy after processing finishes — if it still shows ${MONTH}, wait a moment and reload again.</div>
+    `:rsForNext&&rs.status==='failed'?`
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div><span class="badge bdanger">✕ Failed</span> <span style="font-size:.82rem;margin-left:6px">Processing ${rs.month} failed — ${rs.message||'no details recorded'}.</span></div>
+        <button class="btn btnp bsm" onclick="unlockPayroll()">Try again</button>
+      </div>
+    `:`
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div style="font-size:.82rem;color:#999">Once ${NEXT_M} is ready to process, unlock it to pull fresh data from ServiceTitan.</div>
+        <button class="btn btnp bsm" onclick="unlockPayroll()">Unlock payroll for ${NEXT_M}</button>
+      </div>
+    `}
+  </div>
   <div class="card" style="border-left:3px solid ${isClosed()?'#065f46':'#f59e0b'}">
     <div class="ctitle">Month status</div>
     ${isClosed()?`
@@ -1957,6 +1997,28 @@ function rerenderCurrentView(){
   if(activeBtn&&RENDERS[activeBtn.dataset.v])RENDERS[activeBtn.dataset.v]();
 }
 
+// ── Self-service run ──────────────────────────────────────
+let runStatusPollTimer=null;
+function startRunStatusPolling(){
+  if(runStatusPollTimer)return;
+  runStatusPollTimer=setInterval(async()=>{
+    await loadSheets();
+    if(S.runStatus.status==='complete'||S.runStatus.status==='failed'){
+      clearInterval(runStatusPollTimer);runStatusPollTimer=null;
+    }
+    rerenderCurrentView();
+  },30000); // the runner is picked up by a 5-minute cron — no point polling faster than that
+}
+async function unlockPayroll(){
+  if(!confirm(`Unlock payroll for ${NEXT_M}? This kicks off a fresh pull from ServiceTitan, picked up automatically within a few minutes.`))return;
+  const at=new Date().toISOString();
+  S.runStatus={month:NEXT_M,status:'queued',message:'Requested from the app',at};
+  await sAppend('run_requests',[[NEXT_M,'queued',S.role,at,'Requested from the app']]);
+  toast(`Payroll unlock requested for ${NEXT_M}.`);
+  rOverview();
+  startRunStatusPolling();
+}
+
 // ── Month close-out ──────────────────────────────────────
 function isClosed(){return !!(S.closedOut&&S.closedOut.closed);}
 function guardClosed(){
@@ -2000,6 +2062,11 @@ showPin();
     // already viewing a tab before this resolved, re-render so synced data
     // (corrections, resolutions, flag states, etc) actually shows up.
     rerenderCurrentView();
+    // Resume polling if a run was already in flight when this page loaded (e.g. Billy
+    // unlocked payroll, closed the tab, and came back before it finished).
+    if(S.runStatus&&S.runStatus.month===NEXT_M&&(S.runStatus.status==='queued'||S.runStatus.status==='running')){
+      startRunStatusPolling();
+    }
   }catch(e){
     badge.textContent='Offline — saves disabled';badge.className='conn conn-err';
     console.warn('Sheet offline:',e.message);

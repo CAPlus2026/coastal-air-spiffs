@@ -644,14 +644,19 @@ async function loadSheets(){
   if(corrections){
     const latestCorr={};
     corrections.forEach(r=>{
-      const [month,mgr,empName,idxStr,action,reason]=r;
+      const [month,mgr,empName,idxStr,action,reason,ts,lineId]=r;
       if(normMonth(month)!==MONTH||!mgr||!empName)return;
-      latestCorr[`${mgr}|${empName}|${idxStr}`]={mgr,empName,idx:parseInt(idxStr),action,reason:reason||''};
+      // Group by lineId (content-stable) when present so a re-run's shifted array positions
+      // don't fork one line's flag/unflag history into two separate entries; rows written
+      // before lineId existed fall back to the old position-based key.
+      const key=lineId?`${mgr}|${empName}|id:${lineId}`:`${mgr}|${empName}|${idxStr}`;
+      latestCorr[key]={mgr,empName,idx:parseInt(idxStr),lineId:lineId||'',action,reason:reason||''};
     });
     Object.values(latestCorr).forEach(c=>{
       const detail=(S.spiffDetail[c.mgr]||{})[c.empName];
-      if(!detail||!detail[c.idx])return;
-      const line=detail[c.idx];
+      if(!detail)return;
+      const line=c.lineId?detail.find(d=>d.lineId===c.lineId):detail[c.idx];
+      if(!line)return;
       const emp=S.emps[c.mgr].find(e=>e.name===c.empName);
       if(c.action==='flagged'&&!line.flagged){
         line.flagged=true;line.flagNote=c.reason;
@@ -1942,7 +1947,11 @@ async function flagSpiffLine(mgr,empName,idx){
   }
   // Persist so the correction survives a reload and syncs to other PIN sessions —
   // without this, marking a line incorrect only ever mutated in-memory state.
-  await sAppend('spiff_corrections',[[MONTH,mgr,empName,String(idx),'flagged',reason,new Date().toISOString()]]);
+  // lineId (trailing column) is the line's stable, content-derived id — added so a re-run of
+  // this month (which regenerates spiffDetail fresh from ServiceTitan) can still find the exact
+  // same line by content instead of by array position, which shifts if the line count/order
+  // changes between runs. idx is kept as a fallback for rows written before this existed.
+  await sAppend('spiff_corrections',[[MONTH,mgr,empName,String(idx),'flagged',reason,new Date().toISOString(),detail[idx].lineId||'']]);
   toast('Line flagged — excluded from totals. Noted for payroll reversal.');
   rTeam(mgr);
 }
@@ -1960,7 +1969,7 @@ async function unflagSpiffLine(mgr,empName,idx){
     const col=spiffFieldFor(mgr,empName,detail[idx].type);
     emp[col]=(emp[col]||0)+wasSpiff;
   }
-  await sAppend('spiff_corrections',[[MONTH,mgr,empName,String(idx),'unflagged','',new Date().toISOString()]]);
+  await sAppend('spiff_corrections',[[MONTH,mgr,empName,String(idx),'unflagged','',new Date().toISOString(),detail[idx].lineId||'']]);
   toast('Flag removed — spiff restored to total.');
   rTeam(mgr);
 }

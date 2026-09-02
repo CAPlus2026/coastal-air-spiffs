@@ -18,6 +18,7 @@ pipeline's history (easy to forget to update, easy to silently re-run last
 month). The runner (run_requested_month.py) always passes it explicitly too.
 """
 import calendar
+import hashlib
 import json
 import os
 import re
@@ -29,6 +30,31 @@ import requests
 from st_client import ServiceTitanClient
 
 _MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+
+def stable_id(prefix, *parts):
+    """Content-derived id: same inputs always produce the same id, regardless of iteration
+    order or which run produced them. Replaces sequence-counter ids (cf_2026-08_3, s1, cl_..._2)
+    that got reminted from scratch on every run — including every normal month-to-month carry,
+    not just an explicit re-run — which could silently orphan a manager's already-recorded
+    resolution/correction (found 2026-09 after a real self-service re-run). Truncated sha1 is
+    fine here: this only needs to avoid accidental collisions, not resist a deliberate one."""
+    raw = "|".join(str(p) for p in parts)
+    return f"{prefix}_{hashlib.sha1(raw.encode('utf-8')).hexdigest()[:10]}"
+
+
+def make_id_factory(prefix):
+    """Returns an id-maker that appends a numeric suffix on the rare occasion two genuinely
+    different items hash to the same content-key within one run (e.g. two blank-ref carry-forward
+    items for the same employee) — deterministic as long as encounter order is deterministic,
+    which it is here (both are derived from the same ServiceTitan report order every run)."""
+    seen = {}
+    def make(*parts):
+        base = stable_id(prefix, *parts)
+        n = seen.get(base, 0) + 1
+        seen[base] = n
+        return base if n == 1 else f"{base}_{n}"
+    return make
 
 
 def month_config(label):
@@ -397,11 +423,11 @@ def main():
     flags = {"steven": [], "caleb": []}
     office_mems = defaultdict(float)
     office_mem_details = defaultdict(list)
-    flag_seq = [0]
-
-    def new_flag_id(mgr):
-        flag_seq[0] += 1
-        return f"{mgr[0]}{flag_seq[0]}"
+    # Content-derived, not a sequence counter — flags/details raised for the same underlying
+    # job/employee get the same id every run, so a manager's resolution survives a re-run instead
+    # of silently orphaning when the fresh run's iteration order shifts which item gets which seq.
+    new_flag_id = make_id_factory("flag")
+    new_line_id = make_id_factory("ln")
 
     def ensure_emp(name):
         if name not in emps:
@@ -412,13 +438,14 @@ def main():
         e = ensure_emp(name)
         e[col] += amount
         spiff_detail[name].append({
+            "lineId": new_line_id(name, job, type_, item, amount),
             "date": date, "job": job, "customer": customer, "type": type_, "item": item, "spiff": amount,
             **({"note": "Auto-added — not on Master Pay File"} if auto_added else {}),
         })
 
     def add_flag(mgr, emp, ref, title, detail, sev="yellow"):
         flags[mgr].append({
-            "id": new_flag_id(mgr), "sev": sev, "emp": emp, "ref": ref, "resolved": False,
+            "id": new_flag_id(mgr, emp, ref, title), "sev": sev, "emp": emp, "ref": ref, "resolved": False,
             "disp": "", "note": "", "title": title, "detail": detail,
         })
 
@@ -606,7 +633,11 @@ def main():
 
     carry_forward_out = []
     resolved_keys = set()
-    cf_seq = 0
+    # Content-derived from (employee, job/ref) — the same pending item now keeps the same id
+    # every month until it's resolved, instead of a cf_<month>_<seq> counter that got reminted
+    # from scratch every run (including ordinary month-to-month carry, not just a re-run), which
+    # could silently orphan a "mark paid"/"mark dead" resolution already logged against it.
+    new_cf_id = make_id_factory("cf")
     for cf in prior_carry_forward:
         key = (cf["emp"], cf["lnk"])
         if key in tgl_sold_seen:
@@ -615,9 +646,8 @@ def main():
             continue
         if cf.get("id") and manually_resolved.get(cf["id"]) in ("paid", "dead"):
             continue  # manually resolved in the app — don't carry forward again
-        cf_seq += 1
         carry_forward_out.append({
-            "id": f"cf_{FROM_DATE[:7]}_{cf_seq}", "fromMonth": cf["fromMonth"], "emp": cf["emp"], "ref": cf["ref"],
+            "id": new_cf_id(cf["emp"], cf["ref"]), "fromMonth": cf["fromMonth"], "emp": cf["emp"], "ref": cf["ref"],
             "type": cf["type"], "amount": cf["amount"], "dept": cf["dept"],
             "reason": "Stage 1 paid, still pending sold/installed/paid confirmation — carried forward again.",
             "resolved": False, "disposition": "", "note": "",
@@ -631,10 +661,10 @@ def main():
             continue
         if any(cf["emp"] == name and cf["lnk"] == lnk for cf in prior_carry_forward):
             continue  # already represented above
-        cf_seq += 1
+        ref = f"Job {detail['job']}" if detail["job"] else ""
         carry_forward_out.append({
-            "id": f"cf_{FROM_DATE[:7]}_{cf_seq}", "fromMonth": MONTH_LABEL, "emp": name,
-            "ref": f"Job {detail['job']}" if detail["job"] else "",
+            "id": new_cf_id(name, ref), "fromMonth": MONTH_LABEL, "emp": name,
+            "ref": ref,
             "type": f"Lead Stage 2 — {detail['customer']}", "amount": 75, "dept": detail["dept"],
             "reason": f"Stage 1 paid {MONTH_LABEL}. Pay $75 when sold, installed, paid.",
             "resolved": False, "disposition": "", "note": "",
@@ -665,7 +695,10 @@ def main():
     # a job) — matches the brief's own note that lead-request numbers don't match MPF job numbers anyway.
     # Job number is left blank for manual entry when a manager confirms sold/completed status in the app.
     known_leads = {(l["tech"], last_name_key(l["customer"])) for l in comm_leads_out}
-    seq = 0
+    # Content-derived from (tech, customer key) — the same natural dedup key already used for
+    # `known_leads` just above, so a re-run detects the same lead as the same lead instead of
+    # minting it a new cl_<month>_<seq> counter id every time.
+    new_cl_id = make_id_factory("cl")
     for row in leads:
         if row.get("State") != "Completed":
             continue
@@ -678,9 +711,8 @@ def main():
         if key in known_leads or lnk in mpf_customer_keys.get(name, set()):
             continue  # already logged, or already paid via MPF this month
         known_leads.add(key)
-        seq += 1
         comm_leads_out.append({
-            "id": f"cl_{FROM_DATE[:7]}_{seq}", "month": MONTH_LABEL, "tech": name, "job": "",
+            "id": new_cl_id(name, lnk), "month": MONTH_LABEL, "tech": name, "job": "",
             "customer": customer, "status": "Pending", "spiff": 0, "payMonth": "", "paid": False,
         })
 

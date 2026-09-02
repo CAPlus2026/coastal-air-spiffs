@@ -36,7 +36,8 @@ def flag_line(f):
 
 def spiff_detail_line(d):
     note = f",note:{js(d['note'])}" if d.get("note") else ""
-    return (f"{{date:{js(d['date'])},job:{js(d['job'])},customer:{js(d['customer'])},"
+    line_id = f"lineId:{js(d['lineId'])}," if d.get("lineId") else ""
+    return (f"{{{line_id}date:{js(d['date'])},job:{js(d['job'])},customer:{js(d['customer'])},"
             f"type:{js(d['type'])},item:{js(d['item'])},spiff:{d['spiff']:g}{note}}}")
 
 

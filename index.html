@@ -602,6 +602,18 @@ function reversePayoutCommLead(mgr,l){
 }
 function stevenBonus(){return S.revenue.filter(r=>r.se&&r.actual&&r.actual>=r.goal).length*350;}
 const MONTH_NAMES=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+// Google Sheets silently auto-converts a plain "MMM YYYY" cell value into a real Date on write
+// (confirmed live, 2026-09 — every month-column value read back from the Apps Script backend
+// comes back as an ISO datetime like "2026-08-01T04:00:00.000Z" instead of "Aug 2026"). Every
+// month-string comparison against a Sheet row must go through this first, or it silently never
+// matches — this was quietly breaking every replay-on-load path in loadSheets() below.
+function normMonth(v){
+  if(!v) return '';
+  const s=String(v);
+  const m=s.match(/^(\d{4})-(\d{2})-\d{2}T/);
+  if(m) return MONTH_NAMES[parseInt(m[2],10)-1]+' '+m[1];
+  return s;
+}
 function monthIdx(label){
   const [mon,yr]=(label||'').split(' ');
   const m=MONTH_NAMES.indexOf(mon);
@@ -632,11 +644,11 @@ async function loadSheets(){
     sGet('manager_notes!A2:H1000'),
   ]);
   if(subs)subs.forEach(r=>{
-    if(r[0]===MONTH&&r[1]){const m=r[1].toLowerCase();if(m in S.submissions){S.submissions[m]=r[2]||'not_started';S.pushback[m]=(r[4]==='pushed_back'&&r[5])?r[5]:null;}}
+    if(normMonth(r[0])===MONTH&&r[1]){const m=r[1].toLowerCase();if(m in S.submissions){S.submissions[m]=r[2]||'not_started';S.pushback[m]=(r[4]==='pushed_back'&&r[5])?r[5]:null;}}
   });
-  if(rev)rev.forEach(r=>{if(r[0]===MONTH){const row=S.revenue.find(x=>x.dept===r[1]);if(row&&r[3])row.actual=parseFloat(r[3]);}});
+  if(rev)rev.forEach(r=>{if(normMonth(r[0])===MONTH){const row=S.revenue.find(x=>x.dept===r[1]);if(row&&r[3])row.actual=parseFloat(r[3]);}});
   if(flags)flags.forEach(r=>{
-    if(r[0]!==MONTH||!r[1]||!r[2])return;
+    if(normMonth(r[0])!==MONTH||!r[1]||!r[2])return;
     const mgr=r[1];if(!S.flags[mgr])return;
     const fl=S.flags[mgr].find(f=>f.id===r[2]);
     if(fl){fl.disp=r[9]||'';fl.note=r[10]||'';fl.resolved=r[11]==='true';}
@@ -648,7 +660,7 @@ async function loadSheets(){
     const manualKey=r=>r[9]||[r[0],r[1],r[2],r[3],r[4],r[5]].join('|');
     const latestManual={};
     mans.forEach(r=>{
-      if(r[0]!==MONTH||!r[1])return;
+      if(normMonth(r[0])!==MONTH||!r[1])return;
       const id=manualKey(r);
       latestManual[id]={mgr:r[1],name:r[2],reason:r[3],amount:parseFloat(r[4])||0,dept:r[5],status:r[8]||'added',id};
     });
@@ -659,7 +671,7 @@ async function loadSheets(){
   }
   // Load bonus approvals from Sheet (approved state only — amounts stay hardcoded)
   if(flags)flags.forEach(r=>{
-    if(r[0]!==MONTH||r[1]!=='billy') return;
+    if(normMonth(r[0])!==MONTH||r[1]!=='billy') return;
     const bonusId = r[2]&&r[2].startsWith('bonus-') ? r[2].replace('bonus-','') : null;
     if(bonusId){
       const b=S.bonuses.find(x=>x.id===bonusId);
@@ -682,7 +694,7 @@ async function loadSheets(){
     const latestCorr={};
     corrections.forEach(r=>{
       const [month,mgr,empName,idxStr,action,reason]=r;
-      if(month!==MONTH||!mgr||!empName)return;
+      if(normMonth(month)!==MONTH||!mgr||!empName)return;
       latestCorr[`${mgr}|${empName}|${idxStr}`]={mgr,empName,idx:parseInt(idxStr),action,reason:reason||''};
     });
     Object.values(latestCorr).forEach(c=>{
@@ -706,7 +718,7 @@ async function loadSheets(){
     const latestCf={};
     cfRes.forEach(r=>{
       const [month,mgr,id,emp,ref,type,amount,disposition,note]=r;
-      if(month!==MONTH||!id)return;
+      if(normMonth(month)!==MONTH||!id)return;
       latestCf[id]={mgr,disposition:disposition||'',note:note||''};
     });
     Object.entries(latestCf).forEach(([id,c])=>{
@@ -726,7 +738,7 @@ async function loadSheets(){
     const latestJJ={};
     jayJobLog.forEach(r=>{
       const [month,id,job,subtotal,accDeduct,type,action]=r;
-      if(month!==MONTH||!id)return;
+      if(normMonth(month)!==MONTH||!id)return;
       latestJJ[id]={job,subtotal:parseFloat(subtotal)||0,accDeduct:parseFloat(accDeduct)||0,type,action};
     });
     S.jayJobs=Object.entries(latestJJ)
@@ -742,8 +754,8 @@ async function loadSheets(){
     const latestCL={};
     commLeadLog.forEach(r=>{
       const [month,id,tech,customer,job,status,spiff,payMonth,ts,disposition,note]=r;
-      if(month!==MONTH||!id)return;
-      latestCL[id]={tech,customer,job,status,spiff:parseFloat(spiff)||0,payMonth:payMonth||'',disposition:disposition||'',note:note||''};
+      if(normMonth(month)!==MONTH||!id)return;
+      latestCL[id]={tech,customer,job,status,spiff:parseFloat(spiff)||0,payMonth:normMonth(payMonth),disposition:disposition||'',note:note||''};
     });
     Object.entries(latestCL).forEach(([id,c])=>{
       let lead=S.commLeads.find(l=>l.id===id);
@@ -761,7 +773,7 @@ async function loadSheets(){
   }
   // Replay month close-out status — last row for this MONTH wins.
   if(monthStatusLog){
-    const rowsThisMonth=monthStatusLog.filter(r=>r[0]===MONTH);
+    const rowsThisMonth=monthStatusLog.filter(r=>normMonth(r[0])===MONTH);
     if(rowsThisMonth.length){
       const last=rowsThisMonth[rowsThisMonth.length-1];
       const [month,action,by,timestamp]=last;
@@ -1236,7 +1248,7 @@ function buildRows(){
   // Commercial lead spiffs — amount is already baked into the tech's base vals above
   // (payOutCommLead mutates S.emps directly, same pattern as carry-forward payouts below),
   // so this only adds a traceable note, not the dollar amount again.
-  S.commLeads.filter(l=>l.status==='Sold & Completed'&&l.payMonth===MONTH).forEach(l=>{
+  S.commLeads.filter(l=>l.status==='Sold & Completed'&&normMonth(l.payMonth)===MONTH).forEach(l=>{
     addToEmp(l.tech, [0,0,0,0,0,0], `Commercial lead: ${l.customer} (Job ${l.job}) — ${fp(l.spiff)}`, '');
   });
 

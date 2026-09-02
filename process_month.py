@@ -18,6 +18,8 @@ import re
 import sys
 from collections import defaultdict
 
+import requests
+
 from st_client import ServiceTitanClient
 
 # ── Month config ─────────────────────────────────────────────────────
@@ -125,6 +127,118 @@ def last_name_key(customer):
     first_segment = customer.split(",")[0].strip() if "," in customer else customer
     tokens = re.findall(r"[a-zA-Z]+", first_segment)
     return tokens[0].lower() if tokens else ""
+
+
+# ── Sheet read/write helpers (for self-service: auto-seeding + result delivery) ──
+_MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+_ISO_MONTH_RE = re.compile(r"^(\d{4})-(\d{2})-\d{2}T")
+
+
+def norm_month(v):
+    """Google Sheets silently auto-converts a plain 'MMM YYYY' cell value into a real Date on
+    write (confirmed live, 2026-09: every existing tab's month column comes back from the Apps
+    Script backend as an ISO datetime like '2026-08-01T04:00:00.000Z' instead of 'Aug 2026').
+    Every month-string comparison against Sheet data must go through this first, or it silently
+    never matches — which is exactly why compute_prior_carry_forward()/compute_carried_leads()
+    returned zero rows against real bootstrapped data before this fix."""
+    if not v:
+        return ""
+    m = _ISO_MONTH_RE.match(str(v))
+    if m:
+        year, mon = m.group(1), int(m.group(2))
+        return f"{_MONTH_NAMES[mon - 1]} {year}"
+    return str(v)
+
+
+def sheet_get(sheet_name, timeout=20):
+    """GET a full Sheet tab via the Apps Script backend. Returns [] on any failure — every
+    caller here is a best-effort seed, not something that should ever crash a run."""
+    try:
+        resp = requests.get(APPS_SCRIPT_URL, params={"action": "get", "sheet": sheet_name, "key": SHARED_KEY},
+                             timeout=timeout)
+        resp.raise_for_status()
+        return resp.json().get("values") or []
+    except Exception as e:
+        print(f"  (couldn't fetch {sheet_name}: {e})")
+        return []
+
+
+def sheet_write_table(sheet_name, headers, rows, mode="replaceMonth", month=None):
+    """Bulk-write a result table via the Apps Script backend's writeTable verb (added Phase 1,
+    apps-script/Lib.js actionWriteTable_) — one POST instead of one GET per row."""
+    payload = {"action": "writeTable", "sheet": sheet_name, "key": SHARED_KEY, "mode": mode,
+               "headers": json.dumps(headers), "rows": json.dumps(rows)}
+    if month:
+        payload["month"] = month
+    try:
+        resp = requests.post(APPS_SCRIPT_URL, data=payload, timeout=30)
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as e:
+        print(f"  (couldn't write {sheet_name}: {e})")
+        return None
+
+
+def fetch_disposition_map(sheet_name, id_col, disposition_col, valid_dispositions=("paid", "dead")):
+    """Generic last-row-wins reader for an append-only resolutions log. Returns {id: disposition}."""
+    resolved = {}
+    for row in sheet_get(sheet_name):
+        if len(row) <= max(id_col, disposition_col):
+            continue
+        rid, disp = row[id_col], row[disposition_col]
+        if disp in valid_dispositions:
+            resolved[rid] = disp
+        elif rid in resolved:
+            del resolved[rid]  # undone
+    return resolved
+
+
+def compute_prior_carry_forward():
+    """Auto-computes the carry-forward seed for this run from res_carry_forward (last month's
+    computed output, written by that month's run — see write-back at the end of main()) plus
+    carry_forward_resolutions (what's been resolved since). Replaces the hand-maintained
+    snapshot that used to require manually diffing the live app before every run — the single
+    most error-prone step in this whole pipeline historically."""
+    baseline = sheet_get("res_carry_forward")
+    prev_rows = [r for r in baseline if len(r) >= 9 and norm_month(r[0]) == PREV_LABEL]
+    resolved = fetch_disposition_map("carry_forward_resolutions", id_col=2, disposition_col=7)
+    out = []
+    for r in prev_rows:
+        _month, id_, from_month, emp, ref, type_, amount, dept, reason = r[:9]
+        if resolved.get(id_) in ("paid", "dead"):
+            continue
+        customer = type_.split(" — ", 1)[-1].strip() if " — " in type_ else ""
+        out.append({
+            "id": id_, "fromMonth": norm_month(from_month), "emp": emp, "ref": ref, "type": type_,
+            "amount": float(amount), "dept": dept, "lnk": last_name_key(customer),
+        })
+    return out
+
+
+def compute_carried_leads():
+    """Same idea for the commercial lead rolling log — reads res_comm_leads (last month's
+    computed output) + commlead_updates (resolutions since, not month-filtered since an update
+    can reference a lead first seeded many months back), drops anything paid or dismissed."""
+    baseline = sheet_get("res_comm_leads")
+    prev_rows = [r for r in baseline if len(r) >= 10 and norm_month(r[0]) == PREV_LABEL]
+    latest_status = {}
+    for r in sheet_get("commlead_updates"):
+        if len(r) < 6:
+            continue
+        _month, id_, tech, customer, job, status = r[:6]
+        latest_status[id_] = status
+    terminal = {"Sold & Completed", "Did Not Sell — Close Lead", "Dismissed"}
+    out = []
+    for r in prev_rows:
+        _month, id_, lead_month, tech, job, customer, status, spiff, pay_month, paid = r[:10]
+        eff_status = latest_status.get(id_, status)
+        if eff_status in terminal:
+            continue
+        out.append({
+            "id": id_, "month": norm_month(lead_month), "tech": tech, "job": job, "customer": customer,
+            "status": eff_status, "spiff": 0, "payMonth": "", "paid": False,
+        })
+    return out
 
 
 # ── Classification ───────────────────────────────────────────────────
@@ -379,52 +493,11 @@ def main():
                       f"crediting a Stage 1 spiff.", sev="red")
 
     # ── 5) Residential Stage 2 carry-forward ──
-    # Refreshed 2026-09 from the live index.html S.carryForward (25 items, Jul 2026 build) minus
-    # everything resolved via carry_forward_resolutions since (5 resolved paid/dead) — these 20
-    # are what's still genuinely pending.
-    # NOTE: before running this script for a new month, refresh this list again the same way.
-    prior_carry_forward = [
-        {"id": "cf_2026-07_1", "fromMonth": "May 2026", "emp": "Jim LeBlanc", "ref": "Job 157876582",
-         "type": "Lead Stage 2 — Parsons, Karen", "amount": 75, "dept": "MB Install Residential", "lnk": "parsons"},
-        {"id": "cf_2026-07_2", "fromMonth": "May 2026", "emp": "Jim LeBlanc", "ref": "Job 158111360",
-         "type": "Lead Stage 2 — Sea-Mix LLC", "amount": 75, "dept": "MB Install Residential", "lnk": "sea"},
-        {"id": "cf_2026-07_3", "fromMonth": "May 2026", "emp": "Karl Welch", "ref": "Job 156979623",
-         "type": "Lead Stage 2 — Ogletree, Bill", "amount": 75, "dept": "MB Install Residential", "lnk": "ogletree"},
-        {"id": "cf_2026-07_4", "fromMonth": "May 2026", "emp": "Karl Welch", "ref": "Job 157783679",
-         "type": "Lead Stage 2 — Bernard, Jonathan", "amount": 75, "dept": "MB Install Residential", "lnk": "bernard"},
-        {"id": "cf_2026-07_5", "fromMonth": "Jun 2026", "emp": "Karl Welch", "ref": "Job 158235161",
-         "type": "Lead Stage 2 — O'Drobinak, Larry ", "amount": 75, "dept": "MB Install Residential", "lnk": "o"},
-        {"id": "cf_2026-07_6", "fromMonth": "Jun 2026", "emp": "Karl Welch", "ref": "Job 158878434",
-         "type": "Lead Stage 2 — Morris, Tonya", "amount": 75, "dept": "MB Install Residential", "lnk": "morris"},
-        {"id": "cf_2026-07_7", "fromMonth": "Jun 2026", "emp": "Karl Welch", "ref": "Job 159113711",
-         "type": "Lead Stage 2 — Romero, Anais ", "amount": 75, "dept": "MB Install Residential", "lnk": "romero"},
-        {"id": "cf_2026-07_8", "fromMonth": "Jun 2026", "emp": "Karl Welch", "ref": "Job 159166309",
-         "type": "Lead Stage 2 — Garner, Kim", "amount": 75, "dept": "MB Install Residential", "lnk": "garner"},
-        {"id": "cf_2026-07_9", "fromMonth": "Jun 2026", "emp": "Karl Welch", "ref": "",
-         "type": "Lead Stage 2 — Ard, Jim & Cherie", "amount": 75, "dept": "MB Install Residential", "lnk": "ard"},
-        {"id": "cf_2026-07_12", "fromMonth": "Jul 2026", "emp": "Karl Welch", "ref": "Job 162072085",
-         "type": "Lead Stage 2 — Crutchfield, Jim", "amount": 75, "dept": "MB Install Residential", "lnk": "crutchfield"},
-        {"id": "cf_2026-07_13", "fromMonth": "Jul 2026", "emp": "Karl Welch", "ref": "Job 162819304",
-         "type": "Lead Stage 2 — Thigpen, Barry", "amount": 75, "dept": "MB Install Residential", "lnk": "thigpen"},
-        {"id": "cf_2026-07_14", "fromMonth": "Jul 2026", "emp": "Karl Welch", "ref": "Job 163202786",
-         "type": "Lead Stage 2 — BCR Capital Partners, LLC", "amount": 75, "dept": "MB Install Residential", "lnk": "bcr"},
-        {"id": "cf_2026-07_15", "fromMonth": "Jul 2026", "emp": "Karl Welch", "ref": "Job 163110556",
-         "type": "Lead Stage 2 — Link, Jesse", "amount": 75, "dept": "MB Install Residential", "lnk": "link"},
-        {"id": "cf_2026-07_18", "fromMonth": "Jul 2026", "emp": "Karl Welch", "ref": "Job 164058977",
-         "type": "Lead Stage 2 — Perrella, Patrick ", "amount": 75, "dept": "MB Install Residential", "lnk": "perrella"},
-        {"id": "cf_2026-07_19", "fromMonth": "Jul 2026", "emp": "Karl Welch", "ref": "",
-         "type": "Lead Stage 2 — Biddle, Larry", "amount": 75, "dept": "MB Install Residential", "lnk": "biddle"},
-        {"id": "cf_2026-07_21", "fromMonth": "Jul 2026", "emp": "Karl Welch", "ref": "",
-         "type": "Lead Stage 2 — Hannah, Bill", "amount": 75, "dept": "MB Install Residential", "lnk": "hannah"},
-        {"id": "cf_2026-07_22", "fromMonth": "Jul 2026", "emp": "Karl Welch", "ref": "",
-         "type": "Lead Stage 2 — Wofford, Walter", "amount": 75, "dept": "MB Install Residential", "lnk": "wofford"},
-        {"id": "cf_2026-07_23", "fromMonth": "Jul 2026", "emp": "Karl Welch", "ref": "",
-         "type": "Lead Stage 2 — Graham, Destiny", "amount": 75, "dept": "MB Install Residential", "lnk": "graham"},
-        {"id": "cf_2026-07_24", "fromMonth": "Jul 2026", "emp": "Karl Welch", "ref": "",
-         "type": "Lead Stage 2 — Birchenough, Dave", "amount": 75, "dept": "MB Install Residential", "lnk": "birchenough"},
-        {"id": "cf_2026-07_25", "fromMonth": "Jul 2026", "emp": "Karl Welch", "ref": "",
-         "type": "Lead Stage 2 — Rodriguez, Lupe", "amount": 75, "dept": "MB Install Residential", "lnk": "rodriguez"},
-    ]
+    # Auto-computed from res_carry_forward (last month's output) + carry_forward_resolutions —
+    # see compute_prior_carry_forward() near the top of this file. This used to be a hardcoded
+    # snapshot that had to be manually refreshed from the live app before every run (as of
+    # 2026-09, the last month that needed that manual step).
+    prior_carry_forward = compute_prior_carry_forward()
     # Manual resolutions from the app (Steven/Caleb marking a carry-forward item "paid" or "dead" directly) —
     # respect these so a dead lead doesn't keep rolling forward forever, and a manually-paid one doesn't reappear.
     def fetch_carry_forward_resolutions():
@@ -486,46 +559,10 @@ def main():
         })
 
     # ── 6) Commercial lead rolling log ──
-    # Refreshed 2026-09 from the live index.html S.commLeads (43 items, Jul 2026 build) minus
-    # everything resolved via commlead_updates since: 9 paid (excluded — already reflected in
-    # Jul's totals, not re-paid here) and 17 dismissed (excluded — closed, no payment). These 17
-    # are what's still genuinely Pending.
-    carried_leads = [
-        {"id": "cl_2026-06_1", "month": "Jun 2026", "tech": "Nick Scarpa", "job": "",
-         "customer": "Rambler - Wares to Wander", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
-        {"id": "cl_2026-06_2", "month": "Jun 2026", "tech": "Ray Lambert", "job": "",
-         "customer": "Founders Group Int'l", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
-        {"id": "cl_2026-06_4", "month": "Jun 2026", "tech": "Nick Scarpa", "job": "",
-         "customer": "Carolina Ale House", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
-        {"id": "cl_2026-06_5", "month": "Jun 2026", "tech": "Nick Scarpa", "job": "",
-         "customer": "Coldwell Banker", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
-        {"id": "cl_2026-06_6", "month": "Jun 2026", "tech": "Ray Lambert", "job": "",
-         "customer": "Refuel Gas Stations", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
-        {"id": "cl_2026-06_7", "month": "Jun 2026", "tech": "Nick Scarpa", "job": "",
-         "customer": "Hickory Tavern", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
-        {"id": "cl_2026-06_9", "month": "Jun 2026", "tech": "Javi Vazquez", "job": "",
-         "customer": "Grube. Inc.", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
-        {"id": "cl_2026-06_11", "month": "Jun 2026", "tech": "Kyle Freeman", "job": "",
-         "customer": "America First Management", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
-        {"id": "cl_2026-06_12", "month": "Jun 2026", "tech": "Ray Lambert", "job": "",
-         "customer": "Yahnis Company", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
-        {"id": "cl_2026-07_2", "month": "Jul 2026", "tech": "Kyle Freeman", "job": "",
-         "customer": "Anto's Pizza Romana", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
-        {"id": "cl_2026-07_6", "month": "Jul 2026", "tech": "Kyle Freeman", "job": "",
-         "customer": "Founders Group Int'l", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
-        {"id": "cl_2026-07_7", "month": "Jul 2026", "tech": "Ray Lambert", "job": "",
-         "customer": "Grand Strand Dermatology MB", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
-        {"id": "cl_2026-07_9", "month": "Jul 2026", "tech": "Kyle Freeman", "job": "",
-         "customer": "E3 Bootcamp", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
-        {"id": "cl_2026-07_10", "month": "Jul 2026", "tech": "Kyle Freeman", "job": "",
-         "customer": "Reflections Assisted Living of Carolina Forest", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
-        {"id": "cl_2026-07_11", "month": "Jul 2026", "tech": "Javi Vazquez", "job": "",
-         "customer": "Bo Benton Inc. Bojangles'", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
-        {"id": "cl_2026-07_12", "month": "Jul 2026", "tech": "Javi Vazquez", "job": "",
-         "customer": "Team Dodge Ram Myrtle Beach", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
-        {"id": "cl_2026-07_18", "month": "Jul 2026", "tech": "Nick Scarpa", "job": "",
-         "customer": "Oceans One Rental Management", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
-    ]
+    # Auto-computed from res_comm_leads (last month's output) + commlead_updates — see
+    # compute_carried_leads() near the top of this file. Same history as the carry-forward
+    # seed above: used to be a hand-maintained snapshot before 2026-09.
+    carried_leads = compute_carried_leads()
     comm_leads_out = []
     for lead in carried_leads:
         if (lead["tech"], lead["job"]) in mpf_job_keys:
@@ -634,7 +671,7 @@ def main():
         if len(row) < 4:
             continue
         prior_month, _mgr, prior_emp, prior_job = row[0], row[1], row[2], row[3]
-        if prior_month != MONTH_LABEL and prior_job:
+        if norm_month(prior_month) != MONTH_LABEL and prior_job:
             prior_job_keys.add((prior_emp, str(prior_job)))
 
     for entry in ledger_entries:
@@ -663,6 +700,19 @@ def main():
                 print(f"  Wrote {len(rows_to_append)} entries to spiff_ledger")
         except Exception as e:
             print(f"  (couldn't write to spiff_ledger: {e})")
+
+    # Write this month's carry-forward/comm-lead output back to the Sheet — becomes next
+    # month's auto-computed seed via compute_prior_carry_forward()/compute_carried_leads().
+    # This is what makes the seed step self-service instead of a manual hand-refresh.
+    cf_rows = [[MONTH_LABEL, c["id"], c["fromMonth"], c["emp"], c["ref"], c["type"], c["amount"],
+                c["dept"], c["reason"]] for c in carry_forward_out]
+    sheet_write_table("res_carry_forward", ["month", "id", "fromMonth", "emp", "ref", "type", "amount", "dept", "reason"],
+                       cf_rows, mode="replaceMonth", month=MONTH_LABEL)
+    cl_rows = [[MONTH_LABEL, l["id"], l["month"], l["tech"], l["job"], l["customer"], l["status"],
+                l["spiff"], l["payMonth"], l["paid"]] for l in comm_leads_out]
+    sheet_write_table("res_comm_leads", ["month", "id", "leadMonth", "tech", "job", "customer", "status", "spiff", "payMonth", "paid"],
+                       cl_rows, mode="replaceMonth", month=MONTH_LABEL)
+    print(f"  Wrote {len(cf_rows)} carry-forward rows and {len(cl_rows)} comm-lead rows to the Sheet for next month's seed")
 
     # ── Output ──────────────────────────────────────────────────────
     steven_emps = [emps[n] for n in STEVEN_ROSTER if n in emps]

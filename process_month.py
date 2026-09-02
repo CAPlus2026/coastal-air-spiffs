@@ -278,21 +278,29 @@ def load_roster():
     is what determines display order in the app. Columns: name, team, role, eligible, active,
     exclusionReason, updatedBy, updatedAt.
     """
-    steven, caleb = [], []
-    plumbers, comm_techs, ch_techs, office = set(), set(), set(), set()
-    excluded = {}
+    # Last-row-wins by name, same append-only-edit-log pattern as every other editable tab in
+    # this app (manual_adds, spiff_corrections, ...) — editing/deactivating someone means
+    # appending a new row for that name, not mutating the old one, so this dedup step is what
+    # makes an edit actually take effect instead of leaving the person in two states at once.
+    latest = {}
     for r in sheet_get("roster"):
         if len(r) < 6 or not r[0]:
             continue
         name, team, role, eligible, active, reason = r[:6]
-        eligible_b = str(eligible).strip().upper() == "TRUE"
-        active_b = str(active).strip().upper() == "TRUE"
         # sheet_get() has no way to skip row 1 — a brand-new tab gets a real header row from
         # ensureSheet_, so "eligible"/"active" show up literally here instead of TRUE/FALSE.
         # Any genuine data row always has one of those two exact values; anything else (header,
         # or a malformed row) is skipped rather than guessed at.
         if str(eligible).strip().upper() not in ("TRUE", "FALSE"):
             continue
+        latest[name] = (team, role, eligible, active, reason)
+
+    steven, caleb = [], []
+    plumbers, comm_techs, ch_techs, office = set(), set(), set(), set()
+    excluded = {}
+    for name, (team, role, eligible, active, reason) in latest.items():
+        eligible_b = str(eligible).strip().upper() == "TRUE"
+        active_b = str(active).strip().upper() == "TRUE"
         if not eligible_b:
             excluded[name] = reason or "Not eligible for spiffs"
             continue

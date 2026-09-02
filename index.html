@@ -452,70 +452,31 @@ function chkPin(v){
   }
 }
 
-// ── MPF Classification ──────────────────────────────────
-const LEAD_ACTIVITIES = ['TGL Lead Set Res','TGL Lead Sold Res'];
-const PLUMBERS = ['Jesse Mertens','Herbie Windley'];
-const COMM_TECHS = ['Nick Scarpa','Javi Vazquez','Ray Lambert','Kyle Freeman','Stuart Akel'];
-const CH_TECHS = ['Jay Hall','Steve Gordon'];
-
-function classifyMPFLine(name, activity) {
-  const isLead = LEAD_ACTIVITIES.includes(activity);
-  if (PLUMBERS.includes(name)) return 'plb';
-  if (COMM_TECHS.includes(name)) return 'com';
-  if (CH_TECHS.includes(name)) return isLead ? 'chi' : 'chs';
-  return isLead ? 'ins' : 'svc'; // default MB resi tech
-}
-
-function processMPFData(mpfRows) {
-  // mpfRows: array of [name, activity, date, job, pay, customer, location, labor]
-  const totals = {};
-  const dupsMap = {}; // track TGL sold by customer to detect duplicates
-  const flags = [];
-
-  mpfRows.forEach(r => {
-    const [name, activity, date, job, pay, customer] = r;
-    if (!name || !activity || !pay) return;
-    const amt = parseFloat(pay) || 0;
-    if (amt === 0) return;
-
-    if (!totals[name]) totals[name] = {svc:0,ins:0,plb:0,com:0,chs:0,chi:0};
-    const col = classifyMPFLine(name, activity);
-    totals[name][col] += amt;
-
-    // Duplicate TGL detection
-    if (activity === 'TGL Lead Sold Res') {
-      const custKey = name + '|' + String(customer).split(',')[0].trim().toLowerCase();
-      if (!dupsMap[custKey]) { dupsMap[custKey] = []; }
-      dupsMap[custKey].push({job, amt, customer});
-      if (dupsMap[custKey].length > 1) {
-        flags.push({
-          type: 'dup_tgl',
-          emp: name,
-          ref: `Job #${job}`,
-          title: `Duplicate TGL Stage 2 — ${customer}`,
-          detail: `TGL Lead Sold Res appears more than once for ${customer}. Jobs: ${dupsMap[custKey].map(x=>'#'+x.job).join(', ')}. One is likely a duplicate payroll entry. Verify and reverse the incorrect one.`,
-          sev: 'red'
-        });
-      }
-    }
-
-    // Stage 2 without Stage 1 detection
-    if (activity === 'TGL Lead Sold Res') {
-      const custKey2 = name + '|sold|' + String(customer).split(',')[0].trim().toLowerCase();
-      dupsMap[custKey2] = true;
-    }
+// ── Roster ───────────────────────────────────────────────
+// Loaded from the `roster` Sheet tab in loadSheets() — replaces the hardcoded PLUMBERS/
+// COMM_TECHS/CH_TECHS lists this app used to duplicate from process_month.py by hand. Empty
+// until that load resolves; every reader here tolerates that (same race the rest of the app's
+// Sheet-loaded state already has — see loadSheets()'s own comments).
+let ROSTER={plumbers:new Set(),commTechs:new Set(),chTechs:new Set(),office:new Set(),excluded:{},rows:[]};
+function loadRosterFrom(rows){
+  const r={plumbers:new Set(),commTechs:new Set(),chTechs:new Set(),office:new Set(),excluded:{},rows:[]};
+  const latest={};
+  (rows||[]).forEach(row=>{
+    const [name,team,role,eligible,active,reason]=row;
+    if(!name)return;
+    if(String(eligible).trim().toUpperCase()!=='TRUE'&&String(eligible).trim().toUpperCase()!=='FALSE')return; // header row
+    latest[name]={team,role,eligible:String(eligible).toUpperCase()==='TRUE',active:String(active).toUpperCase()==='TRUE',reason:reason||''};
   });
-
-  // Check for S2 without S1
-  mpfRows.forEach(r => {
-    const [name, activity, date, job, pay, customer] = r;
-    if (activity !== 'TGL Lead Set Res') return;
-    const custKey = name + '|sold|' + String(customer).split(',')[0].trim().toLowerCase();
-    // S1 exists — good, remove S2 orphan concern
-    delete dupsMap[custKey];
+  Object.entries(latest).forEach(([name,m])=>{
+    r.rows.push({name,...m});
+    if(!m.eligible){ r.excluded[name]=m.reason||'Not eligible for spiffs'; return; }
+    if(!m.active) return;
+    if(m.role==='plumber') r.plumbers.add(name);
+    else if(m.role==='comm_tech') r.commTechs.add(name);
+    else if(m.role==='ch_tech') r.chTechs.add(name);
+    else if(m.role==='office') r.office.add(name);
   });
-
-  return {totals, flags};
+  return r;
 }
 
 // ── Utils ────────────────────────────────────────────────
@@ -525,7 +486,7 @@ function toast(msg,dur=3200){const t=document.getElementById('toast');t.textCont
 function empTot(e){return(e.svc||0)+(e.ins||0)+(e.plb||0)+(e.com||0)+(e.chs||0)+(e.chi||0);}
 function spiffFieldFor(mgr,empName,type){
   const isTGL = !!(type&&type.includes('TGL'));
-  if(PLUMBERS.includes(empName)) return 'plb';
+  if(ROSTER.plumbers.has(empName)) return 'plb';
   if(mgr==='steven') return isTGL?'ins':'svc';
   return isTGL?'chi':'chs';
 }
@@ -632,7 +593,7 @@ function toggleDetailRow(cell){
 
 // ── Load from Sheets ──────────────────────────────────────
 async function loadSheets(){
-  const [subs,rev,flags,mans,corrections,cfRes,jayJobLog,commLeadLog,monthStatusLog,notesLog,runReqLog]=await Promise.all([
+  const [subs,rev,flags,mans,corrections,cfRes,jayJobLog,commLeadLog,monthStatusLog,notesLog,runReqLog,rosterLog]=await Promise.all([
     sGet('submissions!A2:F50'),
     sGet('revenue_actuals!A2:D50'),
     sGet('flags!A2:N500'),
@@ -644,7 +605,9 @@ async function loadSheets(){
     sGet('month_status!A2:D50'),
     sGet('manager_notes!A2:H1000'),
     sGet('run_requests!A2:E200'),
+    sGet('roster!A2:H500'),
   ]);
+  if(rosterLog) ROSTER=loadRosterFrom(rosterLog);
   if(subs)subs.forEach(r=>{
     if(normMonth(r[0])===MONTH&&r[1]){const m=r[1].toLowerCase();if(m in S.submissions){S.submissions[m]=r[2]||'not_started';S.pushback[m]=(r[4]==='pushed_back'&&r[5])?r[5]:null;}}
   });
@@ -807,12 +770,12 @@ async function loadSheets(){
 
 // ── Nav ──────────────────────────────────────────────────
 const NAVS={
-  billy:[{id:'overview',label:'Overview'},{id:'review',label:'Manager Review'},{id:'revenue',label:'Revenue & Budgets'},{id:'bonuses',label:'Bonus Approvals'},{id:'output',label:'Accounting Output'},{id:'lookup',label:'Lookup'}],
+  billy:[{id:'overview',label:'Overview'},{id:'review',label:'Manager Review'},{id:'revenue',label:'Revenue & Budgets'},{id:'bonuses',label:'Bonus Approvals'},{id:'output',label:'Accounting Output'},{id:'roster',label:'Roster'},{id:'lookup',label:'Lookup'}],
   steven:[{id:'myteam',label:'My Team'},{id:'flags',label:'Flags to Resolve'},{id:'commleads',label:'Commercial Leads'},{id:'lookup',label:'Lookup'}],
   caleb:[{id:'myteam',label:'My Team'},{id:'flags',label:'Flags to Resolve'},{id:'lookup',label:'Lookup'}],
   jenny:[{id:'membership',label:'Membership Review'},{id:'lookup',label:'Lookup'}],
 };
-const RENDERS={overview:rOverview,review:rReview,revenue:rRevenue,bonuses:rBonuses,output:rOutput,myteam:()=>rTeam(S.role),flags:()=>rFlags(S.role),commleads:rCommLeads,lookup:rLookup,membership:rMembershipReview};
+const RENDERS={overview:rOverview,review:rReview,revenue:rRevenue,bonuses:rBonuses,output:rOutput,roster:rRoster,myteam:()=>rTeam(S.role),flags:()=>rFlags(S.role),commleads:rCommLeads,lookup:rLookup,membership:rMembershipReview};
 
 function setRole(role){
   S.role=role;
@@ -1151,6 +1114,111 @@ function toggleBonusDetail(i){
   if(el) el.style.display = el.style.display==='none'?'':'none';
 }
 
+// ── ROSTER (Billy only) ───────────────────────────────────
+// Persistence here is a keyed upsert-by-name via append-only rows (last row per name wins, same
+// as everywhere else in this app) — editing someone means appending a fresh row for them, not
+// mutating an old one. Not month-scoped and not guarded by guardClosed(): a new hire during a
+// closed-out month must still be addable.
+const ROSTER_ROLES=[
+  {value:'tech',label:'Technician'},
+  {value:'plumber',label:'Plumber'},
+  {value:'comm_tech',label:'Commercial tech'},
+  {value:'ch_tech',label:'Charleston tech'},
+  {value:'office',label:'Office / call center'},
+];
+function rRoster(){
+  const v=vw();
+  const rows=ROSTER.rows;
+  const group=(team)=>rows.filter(r=>r.eligible&&r.active&&r.team===team);
+  const notEligible=rows.filter(r=>!r.eligible);
+  const inactive=rows.filter(r=>r.eligible&&!r.active);
+  const roleLbl=(role)=>(ROSTER_ROLES.find(x=>x.value===role)||{}).label||role||'—';
+  const teamCard=(title,team)=>{
+    const people=group(team);
+    return `<div class="card">
+      <div class="ctitle">${title}</div>
+      ${people.length?`<table class="et"><thead><tr><th style="text-align:left">Name</th><th style="text-align:left">Role</th><th></th></tr></thead>
+      <tbody>${people.map(p=>`<tr><td style="text-align:left;font-family:'DM Sans',sans-serif;font-weight:500">${p.name}</td><td style="text-align:left;color:#666">${roleLbl(p.role)}</td><td style="text-align:right"><button class="btn bsm" onclick="editRosterMember('${p.name.replace(/'/g,"\\'")}')">Edit</button> <button class="btn btnd bsm" onclick="deactivateRosterMember('${p.name.replace(/'/g,"\\'")}')">Mark departed</button></td></tr>`).join('')}</tbody></table>`
+      :`<div style="font-size:.82rem;color:#999">No one on this team yet.</div>`}
+    </div>`;
+  };
+  v.innerHTML=`
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+    <div style="font-size:1rem;font-weight:600">Roster</div>
+  </div>
+  <div class="card">
+    <div class="ctitle" id="roster-form-title">Add someone</div>
+    <div class="mg" style="grid-template-columns:1.3fr 1fr 1.3fr auto">
+      <div><label>Name</label><input type="text" id="ro-name" placeholder="Full name"></div>
+      <div><label>Team</label><select id="ro-team"><option value="steven">Myrtle Beach (Steven)</option><option value="caleb">Charleston (Caleb)</option><option value="office">Office / Call Center</option></select></div>
+      <div><label>Role</label><select id="ro-role">${ROSTER_ROLES.map(r=>`<option value="${r.value}">${r.label}</option>`).join('')}</select></div>
+      <div><label>&nbsp;</label><button class="btn btnp" id="ro-submit-btn" onclick="saveRosterMember()">Add</button></div>
+    </div>
+    <div style="font-size:.7rem;color:#999;margin-top:.5rem">A new hire needs to show up here before their spiffs will be correctly attributed — anyone not listed still gets flagged and paid under Steven by default, but adding them here routes it correctly from the start.</div>
+  </div>
+  ${teamCard('Myrtle Beach — Steven','steven')}
+  ${teamCard('Charleston — Caleb','caleb')}
+  ${teamCard('Office / Call Center','office')}
+  ${inactive.length?`<div class="card" style="opacity:.6">
+    <div class="ctitle">Departed</div>
+    <table class="et"><thead><tr><th style="text-align:left">Name</th><th style="text-align:left">Reason</th><th></th></tr></thead>
+    <tbody>${inactive.map(p=>`<tr><td style="text-align:left">${p.name}</td><td style="text-align:left;color:#666">${p.reason||'—'}</td><td style="text-align:right"><button class="btn bsm" onclick="reactivateRosterMember('${p.name.replace(/'/g,"\\'")}')">Restore</button></td></tr>`).join('')}</tbody></table>
+  </div>`:''}
+  ${notEligible.length?`<div class="card" style="opacity:.6">
+    <div class="ctitle">Not eligible for spiffs</div>
+    <table class="et"><thead><tr><th style="text-align:left">Name</th><th style="text-align:left">Reason</th></tr></thead>
+    <tbody>${notEligible.map(p=>`<tr><td style="text-align:left">${p.name}</td><td style="text-align:left;color:#666">${p.reason||'—'}</td></tr>`).join('')}</tbody></table>
+  </div>`:''}`;
+}
+let rosterEditingName=null;
+function editRosterMember(name){
+  const p=ROSTER.rows.find(r=>r.name===name);
+  if(!p)return;
+  rosterEditingName=name;
+  document.getElementById('ro-name').value=p.name;
+  document.getElementById('ro-team').value=p.team;
+  document.getElementById('ro-role').value=p.role;
+  document.getElementById('ro-submit-btn').textContent='Save changes';
+  document.getElementById('roster-form-title').textContent=`Editing ${p.name}`;
+  document.getElementById('ro-name').scrollIntoView({behavior:'smooth',block:'center'});
+}
+async function writeRosterRow(name,team,role,eligible,active,reason){
+  const at=new Date().toISOString();
+  await sAppend('roster',[[name,team,role,eligible?'TRUE':'FALSE',active?'TRUE':'FALSE',reason||'',S.role,at]]);
+}
+async function saveRosterMember(){
+  const name=document.getElementById('ro-name').value.trim();
+  const team=document.getElementById('ro-team').value;
+  const role=document.getElementById('ro-role').value;
+  if(!name){toast('Please enter a name.');return;}
+  await writeRosterRow(name,team,role,true,true,'');
+  toast(rosterEditingName?`${name} updated.`:`${name} added to the roster.`);
+  rosterEditingName=null;
+  document.getElementById('ro-name').value='';
+  document.getElementById('ro-submit-btn').textContent='Add';
+  document.getElementById('roster-form-title').textContent='Add someone';
+  await loadSheets();
+  rRoster();
+}
+async function deactivateRosterMember(name){
+  const reason=prompt(`Why is ${name} being marked departed? (shown in the Departed list)`);
+  if(reason===null)return;
+  const p=ROSTER.rows.find(r=>r.name===name);
+  if(!p)return;
+  await writeRosterRow(name,p.team,p.role,true,false,reason||'No longer employed');
+  toast(`${name} marked departed.`);
+  await loadSheets();
+  rRoster();
+}
+async function reactivateRosterMember(name){
+  const p=ROSTER.rows.find(r=>r.name===name);
+  if(!p)return;
+  await writeRosterRow(name,p.team,p.role,true,true,'');
+  toast(`${name} restored.`);
+  await loadSheets();
+  rRoster();
+}
+
 // ── MEMBERSHIP REVIEW (Jenny) ─────────────────────────────
 function rMembershipReview(){
   const v=vw();
@@ -1274,7 +1342,7 @@ function buildRows(){
   [...S.flags.steven,...S.flags.caleb].filter(f=>f.resolved&&f.disp==='Pay this month').forEach(f=>{
     const isLead = f.title.toLowerCase().includes('lead stage 1')||f.title.toLowerCase().includes('lead stage 2');
     const isAccessory = f.title.toLowerCase().includes('accessory');
-    const isCH = f.emp==='Steve Gordon'||f.emp==='Jay Hall';
+    const isCH = ROSTER.chTechs.has(f.emp);
     // Determine amount from flag title
     let amt = 25; // default Stage 1
     if(f.title.includes('Stage 2')) amt=75;
@@ -1287,7 +1355,7 @@ function buildRows(){
     let col = isLead ? (isCH?5:1) : (isCH?4:0);
     if(isAccessory && isCH) col=4;
     if(isAccessory && !isCH) col=0;
-    if(f.emp==='Javi Vazquez'||f.emp==='Kyle Freeman'||f.emp==='Nick Scarpa') col=3;
+    if(ROSTER.commTechs.has(f.emp)) col=3;
     const v=[0,0,0,0,0,0]; v[col]=amt;
     addToEmp(f.emp, v, `Resolved: ${f.title} — ${fp(amt)}`, '');
   });

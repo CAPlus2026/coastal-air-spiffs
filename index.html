@@ -176,7 +176,7 @@ async function sPut(range, values){
 const S={
   role:'billy',
   notes:[],
-  runStatus:{month:null,status:null,message:'',at:null}, // replaced by loadSheets() from run_requests
+  runStatus:{month:null,status:null,message:'',at:null},
   submissions:{steven:'not_started',caleb:'not_started'},
   pushback:{steven:null,caleb:null},
   revenue:[
@@ -209,18 +209,6 @@ const S={
   },
   flags:{
     steven:[
-      {id:"s1",sev:"red",emp:"Rich Smith",ref:"Job #166138097",resolved:false,disp:'',note:'',
-       title:"Possible duplicate payment — job #166138097 already paid in a prior month",
-       detail:"Rich Smith is being paid $220.26 for job #166138097 (Water Heater Replacement ) this month, but the ledger shows this same job/employee combination was already paid in a previous month. Verify this isn't a duplicate before approving."},
-      {id:"s2",sev:"red",emp:"Rich Smith",ref:"Job #166376798",resolved:false,disp:'',note:'',
-       title:"Possible duplicate payment — job #166376798 already paid in a prior month",
-       detail:"Rich Smith is being paid $117.59 for job #166376798 (Line Set Repair) this month, but the ledger shows this same job/employee combination was already paid in a previous month. Verify this isn't a duplicate before approving."},
-      {id:"s3",sev:"red",emp:"Rich Smith",ref:"Job #166094452",resolved:false,disp:'',note:'',
-       title:"Possible duplicate payment — job #166094452 already paid in a prior month",
-       detail:"Rich Smith is being paid $49.80 for job #166094452 (2nd Floor Women’s Restroom Common ADA Toilet) this month, but the ledger shows this same job/employee combination was already paid in a previous month. Verify this isn't a duplicate before approving."},
-      {id:"s4",sev:"red",emp:"Rich Smith",ref:"Job #165456355",resolved:false,disp:'',note:'',
-       title:"Possible duplicate payment — job #165456355 already paid in a prior month",
-       detail:"Rich Smith is being paid $20.42 for job #165456355 (Good) this month, but the ledger shows this same job/employee combination was already paid in a previous month. Verify this isn't a duplicate before approving."},
     ],
     caleb:[
     ],
@@ -304,6 +292,25 @@ const S={
   ],
   spiffDetail:{
     steven:{
+      "Andrew Babyak":[
+        {date:"2026-08-04",job:"165145448",customer:"Bulger, Jane",type:"Sales Spiff",item:"Bulger, Jane",spiff:5},
+        {date:"2026-08-10",job:"165748120",customer:"Grobski, Paul",type:"Sales Spiff",item:"Grobski, Paul",spiff:20},
+        {date:"2026-08-21",job:"163591450",customer:"Donatelli, William ",type:"Sales Spiff",item:"Donatelli, William ",spiff:5},
+        {date:"2026-08-24",job:"166685063",customer:"Cvasa, Eduard & Lizabeth",type:"Sales Spiff",item:"Cvasa, Eduard & Lizabeth",spiff:5},
+        {date:"2026-08-25",job:"162007451",customer:"Grauke, Katie ",type:"Sales Spiff",item:"Grauke, Katie ",spiff:5},
+        {date:"2026-08-11",job:"165963362",customer:"Kirby, Terry",type:"TGL Lead Set Res",item:"Kirby, Terry",spiff:25},
+        {date:"2026-08-26",job:"167994897",customer:"McMakin, Missi & Joel",type:"TGL Lead Set Res",item:"McMakin, Missi & Joel",spiff:25},
+        {date:"2026-08-31",job:"168367583",customer:"Owens, Doug",type:"TGL Lead Set Res",item:"Owens, Doug",spiff:25},
+        {date:"2026-08-18",job:"",customer:"Griffis, Dave",type:"TGL Lead Set Res",item:"Lead Stage 1 — quote delivered (auto-added, not on pay file)",spiff:25,note:"Auto-added — not on Master Pay File"},
+        {date:"2026-08-21",job:"",customer:"Akel, Robin",type:"TGL Lead Set Res",item:"Lead Stage 1 — quote delivered (auto-added, not on pay file)",spiff:25,note:"Auto-added — not on Master Pay File"},
+      ],
+      "Corey Ward":[
+        {date:"2026-08-05",job:"162462579",customer:"Travisono, Steve",type:"Sales Spiff",item:"Travisono, Steve",spiff:10},
+        {date:"2026-08-07",job:"159490075",customer:"Billings, Mike ",type:"Sales Spiff",item:"Billings, Mike ",spiff:5},
+        {date:"2026-08-11",job:"165512610",customer:"Zocchi, David",type:"TGL Lead Set Res",item:"Zocchi, David",spiff:25},
+        {date:"2026-08-11",job:"165809871",customer:"Ruppert, Harley & Nancy",type:"TGL Lead Set Res",item:"Ruppert, Harley & Nancy",spiff:25},
+        {date:"2026-08-28",job:"",customer:"Miller, Daniel",type:"Sales Spiff",item:"Basic Membership - 2 Systems — New Sale",spiff:15,note:"Auto-added — not on Master Pay File"},
+      ],
       "Karl Welch":[
         {date:"2026-08-04",job:"133192838",customer:"Cox, Stephanie",type:"Sales Spiff",item:"Cox, Stephanie",spiff:5},
         {date:"2026-08-05",job:"165075275",customer:"Pasciolla, Jim",type:"Sales Spiff",item:"Pasciolla, Jim",spiff:20},
@@ -341,30 +348,11 @@ const S={
       "Herbie Windley":[
         {date:"2026-08-05",job:"163547514",customer:"Kipnis, Robert ",type:"Sales Spiff",item:"Moen Flo Water Protection (AC-34)",spiff:100,note:"Auto-added — not on Master Pay File"},
       ],
-      "Nick Scarpa":[
-        {date:"2026-08-01",job:"",customer:"Harris, Heather",type:"Sales Spiff",item:"Standard Membership - 2 Systems — New Sale",spiff:25,note:"Auto-added — not on Master Pay File"},
-      ],
       "Ray Lambert":[
         {date:"2026-08-19",job:"167039835",customer:"Coldwell Banker",type:"Sales Spiff",item:"06 Drain Overflow Protection Upgrade (CHAC-6)",spiff:50,note:"Auto-added — not on Master Pay File"},
       ],
-      "Andrew Babyak":[
-        {date:"2026-08-04",job:"165145448",customer:"Bulger, Jane",type:"Sales Spiff",item:"Bulger, Jane",spiff:5},
-        {date:"2026-08-10",job:"165748120",customer:"Grobski, Paul",type:"Sales Spiff",item:"Grobski, Paul",spiff:20},
-        {date:"2026-08-21",job:"163591450",customer:"Donatelli, William ",type:"Sales Spiff",item:"Donatelli, William ",spiff:5},
-        {date:"2026-08-24",job:"166685063",customer:"Cvasa, Eduard & Lizabeth",type:"Sales Spiff",item:"Cvasa, Eduard & Lizabeth",spiff:5},
-        {date:"2026-08-25",job:"162007451",customer:"Grauke, Katie ",type:"Sales Spiff",item:"Grauke, Katie ",spiff:5},
-        {date:"2026-08-11",job:"165963362",customer:"Kirby, Terry",type:"TGL Lead Set Res",item:"Kirby, Terry",spiff:25},
-        {date:"2026-08-26",job:"167994897",customer:"McMakin, Missi & Joel",type:"TGL Lead Set Res",item:"McMakin, Missi & Joel",spiff:25},
-        {date:"2026-08-31",job:"168367583",customer:"Owens, Doug",type:"TGL Lead Set Res",item:"Owens, Doug",spiff:25},
-        {date:"2026-08-18",job:"",customer:"Griffis, Dave",type:"TGL Lead Set Res",item:"Lead Stage 1 — quote delivered (auto-added, not on pay file)",spiff:25,note:"Auto-added — not on Master Pay File"},
-        {date:"2026-08-21",job:"",customer:"Akel, Robin",type:"TGL Lead Set Res",item:"Lead Stage 1 — quote delivered (auto-added, not on pay file)",spiff:25,note:"Auto-added — not on Master Pay File"},
-      ],
-      "Corey Ward":[
-        {date:"2026-08-05",job:"162462579",customer:"Travisono, Steve",type:"Sales Spiff",item:"Travisono, Steve",spiff:10},
-        {date:"2026-08-07",job:"159490075",customer:"Billings, Mike ",type:"Sales Spiff",item:"Billings, Mike ",spiff:5},
-        {date:"2026-08-11",job:"165512610",customer:"Zocchi, David",type:"TGL Lead Set Res",item:"Zocchi, David",spiff:25},
-        {date:"2026-08-11",job:"165809871",customer:"Ruppert, Harley & Nancy",type:"TGL Lead Set Res",item:"Ruppert, Harley & Nancy",spiff:25},
-        {date:"2026-08-28",job:"",customer:"Miller, Daniel",type:"Sales Spiff",item:"Basic Membership - 2 Systems — New Sale",spiff:15,note:"Auto-added — not on Master Pay File"},
+      "Nick Scarpa":[
+        {date:"2026-08-01",job:"",customer:"Harris, Heather",type:"Sales Spiff",item:"Standard Membership - 2 Systems — New Sale",spiff:25,note:"Auto-added — not on Master Pay File"},
       ],
     },
     caleb:{

@@ -841,32 +841,39 @@ function rOverview(){
   const open=allF.filter(f=>!f.resolved).length;
   const subs=Object.values(S.submissions).filter(s=>s==='submitted'||s==='approved').length;
   const rs=S.runStatus||{};
-  const rsForNext=rs.month===NEXT_M;
-  const rsActive=rsForNext&&(rs.status==='queued'||rs.status==='running');
+  const targetMonth=lastCalendarMonthLabel();
+  const rsForTarget=rs.month===targetMonth;
+  const rsActive=rsForTarget&&(rs.status==='queued'||rs.status==='running');
+  const rsComplete=rsForTarget&&rs.status==='complete';
+  const rsFailed=rsForTarget&&rs.status==='failed';
   v.innerHTML=`
   <datalist id="all-names">${allKnownNames().map(n=>`<option value="${n}">`).join('')}</datalist>
-  <div class="card" style="border-left:3px solid ${rsActive?'#3b82f6':rsForNext&&rs.status==='failed'?'#ef4444':'#999'}">
+  <div class="card" style="border-left:3px solid ${rsActive?'#3b82f6':rsFailed?'#ef4444':rsComplete?'#065f46':'#999'}">
     <div class="ctitle">Self-service run</div>
+    <div style="font-size:.75rem;color:#999;margin-bottom:.5rem">Always runs last month's payroll (currently ${targetMonth}) — pulls fresh data from ServiceTitan. <strong>Payroll approvals need to be unlocked prior to running.</strong> Safe to click more than once (e.g. if you clicked before approvals were actually unlocked) — running it again just pulls fresh data again.</div>
     ${rsActive?`
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
         <div><span class="badge binfo">${rs.status==='queued'?'Queued':'Running'}</span> <span style="font-size:.82rem;margin-left:6px">Processing ${rs.month} — usually done within a few minutes.</span></div>
       </div>
       <div style="font-size:.75rem;color:#999;margin-top:.5rem">Picked up automatically by a check that runs every 5 minutes. This page checks back on its own — no need to keep reloading.</div>
-    `:rsForNext&&rs.status==='complete'?`
+    `:rsComplete?`
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
         <div><span class="badge bok">✓ Complete</span> <span style="font-size:.82rem;margin-left:6px">${rs.month} was processed successfully.</span></div>
-        <button class="btn btnp bsm" onclick="location.reload()">Reload to see it</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn bsm" onclick="location.reload()">Reload to see it</button>
+          <button class="btn btnp bsm" onclick="unlockPayroll()">Run again</button>
+        </div>
       </div>
       <div style="font-size:.75rem;color:#999;margin-top:.5rem">The site takes a minute or two to redeploy after processing finishes — if it still shows ${MONTH}, wait a moment and reload again.</div>
-    `:rsForNext&&rs.status==='failed'?`
+    `:rsFailed?`
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
         <div><span class="badge bdanger">✕ Failed</span> <span style="font-size:.82rem;margin-left:6px">Processing ${rs.month} failed — ${rs.message||'no details recorded'}.</span></div>
         <button class="btn btnp bsm" onclick="unlockPayroll()">Try again</button>
       </div>
     `:`
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-        <div style="font-size:.82rem;color:#999">Once ${NEXT_M} is ready to process, unlock it to pull fresh data from ServiceTitan.</div>
-        <button class="btn btnp bsm" onclick="unlockPayroll()">Unlock payroll for ${NEXT_M}</button>
+        <div style="font-size:.82rem;color:#999">Ready when payroll approvals are unlocked.</div>
+        <button class="btn btnp bsm" onclick="unlockPayroll()">Run payroll for ${targetMonth}</button>
       </div>
     `}
   </div>
@@ -1998,6 +2005,17 @@ function rerenderCurrentView(){
 }
 
 // ── Self-service run ──────────────────────────────────────
+// Always the most recently completed calendar month, computed fresh from the real clock every
+// time this renders — deliberately NOT tied to NEXT_M/MONTH from the currently-loaded S block.
+// Those only update once a run has already completed and redeployed, so a button driven by them
+// would show a stale target (e.g. still offering last period's month, or — worse — offering a
+// month that hasn't finished yet) until after the very run it's supposed to kick off.
+function lastCalendarMonthLabel(){
+  const now=new Date();
+  const idx=now.getMonth()===0?11:now.getMonth()-1;
+  const year=now.getMonth()===0?now.getFullYear()-1:now.getFullYear();
+  return `${MONTH_NAMES[idx]} ${year}`;
+}
 let runStatusPollTimer=null;
 function startRunStatusPolling(){
   if(runStatusPollTimer)return;
@@ -2010,11 +2028,17 @@ function startRunStatusPolling(){
   },30000); // the runner is picked up by a 5-minute cron — no point polling faster than that
 }
 async function unlockPayroll(){
-  if(!confirm(`Unlock payroll for ${NEXT_M}? This kicks off a fresh pull from ServiceTitan, picked up automatically within a few minutes.`))return;
+  const month=lastCalendarMonthLabel();
+  const rs=S.runStatus||{};
+  const alreadyDone=rs.month===month&&rs.status==='complete';
+  const msg=alreadyDone
+    ? `${month} was already processed. Run it again? This pulls fresh data from ServiceTitan and re-splices the numbers — only do this if you're sure, since any corrections a manager already made for ${month} may not carry over cleanly.`
+    : `Run payroll for ${month}? Make sure payroll approvals are unlocked first. This pulls fresh data from ServiceTitan, picked up automatically within a few minutes.`;
+  if(!confirm(msg))return;
   const at=new Date().toISOString();
-  S.runStatus={month:NEXT_M,status:'queued',message:'Requested from the app',at};
-  await sAppend('run_requests',[[NEXT_M,'queued',S.role,at,'Requested from the app']]);
-  toast(`Payroll unlock requested for ${NEXT_M}.`);
+  S.runStatus={month,status:'queued',message:'Requested from the app',at};
+  await sAppend('run_requests',[[month,'queued',S.role,at,'Requested from the app']]);
+  toast(`Payroll run requested for ${month}.`);
   rOverview();
   startRunStatusPolling();
 }
@@ -2064,7 +2088,7 @@ showPin();
     rerenderCurrentView();
     // Resume polling if a run was already in flight when this page loaded (e.g. Billy
     // unlocked payroll, closed the tab, and came back before it finished).
-    if(S.runStatus&&S.runStatus.month===NEXT_M&&(S.runStatus.status==='queued'||S.runStatus.status==='running')){
+    if(S.runStatus&&S.runStatus.month===lastCalendarMonthLabel()&&(S.runStatus.status==='queued'||S.runStatus.status==='running')){
       startRunStatusPolling();
     }
   }catch(e){

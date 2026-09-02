@@ -103,20 +103,32 @@ SPIFF_RATES = {normalize_code(k): v for k, v in _raw_rates.items()}
 with open("report_ids.json") as f:
     REPORT_IDS = json.load(f)
 
-client = ServiceTitanClient()
+_client = None
+
+
+def get_client():
+    """Lazy — instantiating ServiceTitanClient() reads ST_CLIENT_ID etc from the environment
+    and raises immediately if they're missing. Deferring this until a report is actually fetched
+    means `import process_month` (e.g. run_requested_month.py, just to reuse its Sheet helpers)
+    doesn't require ServiceTitan credentials to be present at all when there's nothing to do."""
+    global _client
+    if _client is None:
+        _client = ServiceTitanClient()
+    return _client
 
 
 # ── Fetch helpers ────────────────────────────────────────────────────
 def fetch_report(key):
     meta = REPORT_IDS[key]
     params = [{"name": "From", "value": FROM_DATE}, {"name": "To", "value": TO_DATE}, *meta.get("extraParams", [])]
-    fields, rows = client.get_report_data_all_pages(meta["category"], meta["reportId"], parameters=params)
+    fields, rows = get_client().get_report_data_all_pages(meta["category"], meta["reportId"], parameters=params)
     field_names = [f["name"] for f in fields]
     return [dict(zip(field_names, row)) for row in rows]
 
 
 def fetch_all_settings(path):
     page, out = 1, []
+    client = get_client()
     while True:
         data = client._request("GET", f"/settings/v2/tenant/{client.tenant_id}/{path}?page={page}&pageSize=200")
         out.extend(data.get("data", []))

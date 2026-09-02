@@ -145,6 +145,23 @@ async function sGet(range){
   } catch(e) { console.warn('sGet failed', e); return null; }
 }
 
+// One round trip for every boot-path tab instead of 12 concurrent sGet calls — browsers cap
+// concurrent connections per host at ~6, so 12 parallel fetches queue into two waves and blow
+// the 8s boot budget below. Uses the getMulti verb built for exactly this (apps-script/Lib.js).
+// A single call reading all 12 tabs measured 5-7.5s server-side (Apps Script's per-sheet-open
+// overhead dominates, not payload size) — 8s cut it too close, so this gets real headroom.
+async function sGetMulti(sheets){
+  try{
+    const params = new URLSearchParams({action:'getMulti', sheets:sheets.join(','), key:SHARED_KEY});
+    const ctrl = new AbortController();
+    const t = setTimeout(()=>ctrl.abort(), 15000);
+    const res = await fetch(`${SCRIPT_URL}?${params}`, {signal:ctrl.signal});
+    clearTimeout(t);
+    const data = await res.json();
+    return data.tabs || {};
+  } catch(e) { console.warn('sGetMulti failed', e); return {}; }
+}
+
 async function sAppend(tab, values){
   try{
     const params = new URLSearchParams({
@@ -581,20 +598,14 @@ function toggleDetailRow(cell){
 
 // ── Load from Sheets ──────────────────────────────────────
 async function loadSheets(){
-  const [subs,rev,flags,mans,corrections,cfRes,jayJobLog,commLeadLog,monthStatusLog,notesLog,runReqLog,rosterLog]=await Promise.all([
-    sGet('submissions!A2:F50'),
-    sGet('revenue_actuals!A2:D50'),
-    sGet('flags!A2:N500'),
-    sGet('manual_adds!A2:J500'),
-    sGet('spiff_corrections!A2:G500'),
-    sGet('carry_forward_resolutions!A2:J500'),
-    sGet('jay_jobs!A2:H500'),
-    sGet('commlead_updates!A2:K500'),
-    sGet('month_status!A2:D50'),
-    sGet('manager_notes!A2:H1000'),
-    sGet('run_requests!A2:E200'),
-    sGet('roster!A2:H500'),
-  ]);
+  const tabs=await sGetMulti(['submissions','revenue_actuals','flags','manual_adds','spiff_corrections',
+    'carry_forward_resolutions','jay_jobs','commlead_updates','month_status','manager_notes','run_requests','roster']);
+  // getMulti returns the full sheet including its header row; sGet's old A2:... ranges never did — drop row 0 to match.
+  const strip=name=>(tabs[name]||[]).slice(1);
+  const subs=strip('submissions'),rev=strip('revenue_actuals'),flags=strip('flags'),mans=strip('manual_adds'),
+    corrections=strip('spiff_corrections'),cfRes=strip('carry_forward_resolutions'),jayJobLog=strip('jay_jobs'),
+    commLeadLog=strip('commlead_updates'),monthStatusLog=strip('month_status'),notesLog=strip('manager_notes'),
+    runReqLog=strip('run_requests'),rosterLog=strip('roster');
   if(rosterLog) ROSTER=loadRosterFrom(rosterLog);
   if(subs)subs.forEach(r=>{
     if(normMonth(r[0])===MONTH&&r[1]){const m=r[1].toLowerCase();if(m in S.submissions){S.submissions[m]=r[2]||'not_started';S.pushback[m]=(r[4]==='pushed_back'&&r[5])?r[5]:null;}}
@@ -2133,7 +2144,9 @@ showPin();
 (async()=>{
   const badge=document.getElementById('conn-badge');
   try{
-    const timeout=new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),8000));
+    // Matches sGetMulti's own 15s abort — kept 1s above it so that timer (which fails soft,
+    // returning {}) always wins the race over this one (which fails hard, showing Offline).
+    const timeout=new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),16000));
     const connect=(async()=>{await loadSheets();})();
     await Promise.race([connect,timeout]);
     badge.textContent='Connected';badge.className='conn conn-ok';CONN_OK=true;

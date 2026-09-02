@@ -770,18 +770,15 @@ def main():
     if os.environ.get("ORACLE_DRY_RUN"):
         print(f"  [ORACLE_DRY_RUN] Skipping spiff_ledger write ({len(ledger_entries)} entries would have been sent)")
     else:
-        try:
-            import requests as _requests
-            if ledger_entries:
-                rows_to_append = [[e["month"], e["mgr"], e["employee"], e["job"], e["customer"],
-                                    e["type"], e["item"], e["amount"], e["source"]] for e in ledger_entries]
-                # Apps Script append only takes one row at a time via this backend's API shape
-                for row in rows_to_append:
-                    _requests.get(APPS_SCRIPT_URL, params={"action": "append", "sheet": "spiff_ledger",
-                                                            "values": json.dumps(row), "key": SHARED_KEY}, timeout=15)
-                print(f"  Wrote {len(rows_to_append)} entries to spiff_ledger")
-        except Exception as e:
-            print(f"  (couldn't write to spiff_ledger: {e})")
+        # replaceMonth (not append) so re-running an already-processed month overwrites its own
+        # ledger rows instead of duplicating them — found 2026-09 when a real self-service re-run
+        # of August wrote a second copy of every ledger-eligible line (Rich Smith's commissions,
+        # Chris Port, Jenny Miller) because this used to append unconditionally on every run.
+        ledger_rows = [[e["month"], e["mgr"], e["employee"], e["job"], e["customer"],
+                         e["type"], e["item"], e["amount"], e["source"]] for e in ledger_entries]
+        sheet_write_table("spiff_ledger", ["month", "mgr", "employee", "job", "customer", "type", "item", "amount", "source"],
+                           ledger_rows, mode="replaceMonth", month=MONTH_LABEL)
+        print(f"  Wrote {len(ledger_rows)} entries to spiff_ledger (replacing any prior {MONTH_LABEL} entries)")
 
     # Write this month's carry-forward/comm-lead output back to the Sheet — becomes next
     # month's auto-computed seed via compute_prior_carry_forward()/compute_carried_leads().

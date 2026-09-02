@@ -55,7 +55,7 @@
       {
         "name": "Corey Ward",
         "svc": 30.0,
-        "ins": 50.0,
+        "ins": 100.0,
         "plb": 0,
         "com": 0,
         "chs": 0,
@@ -71,7 +71,7 @@
         "plb": 0,
         "com": 0,
         "chs": 2420.0,
-        "chi": 100.0,
+        "chi": 125.0,
         "dups": []
       },
       {
@@ -152,6 +152,22 @@
           "spiff": 25.0
         },
         {
+          "date": "2026-08-19",
+          "job": "167019764",
+          "customer": "Griffis, Dave",
+          "type": "TGL Lead Set Res",
+          "item": "Griffis, Dave",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-08-21",
+          "job": "167446142",
+          "customer": "Akel, Robin",
+          "type": "TGL Lead Set Res",
+          "item": "Akel, Robin",
+          "spiff": 25.0
+        },
+        {
           "date": "2026-08-26",
           "job": "167994897",
           "customer": "McMakin, Missi & Joel",
@@ -166,24 +182,6 @@
           "type": "TGL Lead Set Res",
           "item": "Owens, Doug",
           "spiff": 25.0
-        },
-        {
-          "date": "2026-08-18",
-          "job": "",
-          "customer": "Griffis, Dave",
-          "type": "TGL Lead Set Res",
-          "item": "Lead Stage 1 \u2014 quote delivered (auto-added, not on pay file)",
-          "spiff": 25.0,
-          "note": "Auto-added \u2014 not on Master Pay File"
-        },
-        {
-          "date": "2026-08-21",
-          "job": "",
-          "customer": "Akel, Robin",
-          "type": "TGL Lead Set Res",
-          "item": "Lead Stage 1 \u2014 quote delivered (auto-added, not on pay file)",
-          "spiff": 25.0,
-          "note": "Auto-added \u2014 not on Master Pay File"
         }
       ],
       "Corey Ward": [
@@ -220,6 +218,22 @@
           "spiff": 25.0
         },
         {
+          "date": "2026-08-11",
+          "job": "165972686",
+          "customer": "Epstein, Dave & Madeline",
+          "type": "TGL Lead Set Res",
+          "item": "Epstein, Dave & Madeline",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-08-27",
+          "job": "168341386",
+          "customer": "Mora, Angelina",
+          "type": "TGL Lead Set Res",
+          "item": "Mora, Angelina",
+          "spiff": 25.0
+        },
+        {
           "date": "2026-08-28",
           "job": "",
           "customer": "Miller, Daniel",
@@ -227,6 +241,16 @@
           "item": "Basic Membership - 2 Systems \u2014 New Sale",
           "spiff": 15.0,
           "note": "Auto-added \u2014 not on Master Pay File"
+        }
+      ],
+      "Herbie Windley": [
+        {
+          "date": "2026-08-05",
+          "job": "163547514",
+          "customer": "Kipnis, Robert ",
+          "type": "Sales Spiff",
+          "item": "Kipnis, Robert ",
+          "spiff": 100.0
         }
       ],
       "Karl Welch": [
@@ -248,6 +272,14 @@
         },
         {
           "date": "2026-08-07",
+          "job": "155492489",
+          "customer": "Wilson, Dick",
+          "type": "Sales Spiff",
+          "item": "Wilson, Dick",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-08-07",
           "job": "165375894",
           "customer": "Hogue, Matt",
           "type": "Sales Spiff",
@@ -265,10 +297,18 @@
         {
           "date": "2026-08-08",
           "job": "165733102",
-          "customer": "Newhouse, Ken",
+          "customer": "Newhouse, Ken & Tracy",
           "type": "Sales Spiff",
-          "item": "Newhouse, Ken",
+          "item": "Newhouse, Ken & Tracy",
           "spiff": 50.0
+        },
+        {
+          "date": "2026-08-09",
+          "job": "165734674",
+          "customer": "Palmisano, Dimitra",
+          "type": "Sales Spiff",
+          "item": "Palmisano, Dimitra",
+          "spiff": 20.0
         },
         {
           "date": "2026-08-11",
@@ -399,11 +439,51 @@
           "spiff": 25.0
         },
         {
+          "date": "2026-08-08",
+          "job": "165741279",
+          "customer": "Newhouse, Ken & Tracy",
+          "type": "TGL Lead Set Res",
+          "item": "Newhouse, Ken & Tracy",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-08-20",
+          "job": "167274700",
+          "customer": "Seppi, Walter",
+          "type": "TGL Lead Set Res",
+          "item": "Seppi, Walter",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-08-21",
+          "job": "167352167",
+          "customer": "Taylor, Charles",
+          "type": "TGL Lead Set Res",
+          "item": "Taylor, Charles",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-08-21",
+          "job": "167415018",
+          "customer": "Rodgers, Scott",
+          "type": "TGL Lead Set Res",
+          "item": "Rodgers, Scott",
+          "spiff": 25.0
+        },
+        {
           "date": "2026-08-22",
           "job": "167460572",
           "customer": "Massena, Stan",
           "type": "TGL Lead Set Res",
           "item": "Massena, Stan",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-08-27",
+          "job": "168000283",
+          "customer": "Tomovski, Alex ",
+          "type": "TGL Lead Set Res",
+          "item": "Tomovski, Alex ",
           "spiff": 25.0
         },
         {
@@ -413,33 +493,6 @@
           "type": "Sales Spiff",
           "item": "192 AprilAire Merv 13 Filter (ACC-192)",
           "spiff": 5.0,
-          "note": "Auto-added \u2014 not on Master Pay File"
-        },
-        {
-          "date": "2026-08-07",
-          "job": "155492489",
-          "customer": "Wilson, Dick",
-          "type": "Sales Spiff",
-          "item": "Drain Clog Prevention Kit (drain guard) (CHAC-61)",
-          "spiff": 25.0,
-          "note": "Auto-added \u2014 not on Master Pay File"
-        },
-        {
-          "date": "2026-08-09",
-          "job": "",
-          "customer": "Palmisano, Dimitra",
-          "type": "Sales Spiff",
-          "item": "Standard Membership - 1 System \u2014 New Sale",
-          "spiff": 20.0,
-          "note": "Auto-added \u2014 not on Master Pay File"
-        },
-        {
-          "date": "2026-08-08",
-          "job": "",
-          "customer": "Newhouse, Ken & Tracy",
-          "type": "TGL Lead Set Res",
-          "item": "Lead Stage 1 \u2014 quote delivered (auto-added, not on pay file)",
-          "spiff": 25.0,
           "note": "Auto-added \u2014 not on Master Pay File"
         },
         {
@@ -458,53 +511,6 @@
           "type": "TGL Lead Set Res",
           "item": "Lead Stage 1 \u2014 quote delivered (auto-added, not on pay file)",
           "spiff": 25.0,
-          "note": "Auto-added \u2014 not on Master Pay File"
-        },
-        {
-          "date": "2026-08-20",
-          "job": "",
-          "customer": "Seppi, Walter",
-          "type": "TGL Lead Set Res",
-          "item": "Lead Stage 1 \u2014 quote delivered (auto-added, not on pay file)",
-          "spiff": 25.0,
-          "note": "Auto-added \u2014 not on Master Pay File"
-        },
-        {
-          "date": "2026-08-20",
-          "job": "",
-          "customer": "Taylor, Charles",
-          "type": "TGL Lead Set Res",
-          "item": "Lead Stage 1 \u2014 quote delivered (auto-added, not on pay file)",
-          "spiff": 25.0,
-          "note": "Auto-added \u2014 not on Master Pay File"
-        },
-        {
-          "date": "2026-08-21",
-          "job": "",
-          "customer": "Rodgers, Scott",
-          "type": "TGL Lead Set Res",
-          "item": "Lead Stage 1 \u2014 quote delivered (auto-added, not on pay file)",
-          "spiff": 25.0,
-          "note": "Auto-added \u2014 not on Master Pay File"
-        },
-        {
-          "date": "2026-08-26",
-          "job": "",
-          "customer": "Tomovski, Alex",
-          "type": "TGL Lead Set Res",
-          "item": "Lead Stage 1 \u2014 quote delivered (auto-added, not on pay file)",
-          "spiff": 25.0,
-          "note": "Auto-added \u2014 not on Master Pay File"
-        }
-      ],
-      "Herbie Windley": [
-        {
-          "date": "2026-08-05",
-          "job": "163547514",
-          "customer": "Kipnis, Robert ",
-          "type": "Sales Spiff",
-          "item": "Moen Flo Water Protection (AC-34)",
-          "spiff": 100.0,
           "note": "Auto-added \u2014 not on Master Pay File"
         }
       ],
@@ -572,6 +578,14 @@
           "type": "Sales Spiff",
           "item": "Daniel Ravenel Real Estate Company",
           "spiff": 75.0
+        },
+        {
+          "date": "2026-08-06",
+          "job": "165375741",
+          "customer": "Stuck, Svetlana ",
+          "type": "Sales Spiff",
+          "item": "Stuck, Svetlana ",
+          "spiff": 50.0
         },
         {
           "date": "2026-08-07",
@@ -686,21 +700,20 @@
           "spiff": 25.0
         },
         {
+          "date": "2026-08-18",
+          "job": "165877108",
+          "customer": "Osborne, Jack",
+          "type": "TGL Lead Set Res",
+          "item": "Osborne, Jack",
+          "spiff": 25.0
+        },
+        {
           "date": "2026-08-24",
           "job": "167179616",
           "customer": "Bienaime, Kelitha",
           "type": "TGL Lead Set Res",
           "item": "Bienaime, Kelitha",
           "spiff": 25.0
-        },
-        {
-          "date": "2026-08-06",
-          "job": "165375741",
-          "customer": "Stuck, Svetlana ",
-          "type": "Sales Spiff",
-          "item": "07 Compressor Protection Kit (CHAC-7)",
-          "spiff": 50.0,
-          "note": "Auto-added \u2014 not on Master Pay File"
         },
         {
           "date": "2026-08-15",
@@ -1386,266 +1399,6 @@
   "carryForward": [
     {
       "id": "cf_2026-08_1",
-      "fromMonth": "May 2026",
-      "emp": "Jim LeBlanc",
-      "ref": "Job 157876582",
-      "type": "Lead Stage 2 \u2014 Parsons, Karen",
-      "amount": 75.0,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_2",
-      "fromMonth": "May 2026",
-      "emp": "Jim LeBlanc",
-      "ref": "Job 158111360",
-      "type": "Lead Stage 2 \u2014 Sea-Mix LLC",
-      "amount": 75.0,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_3",
-      "fromMonth": "May 2026",
-      "emp": "Karl Welch",
-      "ref": "Job 156979623",
-      "type": "Lead Stage 2 \u2014 Ogletree, Bill",
-      "amount": 75.0,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_4",
-      "fromMonth": "May 2026",
-      "emp": "Karl Welch",
-      "ref": "Job 157783679",
-      "type": "Lead Stage 2 \u2014 Bernard, Jonathan",
-      "amount": 75.0,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_5",
-      "fromMonth": "Jun 2026",
-      "emp": "Karl Welch",
-      "ref": "Job 158235161",
-      "type": "Lead Stage 2 \u2014 O'Drobinak, Larry ",
-      "amount": 75.0,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_6",
-      "fromMonth": "Jun 2026",
-      "emp": "Karl Welch",
-      "ref": "Job 158878434",
-      "type": "Lead Stage 2 \u2014 Morris, Tonya",
-      "amount": 75.0,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_7",
-      "fromMonth": "Jun 2026",
-      "emp": "Karl Welch",
-      "ref": "Job 159113711",
-      "type": "Lead Stage 2 \u2014 Romero, Anais ",
-      "amount": 75.0,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_8",
-      "fromMonth": "Jun 2026",
-      "emp": "Karl Welch",
-      "ref": "Job 159166309",
-      "type": "Lead Stage 2 \u2014 Garner, Kim",
-      "amount": 75.0,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_9",
-      "fromMonth": "Jun 2026",
-      "emp": "Karl Welch",
-      "ref": "",
-      "type": "Lead Stage 2 \u2014 Ard, Jim & Cherie",
-      "amount": 75.0,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_10",
-      "fromMonth": "Jul 2026",
-      "emp": "Karl Welch",
-      "ref": "Job 162072085",
-      "type": "Lead Stage 2 \u2014 Crutchfield, Jim",
-      "amount": 75.0,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_11",
-      "fromMonth": "Jul 2026",
-      "emp": "Karl Welch",
-      "ref": "Job 162819304",
-      "type": "Lead Stage 2 \u2014 Thigpen, Barry",
-      "amount": 75.0,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_12",
-      "fromMonth": "Jul 2026",
-      "emp": "Karl Welch",
-      "ref": "Job 163202786",
-      "type": "Lead Stage 2 \u2014 BCR Capital Partners, LLC",
-      "amount": 75.0,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_13",
-      "fromMonth": "Jul 2026",
-      "emp": "Karl Welch",
-      "ref": "Job 163110556",
-      "type": "Lead Stage 2 \u2014 Link, Jesse",
-      "amount": 75.0,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_14",
-      "fromMonth": "Jul 2026",
-      "emp": "Karl Welch",
-      "ref": "Job 164058977",
-      "type": "Lead Stage 2 \u2014 Perrella, Patrick ",
-      "amount": 75.0,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_15",
-      "fromMonth": "Jul 2026",
-      "emp": "Karl Welch",
-      "ref": "",
-      "type": "Lead Stage 2 \u2014 Biddle, Larry",
-      "amount": 75.0,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_16",
-      "fromMonth": "Jul 2026",
-      "emp": "Karl Welch",
-      "ref": "",
-      "type": "Lead Stage 2 \u2014 Hannah, Bill",
-      "amount": 75.0,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_17",
-      "fromMonth": "Jul 2026",
-      "emp": "Karl Welch",
-      "ref": "",
-      "type": "Lead Stage 2 \u2014 Wofford, Walter",
-      "amount": 75.0,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_18",
-      "fromMonth": "Jul 2026",
-      "emp": "Karl Welch",
-      "ref": "",
-      "type": "Lead Stage 2 \u2014 Graham, Destiny",
-      "amount": 75.0,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_19",
-      "fromMonth": "Jul 2026",
-      "emp": "Karl Welch",
-      "ref": "",
-      "type": "Lead Stage 2 \u2014 Birchenough, Dave",
-      "amount": 75.0,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_20",
-      "fromMonth": "Jul 2026",
-      "emp": "Karl Welch",
-      "ref": "",
-      "type": "Lead Stage 2 \u2014 Rodriguez, Lupe",
-      "amount": 75.0,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_21",
       "fromMonth": "Aug 2026",
       "emp": "Andrew Babyak",
       "ref": "Job 165963362",
@@ -1658,7 +1411,33 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_22",
+      "id": "cf_2026-08_2",
+      "fromMonth": "Aug 2026",
+      "emp": "Andrew Babyak",
+      "ref": "Job 167019764",
+      "type": "Lead Stage 2 \u2014 Griffis, Dave",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Aug 2026. Pay $75 when sold, installed, paid.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_2026-08_3",
+      "fromMonth": "Aug 2026",
+      "emp": "Andrew Babyak",
+      "ref": "Job 167446142",
+      "type": "Lead Stage 2 \u2014 Akel, Robin",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Aug 2026. Pay $75 when sold, installed, paid.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_2026-08_4",
       "fromMonth": "Aug 2026",
       "emp": "Andrew Babyak",
       "ref": "Job 167994897",
@@ -1671,7 +1450,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_23",
+      "id": "cf_2026-08_5",
       "fromMonth": "Aug 2026",
       "emp": "Andrew Babyak",
       "ref": "Job 168367583",
@@ -1684,7 +1463,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_24",
+      "id": "cf_2026-08_6",
       "fromMonth": "Aug 2026",
       "emp": "Corey Ward",
       "ref": "Job 165512610",
@@ -1697,7 +1476,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_25",
+      "id": "cf_2026-08_7",
       "fromMonth": "Aug 2026",
       "emp": "Corey Ward",
       "ref": "Job 165809871",
@@ -1710,7 +1489,33 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_26",
+      "id": "cf_2026-08_8",
+      "fromMonth": "Aug 2026",
+      "emp": "Corey Ward",
+      "ref": "Job 165972686",
+      "type": "Lead Stage 2 \u2014 Epstein, Dave & Madeline",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Aug 2026. Pay $75 when sold, installed, paid.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_2026-08_9",
+      "fromMonth": "Aug 2026",
+      "emp": "Corey Ward",
+      "ref": "Job 168341386",
+      "type": "Lead Stage 2 \u2014 Mora, Angelina",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Aug 2026. Pay $75 when sold, installed, paid.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_2026-08_10",
       "fromMonth": "Aug 2026",
       "emp": "Jay Hall",
       "ref": "Job 166618356",
@@ -1723,7 +1528,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_27",
+      "id": "cf_2026-08_11",
       "fromMonth": "Aug 2026",
       "emp": "Jay Hall",
       "ref": "Job 166626673",
@@ -1736,7 +1541,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_28",
+      "id": "cf_2026-08_12",
       "fromMonth": "Aug 2026",
       "emp": "Jay Hall",
       "ref": "Job 166732473",
@@ -1749,7 +1554,20 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_29",
+      "id": "cf_2026-08_13",
+      "fromMonth": "Aug 2026",
+      "emp": "Jay Hall",
+      "ref": "Job 165877108",
+      "type": "Lead Stage 2 \u2014 Osborne, Jack",
+      "amount": 75,
+      "dept": "CH Install",
+      "reason": "Stage 1 paid Aug 2026. Pay $75 when sold, installed, paid.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_2026-08_14",
       "fromMonth": "Aug 2026",
       "emp": "Jay Hall",
       "ref": "Job 167179616",
@@ -1762,7 +1580,72 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_30",
+      "id": "cf_2026-08_15",
+      "fromMonth": "Aug 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 164835577",
+      "type": "Lead Stage 2 \u2014 Rodriguez, Lupe",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Aug 2026. Pay $75 when sold, installed, paid.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_2026-08_16",
+      "fromMonth": "Aug 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 165741279",
+      "type": "Lead Stage 2 \u2014 Newhouse, Ken & Tracy",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Aug 2026. Pay $75 when sold, installed, paid.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_2026-08_17",
+      "fromMonth": "Aug 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 167274700",
+      "type": "Lead Stage 2 \u2014 Seppi, Walter",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Aug 2026. Pay $75 when sold, installed, paid.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_2026-08_18",
+      "fromMonth": "Aug 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 167352167",
+      "type": "Lead Stage 2 \u2014 Taylor, Charles",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Aug 2026. Pay $75 when sold, installed, paid.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_2026-08_19",
+      "fromMonth": "Aug 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 167415018",
+      "type": "Lead Stage 2 \u2014 Rodgers, Scott",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Aug 2026. Pay $75 when sold, installed, paid.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_2026-08_20",
       "fromMonth": "Aug 2026",
       "emp": "Karl Welch",
       "ref": "Job 167460572",
@@ -1775,7 +1658,20 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_31",
+      "id": "cf_2026-08_21",
+      "fromMonth": "Aug 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 168000283",
+      "type": "Lead Stage 2 \u2014 Tomovski, Alex ",
+      "amount": 75,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid Aug 2026. Pay $75 when sold, installed, paid.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_2026-08_22",
       "fromMonth": "Aug 2026",
       "emp": "Steve Gordon",
       "ref": "Job 167918062",
@@ -1788,20 +1684,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_32",
-      "fromMonth": "Aug 2026",
-      "emp": "Karl Welch",
-      "ref": "",
-      "type": "Lead Stage 2 \u2014 Newhouse, Ken & Tracy",
-      "amount": 75,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid Aug 2026. Pay $75 when sold, installed, paid.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_33",
+      "id": "cf_2026-08_23",
       "fromMonth": "Aug 2026",
       "emp": "Karl Welch",
       "ref": "",
@@ -1814,89 +1697,11 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_34",
+      "id": "cf_2026-08_24",
       "fromMonth": "Aug 2026",
       "emp": "Karl Welch",
       "ref": "",
       "type": "Lead Stage 2 \u2014 Epstein, Dave & Madeline",
-      "amount": 75,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid Aug 2026. Pay $75 when sold, installed, paid.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_35",
-      "fromMonth": "Aug 2026",
-      "emp": "Andrew Babyak",
-      "ref": "",
-      "type": "Lead Stage 2 \u2014 Griffis, Dave",
-      "amount": 75,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid Aug 2026. Pay $75 when sold, installed, paid.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_36",
-      "fromMonth": "Aug 2026",
-      "emp": "Karl Welch",
-      "ref": "",
-      "type": "Lead Stage 2 \u2014 Seppi, Walter",
-      "amount": 75,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid Aug 2026. Pay $75 when sold, installed, paid.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_37",
-      "fromMonth": "Aug 2026",
-      "emp": "Karl Welch",
-      "ref": "",
-      "type": "Lead Stage 2 \u2014 Taylor, Charles",
-      "amount": 75,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid Aug 2026. Pay $75 when sold, installed, paid.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_38",
-      "fromMonth": "Aug 2026",
-      "emp": "Andrew Babyak",
-      "ref": "",
-      "type": "Lead Stage 2 \u2014 Akel, Robin",
-      "amount": 75,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid Aug 2026. Pay $75 when sold, installed, paid.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_39",
-      "fromMonth": "Aug 2026",
-      "emp": "Karl Welch",
-      "ref": "",
-      "type": "Lead Stage 2 \u2014 Rodgers, Scott",
-      "amount": 75,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid Aug 2026. Pay $75 when sold, installed, paid.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_40",
-      "fromMonth": "Aug 2026",
-      "emp": "Karl Welch",
-      "ref": "",
-      "type": "Lead Stage 2 \u2014 Tomovski, Alex",
       "amount": 75,
       "dept": "MB Install Residential",
       "reason": "Stage 1 paid Aug 2026. Pay $75 when sold, installed, paid.",

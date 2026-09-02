@@ -21,11 +21,11 @@ from collections import defaultdict
 from st_client import ServiceTitanClient
 
 # ── Month config ─────────────────────────────────────────────────────
-MONTH_LABEL = "Jul 2026"
-PREV_LABEL = "Jun 2026"
-NEXT_LABEL = "Aug 2026"
-FROM_DATE = "2026-07-01"
-TO_DATE = "2026-07-31"
+MONTH_LABEL = "Aug 2026"
+PREV_LABEL = "Jul 2026"
+NEXT_LABEL = "Sep 2026"
+FROM_DATE = "2026-08-01"
+TO_DATE = "2026-08-31"
 
 # Same Apps Script Web App URL embedded in index.html — already public there, not a secret.
 APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHV_lR6gQQGs4LOmst5JxYlg6NqDjJIhJjs0h6l4wCs8DFEtBaWQ6RfURKIVdrfkqI/exec"
@@ -55,6 +55,8 @@ EXCLUDED_FROM_SPIFFS = {
     "Lauren Mancino": "Does not receive spiffs — not actually selling the renewals attributed to her",
     "Derrick Hall": "Commissions tracked via the separate CAP Lead Tracker app (Derrick's commercial lead "
                     "tool) — excluded from this pipeline entirely",
+    "Liam Richardson": "Commissioned salesperson — commissions tracked separately, not part of this spiff "
+                        "pool (confirmed by Billy 2026-09)",
 }
 
 def normalize_code(code):
@@ -377,29 +379,51 @@ def main():
                       f"crediting a Stage 1 spiff.", sev="red")
 
     # ── 5) Residential Stage 2 carry-forward ──
-    # Refreshed 2026-08-05 from the live index.html S.carryForward (23 items) minus everything
-    # resolved via carry_forward_resolutions since (14 resolved paid/dead — see git history for
-    # the full reconciliation) — these 9 are what's still genuinely pending.
+    # Refreshed 2026-09 from the live index.html S.carryForward (25 items, Jul 2026 build) minus
+    # everything resolved via carry_forward_resolutions since (5 resolved paid/dead) — these 20
+    # are what's still genuinely pending.
     # NOTE: before running this script for a new month, refresh this list again the same way.
     prior_carry_forward = [
-        {"id": "cf2", "fromMonth": "May 2026", "emp": "Jim LeBlanc", "ref": "Job 157876582",
+        {"id": "cf_2026-07_1", "fromMonth": "May 2026", "emp": "Jim LeBlanc", "ref": "Job 157876582",
          "type": "Lead Stage 2 — Parsons, Karen", "amount": 75, "dept": "MB Install Residential", "lnk": "parsons"},
-        {"id": "cf3", "fromMonth": "May 2026", "emp": "Jim LeBlanc", "ref": "Job 158111360",
+        {"id": "cf_2026-07_2", "fromMonth": "May 2026", "emp": "Jim LeBlanc", "ref": "Job 158111360",
          "type": "Lead Stage 2 — Sea-Mix LLC", "amount": 75, "dept": "MB Install Residential", "lnk": "sea"},
-        {"id": "cf5", "fromMonth": "May 2026", "emp": "Karl Welch", "ref": "Job 156979623",
+        {"id": "cf_2026-07_3", "fromMonth": "May 2026", "emp": "Karl Welch", "ref": "Job 156979623",
          "type": "Lead Stage 2 — Ogletree, Bill", "amount": 75, "dept": "MB Install Residential", "lnk": "ogletree"},
-        {"id": "cf6", "fromMonth": "May 2026", "emp": "Karl Welch", "ref": "Job 157783679",
+        {"id": "cf_2026-07_4", "fromMonth": "May 2026", "emp": "Karl Welch", "ref": "Job 157783679",
          "type": "Lead Stage 2 — Bernard, Jonathan", "amount": 75, "dept": "MB Install Residential", "lnk": "bernard"},
-        {"id": "cf16", "fromMonth": "Jun 2026", "emp": "Karl Welch", "ref": "Job 158235161",
+        {"id": "cf_2026-07_5", "fromMonth": "Jun 2026", "emp": "Karl Welch", "ref": "Job 158235161",
          "type": "Lead Stage 2 — O'Drobinak, Larry ", "amount": 75, "dept": "MB Install Residential", "lnk": "o"},
-        {"id": "cf17", "fromMonth": "Jun 2026", "emp": "Karl Welch", "ref": "Job 158878434",
+        {"id": "cf_2026-07_6", "fromMonth": "Jun 2026", "emp": "Karl Welch", "ref": "Job 158878434",
          "type": "Lead Stage 2 — Morris, Tonya", "amount": 75, "dept": "MB Install Residential", "lnk": "morris"},
-        {"id": "cf19", "fromMonth": "Jun 2026", "emp": "Karl Welch", "ref": "Job 159113711",
+        {"id": "cf_2026-07_7", "fromMonth": "Jun 2026", "emp": "Karl Welch", "ref": "Job 159113711",
          "type": "Lead Stage 2 — Romero, Anais ", "amount": 75, "dept": "MB Install Residential", "lnk": "romero"},
-        {"id": "cf20", "fromMonth": "Jun 2026", "emp": "Karl Welch", "ref": "Job 159166309",
+        {"id": "cf_2026-07_8", "fromMonth": "Jun 2026", "emp": "Karl Welch", "ref": "Job 159166309",
          "type": "Lead Stage 2 — Garner, Kim", "amount": 75, "dept": "MB Install Residential", "lnk": "garner"},
-        {"id": "cf22", "fromMonth": "Jun 2026", "emp": "Karl Welch", "ref": "",
+        {"id": "cf_2026-07_9", "fromMonth": "Jun 2026", "emp": "Karl Welch", "ref": "",
          "type": "Lead Stage 2 — Ard, Jim & Cherie", "amount": 75, "dept": "MB Install Residential", "lnk": "ard"},
+        {"id": "cf_2026-07_12", "fromMonth": "Jul 2026", "emp": "Karl Welch", "ref": "Job 162072085",
+         "type": "Lead Stage 2 — Crutchfield, Jim", "amount": 75, "dept": "MB Install Residential", "lnk": "crutchfield"},
+        {"id": "cf_2026-07_13", "fromMonth": "Jul 2026", "emp": "Karl Welch", "ref": "Job 162819304",
+         "type": "Lead Stage 2 — Thigpen, Barry", "amount": 75, "dept": "MB Install Residential", "lnk": "thigpen"},
+        {"id": "cf_2026-07_14", "fromMonth": "Jul 2026", "emp": "Karl Welch", "ref": "Job 163202786",
+         "type": "Lead Stage 2 — BCR Capital Partners, LLC", "amount": 75, "dept": "MB Install Residential", "lnk": "bcr"},
+        {"id": "cf_2026-07_15", "fromMonth": "Jul 2026", "emp": "Karl Welch", "ref": "Job 163110556",
+         "type": "Lead Stage 2 — Link, Jesse", "amount": 75, "dept": "MB Install Residential", "lnk": "link"},
+        {"id": "cf_2026-07_18", "fromMonth": "Jul 2026", "emp": "Karl Welch", "ref": "Job 164058977",
+         "type": "Lead Stage 2 — Perrella, Patrick ", "amount": 75, "dept": "MB Install Residential", "lnk": "perrella"},
+        {"id": "cf_2026-07_19", "fromMonth": "Jul 2026", "emp": "Karl Welch", "ref": "",
+         "type": "Lead Stage 2 — Biddle, Larry", "amount": 75, "dept": "MB Install Residential", "lnk": "biddle"},
+        {"id": "cf_2026-07_21", "fromMonth": "Jul 2026", "emp": "Karl Welch", "ref": "",
+         "type": "Lead Stage 2 — Hannah, Bill", "amount": 75, "dept": "MB Install Residential", "lnk": "hannah"},
+        {"id": "cf_2026-07_22", "fromMonth": "Jul 2026", "emp": "Karl Welch", "ref": "",
+         "type": "Lead Stage 2 — Wofford, Walter", "amount": 75, "dept": "MB Install Residential", "lnk": "wofford"},
+        {"id": "cf_2026-07_23", "fromMonth": "Jul 2026", "emp": "Karl Welch", "ref": "",
+         "type": "Lead Stage 2 — Graham, Destiny", "amount": 75, "dept": "MB Install Residential", "lnk": "graham"},
+        {"id": "cf_2026-07_24", "fromMonth": "Jul 2026", "emp": "Karl Welch", "ref": "",
+         "type": "Lead Stage 2 — Birchenough, Dave", "amount": 75, "dept": "MB Install Residential", "lnk": "birchenough"},
+        {"id": "cf_2026-07_25", "fromMonth": "Jul 2026", "emp": "Karl Welch", "ref": "",
+         "type": "Lead Stage 2 — Rodriguez, Lupe", "amount": 75, "dept": "MB Install Residential", "lnk": "rodriguez"},
     ]
     # Manual resolutions from the app (Steven/Caleb marking a carry-forward item "paid" or "dead" directly) —
     # respect these so a dead lead doesn't keep rolling forward forever, and a manually-paid one doesn't reappear.
@@ -462,23 +486,15 @@ def main():
         })
 
     # ── 6) Commercial lead rolling log ──
-    # Refreshed 2026-08-05 from the live index.html S.commLeads (17 items, commlead_updates tab
-    # confirmed empty — no manager edits to respect). Previously this seed only carried the 2
-    # "Sold" items forward; the 15 "Pending" leads detected in Jun 2026 were never re-seeded here,
-    # so they'd have silently vanished from the log on this run had they not been added back.
+    # Refreshed 2026-09 from the live index.html S.commLeads (43 items, Jul 2026 build) minus
+    # everything resolved via commlead_updates since: 9 paid (excluded — already reflected in
+    # Jul's totals, not re-paid here) and 17 dismissed (excluded — closed, no payment). These 17
+    # are what's still genuinely Pending.
     carried_leads = [
-        {"id": "cl1", "month": "May 2026", "tech": "Kyle Freeman", "job": "156731670",
-         "customer": "AMC Theaters NMB", "status": "Sold — Install In Progress", "spiff": 100,
-         "payMonth": "Jul 2026", "paid": False},
-        {"id": "cl3", "month": "May 2026", "tech": "Javi Vazquez", "job": "157867483",
-         "customer": "Angel Oak Nursing & Rehab", "status": "Sold — Install In Progress", "spiff": 100,
-         "payMonth": "Jul 2026", "paid": False},
         {"id": "cl_2026-06_1", "month": "Jun 2026", "tech": "Nick Scarpa", "job": "",
          "customer": "Rambler - Wares to Wander", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
         {"id": "cl_2026-06_2", "month": "Jun 2026", "tech": "Ray Lambert", "job": "",
          "customer": "Founders Group Int'l", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
-        {"id": "cl_2026-06_3", "month": "Jun 2026", "tech": "Nick Scarpa", "job": "",
-         "customer": "Sagel, Greg", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
         {"id": "cl_2026-06_4", "month": "Jun 2026", "tech": "Nick Scarpa", "job": "",
          "customer": "Carolina Ale House", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
         {"id": "cl_2026-06_5", "month": "Jun 2026", "tech": "Nick Scarpa", "job": "",
@@ -487,22 +503,28 @@ def main():
          "customer": "Refuel Gas Stations", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
         {"id": "cl_2026-06_7", "month": "Jun 2026", "tech": "Nick Scarpa", "job": "",
          "customer": "Hickory Tavern", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
-        {"id": "cl_2026-06_8", "month": "Jun 2026", "tech": "Ray Lambert", "job": "",
-         "customer": "Community Kitchen", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
         {"id": "cl_2026-06_9", "month": "Jun 2026", "tech": "Javi Vazquez", "job": "",
          "customer": "Grube. Inc.", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
-        {"id": "cl_2026-06_10", "month": "Jun 2026", "tech": "Kyle Freeman", "job": "",
-         "customer": "Southern Crown Partners", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
         {"id": "cl_2026-06_11", "month": "Jun 2026", "tech": "Kyle Freeman", "job": "",
          "customer": "America First Management", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
         {"id": "cl_2026-06_12", "month": "Jun 2026", "tech": "Ray Lambert", "job": "",
          "customer": "Yahnis Company", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
-        {"id": "cl_2026-06_13", "month": "Jun 2026", "tech": "Javi Vazquez", "job": "",
-         "customer": "Bridgewater Academy", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
-        {"id": "cl_2026-06_14", "month": "Jun 2026", "tech": "Javi Vazquez", "job": "",
-         "customer": "Moss, Mitch", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
-        {"id": "cl_2026-06_15", "month": "Jun 2026", "tech": "Javi Vazquez", "job": "",
-         "customer": "Hall, Dana", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
+        {"id": "cl_2026-07_2", "month": "Jul 2026", "tech": "Kyle Freeman", "job": "",
+         "customer": "Anto's Pizza Romana", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
+        {"id": "cl_2026-07_6", "month": "Jul 2026", "tech": "Kyle Freeman", "job": "",
+         "customer": "Founders Group Int'l", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
+        {"id": "cl_2026-07_7", "month": "Jul 2026", "tech": "Ray Lambert", "job": "",
+         "customer": "Grand Strand Dermatology MB", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
+        {"id": "cl_2026-07_9", "month": "Jul 2026", "tech": "Kyle Freeman", "job": "",
+         "customer": "E3 Bootcamp", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
+        {"id": "cl_2026-07_10", "month": "Jul 2026", "tech": "Kyle Freeman", "job": "",
+         "customer": "Reflections Assisted Living of Carolina Forest", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
+        {"id": "cl_2026-07_11", "month": "Jul 2026", "tech": "Javi Vazquez", "job": "",
+         "customer": "Bo Benton Inc. Bojangles'", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
+        {"id": "cl_2026-07_12", "month": "Jul 2026", "tech": "Javi Vazquez", "job": "",
+         "customer": "Team Dodge Ram Myrtle Beach", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
+        {"id": "cl_2026-07_18", "month": "Jul 2026", "tech": "Nick Scarpa", "job": "",
+         "customer": "Oceans One Rental Management", "status": "Pending", "spiff": 0, "payMonth": "", "paid": False},
     ]
     comm_leads_out = []
     for lead in carried_leads:

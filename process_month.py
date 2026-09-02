@@ -64,31 +64,18 @@ APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHV_lR6gQQGs4LOmst5J
 # just gets this caller ready ahead of the eventual flip.
 SHARED_KEY = os.environ.get("SPIFFS_SHARED_KEY", "")
 
-# ── Static rosters (fallback only — dynamic classification below is primary) ──
+# ── Roster ────────────────────────────────────────────────────────────
+# LEAD_ACTIVITIES isn't roster data (it's ServiceTitan activity-type strings, same for everyone)
+# so it stays a plain constant. Everyone/everything else below used to be hardcoded here — now
+# loaded from the `roster` Sheet tab via load_roster_globals(), called from the __main__ block
+# right after configure_month(). None until then, same reasoning as the month config above.
 LEAD_ACTIVITIES = {"TGL Lead Set Res", "TGL Lead Sold Res"}
-PLUMBERS = {"Jesse Mertens", "Herbie Windley"}
-COMM_TECHS = {"Nick Scarpa", "Javi Vazquez", "Ray Lambert", "Kyle Freeman", "Stuart Akel"}
-CH_TECHS = {"Jay Hall", "Steve Gordon"}
-STEVEN_ROSTER = ["Darren Goida", "Jim LeBlanc", "Karl Welch", "Jesse Mertens", "Herbie Windley",
-                 "Nick Scarpa", "Javi Vazquez", "Ray Lambert", "Kyle Freeman", "Stuart Akel",
-                 "Andrew Babyak", "Corey Ward"]  # new hires, added 2026-08-05 per Billy
-CALEB_ROSTER = ["Jay Hall", "Steve Gordon", "Quincy Fields",
-                "Terrance Bostic"]  # new hire, added 2026-08-05 per Billy
-OFFICE_NAMES = {"Jenny Miller", "Chris Port", "Danielle Gerthung"}
+STEVEN_ROSTER = CALEB_ROSTER = PLUMBERS = COMM_TECHS = CH_TECHS = OFFICE_NAMES = EXCLUDED_FROM_SPIFFS = None
 
-# People who show up in reports but aren't part of this spiff pool at all — confirmed by Billy 2026-07-03.
-EXCLUDED_FROM_SPIFFS = {
-    "Chase Shumate": "Salesperson — spiffs/commissions processed separately",
-    "Caleb Harnish": "Location Manager (Charleston) — does not receive spiffs/commissions",
-    "Tracy Dennis": "Office staff — membership attribution artifact, not an actual seller",
-    "Rich Smith": "Commercial equipment salesperson — only service-work commission (3%, via Rich's "
-                  "Commission Report) is processed here; equipment commissions handled separately",
-    "Lauren Mancino": "Does not receive spiffs — not actually selling the renewals attributed to her",
-    "Derrick Hall": "Commissions tracked via the separate CAP Lead Tracker app (Derrick's commercial lead "
-                    "tool) — excluded from this pipeline entirely",
-    "Liam Richardson": "Commissioned salesperson — commissions tracked separately, not part of this spiff "
-                        "pool (confirmed by Billy 2026-09)",
-}
+
+def load_roster_globals():
+    global STEVEN_ROSTER, CALEB_ROSTER, PLUMBERS, COMM_TECHS, CH_TECHS, OFFICE_NAMES, EXCLUDED_FROM_SPIFFS
+    STEVEN_ROSTER, CALEB_ROSTER, PLUMBERS, COMM_TECHS, CH_TECHS, OFFICE_NAMES, EXCLUDED_FROM_SPIFFS = load_roster()
 
 def normalize_code(code):
     return re.sub(r"\s+", "", str(code or "")).upper()
@@ -279,6 +266,53 @@ def compute_carried_leads():
             "status": eff_status, "spiff": 0, "payMonth": "", "paid": False,
         })
     return out
+
+
+def load_roster():
+    """Reads the `roster` Sheet tab and returns the same shapes the hardcoded constants used to
+    be — (steven_roster, caleb_roster, plumbers, comm_techs, ch_techs, office_names, excluded) —
+    so the rest of the pipeline is unchanged below this point. This is what lets Billy add a new
+    hire or remove someone who's left without a Claude Code session.
+
+    steven_roster/caleb_roster are lists (not sets) to preserve Sheet row order, since that order
+    is what determines display order in the app. Columns: name, team, role, eligible, active,
+    exclusionReason, updatedBy, updatedAt.
+    """
+    steven, caleb = [], []
+    plumbers, comm_techs, ch_techs, office = set(), set(), set(), set()
+    excluded = {}
+    for r in sheet_get("roster"):
+        if len(r) < 6 or not r[0]:
+            continue
+        name, team, role, eligible, active, reason = r[:6]
+        eligible_b = str(eligible).strip().upper() == "TRUE"
+        active_b = str(active).strip().upper() == "TRUE"
+        # sheet_get() has no way to skip row 1 — a brand-new tab gets a real header row from
+        # ensureSheet_, so "eligible"/"active" show up literally here instead of TRUE/FALSE.
+        # Any genuine data row always has one of those two exact values; anything else (header,
+        # or a malformed row) is skipped rather than guessed at.
+        if str(eligible).strip().upper() not in ("TRUE", "FALSE"):
+            continue
+        if not eligible_b:
+            excluded[name] = reason or "Not eligible for spiffs"
+            continue
+        if not active_b:
+            continue  # departed — not on any team/role set, so team_of()'s red-flag path catches
+            # them if they still show up with activity, instead of silently dropping the money
+            # (see the steven_emps/caleb_emps fallback near the bottom of main()).
+        if role == "plumber":
+            plumbers.add(name)
+        elif role == "comm_tech":
+            comm_techs.add(name)
+        elif role == "ch_tech":
+            ch_techs.add(name)
+        elif role == "office":
+            office.add(name)
+        if team == "steven" and name not in steven:
+            steven.append(name)
+        elif team == "caleb" and name not in caleb:
+            caleb.append(name)
+    return steven, caleb, plumbers, comm_techs, ch_techs, office, excluded
 
 
 # ── Classification ───────────────────────────────────────────────────
@@ -757,15 +791,22 @@ def main():
     # ── Output ──────────────────────────────────────────────────────
     steven_emps = [emps[n] for n in STEVEN_ROSTER if n in emps]
     caleb_emps = [emps[n] for n in CALEB_ROSTER if n in emps]
-    other_emps = [e for n, e in emps.items() if n not in STEVEN_ROSTER and n not in CALEB_ROSTER]
+    # Anyone not on either roster still gets paid — never silently dropped. This used to land in
+    # an "_unclassified" bucket that render_full_S.py never read, so their computed spiff simply
+    # vanished from the app (a real bug, found 2026-09, only ever worked around by adding new
+    # hires to the roster by hand before this bug could bite). team_of() already defaults an
+    # unrecognized name to Steven's team and raises a red flag when it's first classified above —
+    # mirror that default here so the money and the flag always land in the same place.
+    known_names = set(STEVEN_ROSTER) | set(CALEB_ROSTER)
+    steven_emps += [e for n, e in emps.items() if n not in known_names]
 
     result = {
         "month": MONTH_LABEL,
-        "emps": {"steven": steven_emps, "caleb": caleb_emps, "_unclassified": other_emps},
+        "emps": {"steven": steven_emps, "caleb": caleb_emps},
         "flags": flags,
         "spiffDetail": {
-            "steven": {n: spiff_detail[n] for n in STEVEN_ROSTER if n in spiff_detail},
-            "caleb": {n: spiff_detail[n] for n in CALEB_ROSTER if n in spiff_detail},
+            "steven": {n: d for n, d in spiff_detail.items() if n not in CALEB_ROSTER},
+            "caleb": {n: d for n, d in spiff_detail.items() if n in CALEB_ROSTER},
         },
         "officeMems": [{"name": n, "total": round(t, 2), "details": office_mem_details.get(n, [])}
                        for n, t in office_mems.items()],
@@ -784,11 +825,12 @@ def main():
     with open(f"output_{FROM_DATE[:7]}.json", "w") as f:
         json.dump(result, f, indent=2)
 
+    unclassified_names = [n for n in emps if n not in known_names]
     print("\n=== SUMMARY ===")
     print(f"Steven's team: {len(steven_emps)} employees with spiffs")
     print(f"Caleb's team: {len(caleb_emps)} employees with spiffs")
-    if other_emps:
-        print(f"UNCLASSIFIED (flagged): {[e['name'] for e in other_emps]}")
+    if unclassified_names:
+        print(f"UNCLASSIFIED (flagged, paid under Steven by default): {unclassified_names}")
     print(f"Flags — Steven: {len(flags['steven'])}, Caleb: {len(flags['caleb'])}")
     print(f"Rich Smith commission: ${rich_commission} (base ${rich_total_base:.2f})")
     print(f"Commercial leads log: {len(comm_leads_out)} entries "
@@ -804,4 +846,5 @@ if __name__ == "__main__":
         print('Usage: python process_month.py "Sep 2026"')
         sys.exit(1)
     configure_month(sys.argv[1])
+    load_roster_globals()
     main()

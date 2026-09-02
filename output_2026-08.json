@@ -94,60 +94,141 @@
         "chi": 0,
         "dups": []
       }
-    ],
-    "_unclassified": []
+    ]
   },
   "flags": {
-    "steven": [
-      {
-        "id": "s1",
-        "sev": "red",
-        "emp": "Rich Smith",
-        "ref": "Job #166138097",
-        "resolved": false,
-        "disp": "",
-        "note": "",
-        "title": "Possible duplicate payment \u2014 job #166138097 already paid in a prior month",
-        "detail": "Rich Smith is being paid $220.26 for job #166138097 (Water Heater Replacement ) this month, but the ledger shows this same job/employee combination was already paid in a previous month. Verify this isn't a duplicate before approving."
-      },
-      {
-        "id": "s2",
-        "sev": "red",
-        "emp": "Rich Smith",
-        "ref": "Job #166376798",
-        "resolved": false,
-        "disp": "",
-        "note": "",
-        "title": "Possible duplicate payment \u2014 job #166376798 already paid in a prior month",
-        "detail": "Rich Smith is being paid $117.59 for job #166376798 (Line Set Repair) this month, but the ledger shows this same job/employee combination was already paid in a previous month. Verify this isn't a duplicate before approving."
-      },
-      {
-        "id": "s3",
-        "sev": "red",
-        "emp": "Rich Smith",
-        "ref": "Job #166094452",
-        "resolved": false,
-        "disp": "",
-        "note": "",
-        "title": "Possible duplicate payment \u2014 job #166094452 already paid in a prior month",
-        "detail": "Rich Smith is being paid $49.80 for job #166094452 (2nd Floor Women\u2019s Restroom Common ADA Toilet) this month, but the ledger shows this same job/employee combination was already paid in a previous month. Verify this isn't a duplicate before approving."
-      },
-      {
-        "id": "s4",
-        "sev": "red",
-        "emp": "Rich Smith",
-        "ref": "Job #165456355",
-        "resolved": false,
-        "disp": "",
-        "note": "",
-        "title": "Possible duplicate payment \u2014 job #165456355 already paid in a prior month",
-        "detail": "Rich Smith is being paid $20.42 for job #165456355 (Good) this month, but the ledger shows this same job/employee combination was already paid in a previous month. Verify this isn't a duplicate before approving."
-      }
-    ],
+    "steven": [],
     "caleb": []
   },
   "spiffDetail": {
     "steven": {
+      "Andrew Babyak": [
+        {
+          "date": "2026-08-04",
+          "job": "165145448",
+          "customer": "Bulger, Jane",
+          "type": "Sales Spiff",
+          "item": "Bulger, Jane",
+          "spiff": 5.0
+        },
+        {
+          "date": "2026-08-10",
+          "job": "165748120",
+          "customer": "Grobski, Paul",
+          "type": "Sales Spiff",
+          "item": "Grobski, Paul",
+          "spiff": 20.0
+        },
+        {
+          "date": "2026-08-21",
+          "job": "163591450",
+          "customer": "Donatelli, William ",
+          "type": "Sales Spiff",
+          "item": "Donatelli, William ",
+          "spiff": 5.0
+        },
+        {
+          "date": "2026-08-24",
+          "job": "166685063",
+          "customer": "Cvasa, Eduard & Lizabeth",
+          "type": "Sales Spiff",
+          "item": "Cvasa, Eduard & Lizabeth",
+          "spiff": 5.0
+        },
+        {
+          "date": "2026-08-25",
+          "job": "162007451",
+          "customer": "Grauke, Katie ",
+          "type": "Sales Spiff",
+          "item": "Grauke, Katie ",
+          "spiff": 5.0
+        },
+        {
+          "date": "2026-08-11",
+          "job": "165963362",
+          "customer": "Kirby, Terry",
+          "type": "TGL Lead Set Res",
+          "item": "Kirby, Terry",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-08-26",
+          "job": "167994897",
+          "customer": "McMakin, Missi & Joel",
+          "type": "TGL Lead Set Res",
+          "item": "McMakin, Missi & Joel",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-08-31",
+          "job": "168367583",
+          "customer": "Owens, Doug",
+          "type": "TGL Lead Set Res",
+          "item": "Owens, Doug",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-08-18",
+          "job": "",
+          "customer": "Griffis, Dave",
+          "type": "TGL Lead Set Res",
+          "item": "Lead Stage 1 \u2014 quote delivered (auto-added, not on pay file)",
+          "spiff": 25.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        },
+        {
+          "date": "2026-08-21",
+          "job": "",
+          "customer": "Akel, Robin",
+          "type": "TGL Lead Set Res",
+          "item": "Lead Stage 1 \u2014 quote delivered (auto-added, not on pay file)",
+          "spiff": 25.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        }
+      ],
+      "Corey Ward": [
+        {
+          "date": "2026-08-05",
+          "job": "162462579",
+          "customer": "Travisono, Steve",
+          "type": "Sales Spiff",
+          "item": "Travisono, Steve",
+          "spiff": 10.0
+        },
+        {
+          "date": "2026-08-07",
+          "job": "159490075",
+          "customer": "Billings, Mike ",
+          "type": "Sales Spiff",
+          "item": "Billings, Mike ",
+          "spiff": 5.0
+        },
+        {
+          "date": "2026-08-11",
+          "job": "165512610",
+          "customer": "Zocchi, David",
+          "type": "TGL Lead Set Res",
+          "item": "Zocchi, David",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-08-11",
+          "job": "165809871",
+          "customer": "Ruppert, Harley & Nancy",
+          "type": "TGL Lead Set Res",
+          "item": "Ruppert, Harley & Nancy",
+          "spiff": 25.0
+        },
+        {
+          "date": "2026-08-28",
+          "job": "",
+          "customer": "Miller, Daniel",
+          "type": "Sales Spiff",
+          "item": "Basic Membership - 2 Systems \u2014 New Sale",
+          "spiff": 15.0,
+          "note": "Auto-added \u2014 not on Master Pay File"
+        }
+      ],
       "Karl Welch": [
         {
           "date": "2026-08-04",
@@ -427,17 +508,6 @@
           "note": "Auto-added \u2014 not on Master Pay File"
         }
       ],
-      "Nick Scarpa": [
-        {
-          "date": "2026-08-01",
-          "job": "",
-          "customer": "Harris, Heather",
-          "type": "Sales Spiff",
-          "item": "Standard Membership - 2 Systems \u2014 New Sale",
-          "spiff": 25.0,
-          "note": "Auto-added \u2014 not on Master Pay File"
-        }
-      ],
       "Ray Lambert": [
         {
           "date": "2026-08-19",
@@ -449,130 +519,14 @@
           "note": "Auto-added \u2014 not on Master Pay File"
         }
       ],
-      "Andrew Babyak": [
+      "Nick Scarpa": [
         {
-          "date": "2026-08-04",
-          "job": "165145448",
-          "customer": "Bulger, Jane",
-          "type": "Sales Spiff",
-          "item": "Bulger, Jane",
-          "spiff": 5.0
-        },
-        {
-          "date": "2026-08-10",
-          "job": "165748120",
-          "customer": "Grobski, Paul",
-          "type": "Sales Spiff",
-          "item": "Grobski, Paul",
-          "spiff": 20.0
-        },
-        {
-          "date": "2026-08-21",
-          "job": "163591450",
-          "customer": "Donatelli, William ",
-          "type": "Sales Spiff",
-          "item": "Donatelli, William ",
-          "spiff": 5.0
-        },
-        {
-          "date": "2026-08-24",
-          "job": "166685063",
-          "customer": "Cvasa, Eduard & Lizabeth",
-          "type": "Sales Spiff",
-          "item": "Cvasa, Eduard & Lizabeth",
-          "spiff": 5.0
-        },
-        {
-          "date": "2026-08-25",
-          "job": "162007451",
-          "customer": "Grauke, Katie ",
-          "type": "Sales Spiff",
-          "item": "Grauke, Katie ",
-          "spiff": 5.0
-        },
-        {
-          "date": "2026-08-11",
-          "job": "165963362",
-          "customer": "Kirby, Terry",
-          "type": "TGL Lead Set Res",
-          "item": "Kirby, Terry",
-          "spiff": 25.0
-        },
-        {
-          "date": "2026-08-26",
-          "job": "167994897",
-          "customer": "McMakin, Missi & Joel",
-          "type": "TGL Lead Set Res",
-          "item": "McMakin, Missi & Joel",
-          "spiff": 25.0
-        },
-        {
-          "date": "2026-08-31",
-          "job": "168367583",
-          "customer": "Owens, Doug",
-          "type": "TGL Lead Set Res",
-          "item": "Owens, Doug",
-          "spiff": 25.0
-        },
-        {
-          "date": "2026-08-18",
+          "date": "2026-08-01",
           "job": "",
-          "customer": "Griffis, Dave",
-          "type": "TGL Lead Set Res",
-          "item": "Lead Stage 1 \u2014 quote delivered (auto-added, not on pay file)",
+          "customer": "Harris, Heather",
+          "type": "Sales Spiff",
+          "item": "Standard Membership - 2 Systems \u2014 New Sale",
           "spiff": 25.0,
-          "note": "Auto-added \u2014 not on Master Pay File"
-        },
-        {
-          "date": "2026-08-21",
-          "job": "",
-          "customer": "Akel, Robin",
-          "type": "TGL Lead Set Res",
-          "item": "Lead Stage 1 \u2014 quote delivered (auto-added, not on pay file)",
-          "spiff": 25.0,
-          "note": "Auto-added \u2014 not on Master Pay File"
-        }
-      ],
-      "Corey Ward": [
-        {
-          "date": "2026-08-05",
-          "job": "162462579",
-          "customer": "Travisono, Steve",
-          "type": "Sales Spiff",
-          "item": "Travisono, Steve",
-          "spiff": 10.0
-        },
-        {
-          "date": "2026-08-07",
-          "job": "159490075",
-          "customer": "Billings, Mike ",
-          "type": "Sales Spiff",
-          "item": "Billings, Mike ",
-          "spiff": 5.0
-        },
-        {
-          "date": "2026-08-11",
-          "job": "165512610",
-          "customer": "Zocchi, David",
-          "type": "TGL Lead Set Res",
-          "item": "Zocchi, David",
-          "spiff": 25.0
-        },
-        {
-          "date": "2026-08-11",
-          "job": "165809871",
-          "customer": "Ruppert, Harley & Nancy",
-          "type": "TGL Lead Set Res",
-          "item": "Ruppert, Harley & Nancy",
-          "spiff": 25.0
-        },
-        {
-          "date": "2026-08-28",
-          "job": "",
-          "customer": "Miller, Daniel",
-          "type": "Sales Spiff",
-          "item": "Basic Membership - 2 Systems \u2014 New Sale",
-          "spiff": 15.0,
           "note": "Auto-added \u2014 not on Master Pay File"
         }
       ]
@@ -1436,7 +1390,7 @@
       "emp": "Jim LeBlanc",
       "ref": "Job 157876582",
       "type": "Lead Stage 2 \u2014 Parsons, Karen",
-      "amount": 75,
+      "amount": 75.0,
       "dept": "MB Install Residential",
       "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
       "resolved": false,
@@ -1449,7 +1403,7 @@
       "emp": "Jim LeBlanc",
       "ref": "Job 158111360",
       "type": "Lead Stage 2 \u2014 Sea-Mix LLC",
-      "amount": 75,
+      "amount": 75.0,
       "dept": "MB Install Residential",
       "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
       "resolved": false,
@@ -1462,7 +1416,7 @@
       "emp": "Karl Welch",
       "ref": "Job 156979623",
       "type": "Lead Stage 2 \u2014 Ogletree, Bill",
-      "amount": 75,
+      "amount": 75.0,
       "dept": "MB Install Residential",
       "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
       "resolved": false,
@@ -1475,7 +1429,7 @@
       "emp": "Karl Welch",
       "ref": "Job 157783679",
       "type": "Lead Stage 2 \u2014 Bernard, Jonathan",
-      "amount": 75,
+      "amount": 75.0,
       "dept": "MB Install Residential",
       "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
       "resolved": false,
@@ -1488,7 +1442,7 @@
       "emp": "Karl Welch",
       "ref": "Job 158235161",
       "type": "Lead Stage 2 \u2014 O'Drobinak, Larry ",
-      "amount": 75,
+      "amount": 75.0,
       "dept": "MB Install Residential",
       "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
       "resolved": false,
@@ -1501,7 +1455,7 @@
       "emp": "Karl Welch",
       "ref": "Job 158878434",
       "type": "Lead Stage 2 \u2014 Morris, Tonya",
-      "amount": 75,
+      "amount": 75.0,
       "dept": "MB Install Residential",
       "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
       "resolved": false,
@@ -1514,7 +1468,7 @@
       "emp": "Karl Welch",
       "ref": "Job 159113711",
       "type": "Lead Stage 2 \u2014 Romero, Anais ",
-      "amount": 75,
+      "amount": 75.0,
       "dept": "MB Install Residential",
       "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
       "resolved": false,
@@ -1527,7 +1481,7 @@
       "emp": "Karl Welch",
       "ref": "Job 159166309",
       "type": "Lead Stage 2 \u2014 Garner, Kim",
-      "amount": 75,
+      "amount": 75.0,
       "dept": "MB Install Residential",
       "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
       "resolved": false,
@@ -1540,7 +1494,7 @@
       "emp": "Karl Welch",
       "ref": "",
       "type": "Lead Stage 2 \u2014 Ard, Jim & Cherie",
-      "amount": 75,
+      "amount": 75.0,
       "dept": "MB Install Residential",
       "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
       "resolved": false,
@@ -1553,7 +1507,7 @@
       "emp": "Karl Welch",
       "ref": "Job 162072085",
       "type": "Lead Stage 2 \u2014 Crutchfield, Jim",
-      "amount": 75,
+      "amount": 75.0,
       "dept": "MB Install Residential",
       "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
       "resolved": false,
@@ -1566,7 +1520,7 @@
       "emp": "Karl Welch",
       "ref": "Job 162819304",
       "type": "Lead Stage 2 \u2014 Thigpen, Barry",
-      "amount": 75,
+      "amount": 75.0,
       "dept": "MB Install Residential",
       "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
       "resolved": false,
@@ -1579,7 +1533,7 @@
       "emp": "Karl Welch",
       "ref": "Job 163202786",
       "type": "Lead Stage 2 \u2014 BCR Capital Partners, LLC",
-      "amount": 75,
+      "amount": 75.0,
       "dept": "MB Install Residential",
       "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
       "resolved": false,
@@ -1592,7 +1546,7 @@
       "emp": "Karl Welch",
       "ref": "Job 163110556",
       "type": "Lead Stage 2 \u2014 Link, Jesse",
-      "amount": 75,
+      "amount": 75.0,
       "dept": "MB Install Residential",
       "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
       "resolved": false,
@@ -1605,7 +1559,7 @@
       "emp": "Karl Welch",
       "ref": "Job 164058977",
       "type": "Lead Stage 2 \u2014 Perrella, Patrick ",
-      "amount": 75,
+      "amount": 75.0,
       "dept": "MB Install Residential",
       "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
       "resolved": false,
@@ -1618,7 +1572,7 @@
       "emp": "Karl Welch",
       "ref": "",
       "type": "Lead Stage 2 \u2014 Biddle, Larry",
-      "amount": 75,
+      "amount": 75.0,
       "dept": "MB Install Residential",
       "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
       "resolved": false,
@@ -1631,7 +1585,7 @@
       "emp": "Karl Welch",
       "ref": "",
       "type": "Lead Stage 2 \u2014 Hannah, Bill",
-      "amount": 75,
+      "amount": 75.0,
       "dept": "MB Install Residential",
       "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
       "resolved": false,
@@ -1644,7 +1598,7 @@
       "emp": "Karl Welch",
       "ref": "",
       "type": "Lead Stage 2 \u2014 Wofford, Walter",
-      "amount": 75,
+      "amount": 75.0,
       "dept": "MB Install Residential",
       "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
       "resolved": false,
@@ -1657,7 +1611,7 @@
       "emp": "Karl Welch",
       "ref": "",
       "type": "Lead Stage 2 \u2014 Graham, Destiny",
-      "amount": 75,
+      "amount": 75.0,
       "dept": "MB Install Residential",
       "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
       "resolved": false,
@@ -1670,7 +1624,7 @@
       "emp": "Karl Welch",
       "ref": "",
       "type": "Lead Stage 2 \u2014 Birchenough, Dave",
-      "amount": 75,
+      "amount": 75.0,
       "dept": "MB Install Residential",
       "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
       "resolved": false,
@@ -1683,7 +1637,7 @@
       "emp": "Karl Welch",
       "ref": "",
       "type": "Lead Stage 2 \u2014 Rodriguez, Lupe",
-      "amount": 75,
+      "amount": 75.0,
       "dept": "MB Install Residential",
       "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
       "resolved": false,

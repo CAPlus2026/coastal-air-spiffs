@@ -48,6 +48,26 @@ function parseMaybeJson_(v) {
   return typeof v === 'string' ? JSON.parse(v) : v;
 }
 
+// Sheets silently converts a plain "MMM YYYY" cell value into a real Date on write. When read
+// back INSIDE Apps Script (as opposed to over HTTP, where it's JSON-serialized to an ISO
+// string), that comes back as an actual JS Date object — String(dateObj) produces something
+// like "Tue Aug 01 2026 00:00:00 GMT-0400", which never matches a plain "Aug 2026" string. This
+// silently broke actionWriteTable_'s replaceMonth dedup (rows were never actually removed, only
+// ever appended on top — found 2026-09 when a re-run duplicated res_carry_forward/res_comm_leads
+// instead of replacing them) and would have broken actionGetMulti_'s month filter the same way.
+// Mirrors normMonth()/norm_month() in index.html/process_month.py — keep all three in sync.
+var MONTH_NAMES_ = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+function normMonth_(v) {
+  if (!v) return '';
+  if (Object.prototype.toString.call(v) === '[object Date]') {
+    return MONTH_NAMES_[v.getMonth()] + ' ' + v.getFullYear();
+  }
+  var s = String(v);
+  var m = s.match(/^(\d{4})-(\d{2})-\d{2}T/);
+  if (m) return MONTH_NAMES_[parseInt(m[2], 10) - 1] + ' ' + m[1];
+  return s;
+}
+
 // ── Verb implementations ─────────────────────────────────────────────────
 function actionGet_(ss, params) {
   var sheet = ensureSheet_(ss, params.sheet);
@@ -82,7 +102,7 @@ function actionGetMulti_(ss, params) {
     var values = sheet.getDataRange().getValues();
     if (month && values.length) {
       var header = values[0];
-      var rows = values.slice(1).filter(function (r) { return String(r[0]) === month; });
+      var rows = values.slice(1).filter(function (r) { return normMonth_(r[0]) === month; });
       out[name] = [header].concat(rows);
     } else {
       out[name] = values;
@@ -112,7 +132,7 @@ function actionWriteTable_(ss, params) {
     var data = sheet.getDataRange().getValues();
     if (data.length > 1) {
       var header = data[0];
-      var keep = data.slice(1).filter(function (r) { return String(r[0]) !== month; });
+      var keep = data.slice(1).filter(function (r) { return normMonth_(r[0]) !== month; });
       sheet.clearContents();
       sheet.getRange(1, 1, 1, header.length).setValues([header]);
       if (keep.length) sheet.getRange(2, 1, keep.length, header.length).setValues(keep);

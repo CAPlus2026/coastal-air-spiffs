@@ -5,7 +5,7 @@
       {
         "name": "Karl Welch",
         "svc": 570.0,
-        "ins": 225.0,
+        "ins": 175.0,
         "plb": 0,
         "com": 0,
         "chs": 0,
@@ -98,12 +98,14 @@
   },
   "flags": {
     "steven": [],
-    "caleb": []
+    "caleb": [],
+    "jenny": []
   },
   "spiffDetail": {
     "steven": {
       "Andrew Babyak": [
         {
+          "lineId": "ln_ed794bd3b7",
           "date": "2026-08-04",
           "job": "165145448",
           "customer": "Bulger, Jane",
@@ -112,6 +114,7 @@
           "spiff": 5.0
         },
         {
+          "lineId": "ln_f9f5c58efc",
           "date": "2026-08-10",
           "job": "165748120",
           "customer": "Grobski, Paul",
@@ -120,6 +123,7 @@
           "spiff": 20.0
         },
         {
+          "lineId": "ln_59fa5ddd63",
           "date": "2026-08-21",
           "job": "163591450",
           "customer": "Donatelli, William ",
@@ -128,6 +132,7 @@
           "spiff": 5.0
         },
         {
+          "lineId": "ln_844b98486f",
           "date": "2026-08-24",
           "job": "166685063",
           "customer": "Cvasa, Eduard & Lizabeth",
@@ -136,6 +141,7 @@
           "spiff": 5.0
         },
         {
+          "lineId": "ln_429b28e078",
           "date": "2026-08-25",
           "job": "162007451",
           "customer": "Grauke, Katie ",
@@ -144,6 +150,7 @@
           "spiff": 5.0
         },
         {
+          "lineId": "ln_792a294d6f",
           "date": "2026-08-11",
           "job": "165963362",
           "customer": "Kirby, Terry",
@@ -152,6 +159,7 @@
           "spiff": 25.0
         },
         {
+          "lineId": "ln_0693e0fe90",
           "date": "2026-08-19",
           "job": "167019764",
           "customer": "Griffis, Dave",
@@ -160,6 +168,7 @@
           "spiff": 25.0
         },
         {
+          "lineId": "ln_6715518bf1",
           "date": "2026-08-21",
           "job": "167446142",
           "customer": "Akel, Robin",
@@ -168,6 +177,7 @@
           "spiff": 25.0
         },
         {
+          "lineId": "ln_5e9332ab3d",
           "date": "2026-08-26",
           "job": "167994897",
           "customer": "McMakin, Missi & Joel",
@@ -176,6 +186,7 @@
           "spiff": 25.0
         },
         {
+          "lineId": "ln_134c170182",
           "date": "2026-08-31",
           "job": "168367583",
           "customer": "Owens, Doug",
@@ -186,6 +197,7 @@
       ],
       "Corey Ward": [
         {
+          "lineId": "ln_84aaee154b",
           "date": "2026-08-05",
           "job": "162462579",
           "customer": "Travisono, Steve",
@@ -194,6 +206,7 @@
           "spiff": 10.0
         },
         {
+          "lineId": "ln_4745c52b23",
           "date": "2026-08-07",
           "job": "159490075",
           "customer": "Billings, Mike ",
@@ -202,6 +215,7 @@
           "spiff": 5.0
         },
         {
+          "lineId": "ln_2b0f79d52e",
           "date": "2026-08-11",
           "job": "165512610",
           "customer": "Zocchi, David",
@@ -210,6 +224,7 @@
           "spiff": 25.0
         },
         {
+          "lineId": "ln_37bac9b41c",
           "date": "2026-08-11",
           "job": "165809871",
           "customer": "Ruppert, Harley & Nancy",
@@ -218,6 +233,7 @@
           "spiff": 25.0
         },
         {
+          "lineId": "ln_4a25f205d6",
           "date": "2026-08-11",
           "job": "165972686",
           "customer": "Epstein, Dave & Madeline",
@@ -226,6 +242,7 @@
           "spiff": 25.0
         },
         {
+          "lineId": "ln_f94024a17e",
           "date": "2026-08-27",
           "job": "168341386",
           "customer": "Mora, Angelina",
@@ -234,6 +251,7 @@
           "spiff": 25.0
         },
         {
+          "lineId": "ln_462933fbbd",
           "date": "2026-08-28",
           "job": "",
           "customer": "Miller, Daniel",
@@ -245,6 +263,7 @@
       ],
       "Herbie Windley": [
         {
+          "lineId": "ln_89db120bde",
           "date": "2026-08-05",
           "job": "163547514",
           "customer": "Kipnis, Robert ",
@@ -255,6 +274,7 @@
       ],
       "Karl Welch": [
         {
+          "lineId": "ln_2f840f6938",
           "date": "2026-08-04",
           "job": "133192838",
           "customer": "Cox, Stephanie",
@@ -263,6 +283,7 @@
           "spiff": 5.0
         },
         {
+          "lineId": "ln_1ff5bc1ff5",
           "date": "2026-08-05",
           "job": "165075275",
           "customer": "Pasciolla, Jim",
@@ -271,6 +292,7 @@
           "spiff": 20.0
         },
         {
+          "lineId": "ln_df348d6679",
           "date": "2026-08-07",
           "job": "155492489",
           "customer": "Wilson, Dick",
@@ -279,6 +301,7 @@
           "spiff": 25.0
         },
         {
+          "lineId": "ln_8c11f4186f",
           "date": "2026-08-07",
           "job": "165375894",
           "customer": "Hogue, Matt",
@@ -287,6 +310,7 @@
           "spiff": 25.0
         },
         {
+          "lineId": "ln_a705a9e943",
           "date": "2026-08-07",
           "job": "165375894",
           "customer": "Hogue, Matt",
@@ -295,6 +319,7 @@
           "spiff": 50.0
         },
         {
+          "lineId": "ln_4d0c048cd5",
           "date": "2026-08-08",
           "job": "165733102",
           "customer": "Newhouse, Ken & Tracy",
@@ -303,6 +328,7 @@
           "spiff": 50.0
         },
         {
+          "lineId": "ln_3c0180944f",
           "date": "2026-08-09",
           "job": "165734674",
           "customer": "Palmisano, Dimitra",
@@ -311,6 +337,7 @@
           "spiff": 20.0
         },
         {
+          "lineId": "ln_56cfef7641",
           "date": "2026-08-11",
           "job": "165861488",
           "customer": "Fry, Dan",
@@ -319,6 +346,7 @@
           "spiff": 30.0
         },
         {
+          "lineId": "ln_7d4700ce6c",
           "date": "2026-08-18",
           "job": "166779868",
           "customer": "Zeltwanger, Tim",
@@ -327,6 +355,7 @@
           "spiff": 20.0
         },
         {
+          "lineId": "ln_b8df3a4e4e",
           "date": "2026-08-19",
           "job": "165192137",
           "customer": "Allen, Jim & Marge",
@@ -335,6 +364,7 @@
           "spiff": 5.0
         },
         {
+          "lineId": "ln_0b73d391b1",
           "date": "2026-08-20",
           "job": "163844328",
           "customer": "Sessions, John ",
@@ -343,6 +373,7 @@
           "spiff": 5.0
         },
         {
+          "lineId": "ln_a6b4f4767b",
           "date": "2026-08-20",
           "job": "165755260",
           "customer": "Bagby, Rodney ",
@@ -351,6 +382,7 @@
           "spiff": 30.0
         },
         {
+          "lineId": "ln_6ea09bd2cf",
           "date": "2026-08-20",
           "job": "167226204",
           "customer": "Clinton, Linda",
@@ -359,6 +391,7 @@
           "spiff": 50.0
         },
         {
+          "lineId": "ln_010ff357dd",
           "date": "2026-08-24",
           "job": "154702503",
           "customer": "Cobb, Jack",
@@ -367,6 +400,7 @@
           "spiff": 5.0
         },
         {
+          "lineId": "ln_1dca37ed0a",
           "date": "2026-08-25",
           "job": "163989524",
           "customer": "Pettit, Mary Lou",
@@ -375,6 +409,7 @@
           "spiff": 50.0
         },
         {
+          "lineId": "ln_d90c631736",
           "date": "2026-08-26",
           "job": "133896463",
           "customer": "Grimmer, Charles",
@@ -383,6 +418,7 @@
           "spiff": 5.0
         },
         {
+          "lineId": "ln_e1d2997cf1",
           "date": "2026-08-26",
           "job": "165314558",
           "customer": "Rothermel, Lori",
@@ -391,6 +427,7 @@
           "spiff": 50.0
         },
         {
+          "lineId": "ln_7fd25b5807",
           "date": "2026-08-27",
           "job": "166377052",
           "customer": "Ragsdale, Bill",
@@ -399,6 +436,7 @@
           "spiff": 5.0
         },
         {
+          "lineId": "ln_717fea06a9",
           "date": "2026-08-27",
           "job": "166377052",
           "customer": "Ragsdale, Bill",
@@ -407,6 +445,7 @@
           "spiff": 50.0
         },
         {
+          "lineId": "ln_f0a37fc577",
           "date": "2026-08-28",
           "job": "166730462",
           "customer": "Hatch Jr, Bill ",
@@ -415,6 +454,7 @@
           "spiff": 5.0
         },
         {
+          "lineId": "ln_601b6d14d0",
           "date": "2026-08-28",
           "job": "166730462",
           "customer": "Hatch Jr, Bill ",
@@ -423,6 +463,7 @@
           "spiff": 50.0
         },
         {
+          "lineId": "ln_5659d98bb1",
           "date": "2026-08-31",
           "job": "158468238",
           "customer": "Badder, Victor",
@@ -431,6 +472,7 @@
           "spiff": 10.0
         },
         {
+          "lineId": "ln_b2e51d995c",
           "date": "2026-08-01",
           "job": "164835577",
           "customer": "Rodriguez, Lupe",
@@ -439,6 +481,7 @@
           "spiff": 25.0
         },
         {
+          "lineId": "ln_1bc75a2e83",
           "date": "2026-08-08",
           "job": "165741279",
           "customer": "Newhouse, Ken & Tracy",
@@ -447,6 +490,7 @@
           "spiff": 25.0
         },
         {
+          "lineId": "ln_1b9bc9c876",
           "date": "2026-08-20",
           "job": "167274700",
           "customer": "Seppi, Walter",
@@ -455,6 +499,7 @@
           "spiff": 25.0
         },
         {
+          "lineId": "ln_aa47b206cd",
           "date": "2026-08-21",
           "job": "167352167",
           "customer": "Taylor, Charles",
@@ -463,6 +508,7 @@
           "spiff": 25.0
         },
         {
+          "lineId": "ln_baa2489edf",
           "date": "2026-08-21",
           "job": "167415018",
           "customer": "Rodgers, Scott",
@@ -471,6 +517,7 @@
           "spiff": 25.0
         },
         {
+          "lineId": "ln_32800aaf76",
           "date": "2026-08-22",
           "job": "167460572",
           "customer": "Massena, Stan",
@@ -479,6 +526,7 @@
           "spiff": 25.0
         },
         {
+          "lineId": "ln_c25ece3289",
           "date": "2026-08-27",
           "job": "168000283",
           "customer": "Tomovski, Alex ",
@@ -487,6 +535,7 @@
           "spiff": 25.0
         },
         {
+          "lineId": "ln_922404aa11",
           "date": "2026-08-07",
           "job": "165504051",
           "customer": "Webb, Bill & Terrie",
@@ -494,28 +543,11 @@
           "item": "192 AprilAire Merv 13 Filter (ACC-192)",
           "spiff": 5.0,
           "note": "Auto-added \u2014 not on Master Pay File"
-        },
-        {
-          "date": "2026-08-10",
-          "job": "",
-          "customer": "Padro, Gina",
-          "type": "TGL Lead Set Res",
-          "item": "Lead Stage 1 \u2014 quote delivered (auto-added, not on pay file)",
-          "spiff": 25.0,
-          "note": "Auto-added \u2014 not on Master Pay File"
-        },
-        {
-          "date": "2026-08-11",
-          "job": "",
-          "customer": "Epstein, Dave & Madeline",
-          "type": "TGL Lead Set Res",
-          "item": "Lead Stage 1 \u2014 quote delivered (auto-added, not on pay file)",
-          "spiff": 25.0,
-          "note": "Auto-added \u2014 not on Master Pay File"
         }
       ],
       "Ray Lambert": [
         {
+          "lineId": "ln_ceab52ccf0",
           "date": "2026-08-19",
           "job": "167039835",
           "customer": "Coldwell Banker",
@@ -527,6 +559,7 @@
       ],
       "Nick Scarpa": [
         {
+          "lineId": "ln_ba924bf7d0",
           "date": "2026-08-01",
           "job": "",
           "customer": "Harris, Heather",
@@ -540,6 +573,7 @@
     "caleb": {
       "Jay Hall": [
         {
+          "lineId": "ln_34cf4fe5d8",
           "date": "2026-08-03",
           "job": "162608925",
           "customer": "Curley, Christine",
@@ -548,6 +582,7 @@
           "spiff": 100.0
         },
         {
+          "lineId": "ln_a857e089a7",
           "date": "2026-08-03",
           "job": "164180068",
           "customer": "Kimmel, Barbara ",
@@ -556,6 +591,7 @@
           "spiff": 75.0
         },
         {
+          "lineId": "ln_86fbe0580a",
           "date": "2026-08-03",
           "job": "164180068",
           "customer": "Kimmel, Barbara ",
@@ -564,6 +600,7 @@
           "spiff": 100.0
         },
         {
+          "lineId": "ln_0dc4c10065",
           "date": "2026-08-06",
           "job": "162659469",
           "customer": "Daniel Ravenel Real Estate Company",
@@ -572,6 +609,7 @@
           "spiff": 50.0
         },
         {
+          "lineId": "ln_e8078424c8",
           "date": "2026-08-06",
           "job": "162659469",
           "customer": "Daniel Ravenel Real Estate Company",
@@ -580,6 +618,7 @@
           "spiff": 75.0
         },
         {
+          "lineId": "ln_5a5ddef1b2",
           "date": "2026-08-06",
           "job": "165375741",
           "customer": "Stuck, Svetlana ",
@@ -588,6 +627,7 @@
           "spiff": 50.0
         },
         {
+          "lineId": "ln_c16f142058",
           "date": "2026-08-07",
           "job": "161249778",
           "customer": "Pure Property Management  of South Carolina",
@@ -596,6 +636,7 @@
           "spiff": 50.0
         },
         {
+          "lineId": "ln_76d8c746a0",
           "date": "2026-08-07",
           "job": "164783327",
           "customer": "Shutt, Daniel",
@@ -604,6 +645,7 @@
           "spiff": 50.0
         },
         {
+          "lineId": "ln_2d47b814c3",
           "date": "2026-08-10",
           "job": "165744987",
           "customer": "Petty, Richard",
@@ -612,6 +654,7 @@
           "spiff": 100.0
         },
         {
+          "lineId": "ln_f581b86b42",
           "date": "2026-08-11",
           "job": "159754781",
           "customer": "Myers, Kevin & Donna",
@@ -620,6 +663,7 @@
           "spiff": 100.0
         },
         {
+          "lineId": "ln_22a435076f",
           "date": "2026-08-11",
           "job": "163036531",
           "customer": "Phelps, Andy",
@@ -628,6 +672,7 @@
           "spiff": 50.0
         },
         {
+          "lineId": "ln_3702c4241a",
           "date": "2026-08-11",
           "job": "166009480",
           "customer": "Westberg, Annie",
@@ -636,6 +681,7 @@
           "spiff": 50.0
         },
         {
+          "lineId": "ln_68d53868e9",
           "date": "2026-08-13",
           "job": "165741147",
           "customer": "King and Society",
@@ -644,6 +690,7 @@
           "spiff": 50.0
         },
         {
+          "lineId": "ln_684a59d38b",
           "date": "2026-08-14",
           "job": "162602723",
           "customer": "Pure Property Management  of South Carolina",
@@ -652,6 +699,7 @@
           "spiff": 50.0
         },
         {
+          "lineId": "ln_8a5ca0d191",
           "date": "2026-08-14",
           "job": "164622698",
           "customer": "Pure Property Management  of South Carolina",
@@ -660,6 +708,7 @@
           "spiff": 50.0
         },
         {
+          "lineId": "ln_f602d0b5ba",
           "date": "2026-08-19",
           "job": "157006406",
           "customer": "Harper, Mikell",
@@ -668,6 +717,7 @@
           "spiff": 50.0
         },
         {
+          "lineId": "ln_7fc04680f4",
           "date": "2026-08-24",
           "job": "167621723",
           "customer": "King and Society",
@@ -676,6 +726,7 @@
           "spiff": 50.0
         },
         {
+          "lineId": "ln_de6875e9ed",
           "date": "2026-08-17",
           "job": "166618356",
           "customer": "Mcalhany, Leila & Shawn",
@@ -684,6 +735,7 @@
           "spiff": 25.0
         },
         {
+          "lineId": "ln_b5f353a47f",
           "date": "2026-08-17",
           "job": "166626673",
           "customer": "Vieth, Ashley & Eric ",
@@ -692,6 +744,7 @@
           "spiff": 25.0
         },
         {
+          "lineId": "ln_4cae15690c",
           "date": "2026-08-17",
           "job": "166732473",
           "customer": "Willis, James",
@@ -700,6 +753,7 @@
           "spiff": 25.0
         },
         {
+          "lineId": "ln_475c000e71",
           "date": "2026-08-18",
           "job": "165877108",
           "customer": "Osborne, Jack",
@@ -708,6 +762,7 @@
           "spiff": 25.0
         },
         {
+          "lineId": "ln_1ea2cb0c7e",
           "date": "2026-08-24",
           "job": "167179616",
           "customer": "Bienaime, Kelitha",
@@ -716,6 +771,7 @@
           "spiff": 25.0
         },
         {
+          "lineId": "ln_84ad6c498b",
           "date": "2026-08-15",
           "job": "166559197",
           "customer": "Pure Property Management  of South Carolina",
@@ -725,6 +781,7 @@
           "note": "Auto-added \u2014 not on Master Pay File"
         },
         {
+          "lineId": "ln_85525cc8bb",
           "date": "2026-08-19",
           "job": "167026011",
           "customer": "Pure Property Management  of South Carolina",
@@ -734,6 +791,7 @@
           "note": "Auto-added \u2014 not on Master Pay File"
         },
         {
+          "lineId": "ln_69b9261d60",
           "date": "2026-08-21",
           "job": "166797787",
           "customer": "Vieth, Ashley & Eric ",
@@ -743,6 +801,7 @@
           "note": "Auto-added \u2014 not on Master Pay File"
         },
         {
+          "lineId": "ln_a7116953d6",
           "date": "2026-08-27",
           "job": "162001406",
           "customer": "Dyer, Audrey",
@@ -752,6 +811,7 @@
           "note": "Auto-added \u2014 not on Master Pay File"
         },
         {
+          "lineId": "ln_88f5fb155b",
           "date": "2026-08-27",
           "job": "162001406",
           "customer": "Dyer, Audrey",
@@ -761,6 +821,7 @@
           "note": "Auto-added \u2014 not on Master Pay File"
         },
         {
+          "lineId": "ln_cc3d678e59",
           "date": "2026-08-27",
           "job": "162001406",
           "customer": "Dyer, Audrey",
@@ -770,6 +831,7 @@
           "note": "Auto-added \u2014 not on Master Pay File"
         },
         {
+          "lineId": "ln_090f061ddc",
           "date": "2026-08-27",
           "job": "162001406",
           "customer": "Dyer, Audrey",
@@ -779,6 +841,7 @@
           "note": "Auto-added \u2014 not on Master Pay File"
         },
         {
+          "lineId": "ln_e33e9b37c7",
           "date": "2026-08-18",
           "job": "",
           "customer": "Lunn, Steven & Carter, Kristina",
@@ -790,6 +853,7 @@
       ],
       "Steve Gordon": [
         {
+          "lineId": "ln_86f7b459f7",
           "date": "2026-08-07",
           "job": "131468967",
           "customer": "Pure Property Management  of South Carolina",
@@ -798,6 +862,7 @@
           "spiff": 100.0
         },
         {
+          "lineId": "ln_7a6ea33d6b",
           "date": "2026-08-07",
           "job": "163583195",
           "customer": "Pure Property Management  of South Carolina",
@@ -806,6 +871,7 @@
           "spiff": 50.0
         },
         {
+          "lineId": "ln_520c2d64c8",
           "date": "2026-08-25",
           "job": "167918062",
           "customer": "Langborgh, Richard",
@@ -814,6 +880,7 @@
           "spiff": 25.0
         },
         {
+          "lineId": "ln_f88ea41dfc",
           "date": "2026-08-14",
           "job": "166381605",
           "customer": "Daniel Ravenel Real Estate Company",
@@ -823,6 +890,7 @@
           "note": "Auto-added \u2014 not on Master Pay File"
         },
         {
+          "lineId": "ln_1587dd6a1b",
           "date": "2026-08-15",
           "job": "166085506",
           "customer": "Pure Property Management  of South Carolina",
@@ -834,6 +902,7 @@
       ],
       "Terrance Bostic": [
         {
+          "lineId": "ln_619f689190",
           "date": "2026-08-31",
           "job": "168818449",
           "customer": "Mcdowell, Ruth",
@@ -1104,6 +1173,7 @@
       "tech": "Nick Scarpa",
       "job": "",
       "customer": "Rambler - Wares to Wander",
+      "location": "",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "Sep 2026",
@@ -1115,6 +1185,7 @@
       "tech": "Ray Lambert",
       "job": "",
       "customer": "Founders Group Int'l",
+      "location": "",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "Sep 2026",
@@ -1126,6 +1197,7 @@
       "tech": "Nick Scarpa",
       "job": "",
       "customer": "Carolina Ale House",
+      "location": "",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "Sep 2026",
@@ -1137,6 +1209,7 @@
       "tech": "Nick Scarpa",
       "job": "",
       "customer": "Coldwell Banker",
+      "location": "",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "Sep 2026",
@@ -1148,6 +1221,7 @@
       "tech": "Ray Lambert",
       "job": "",
       "customer": "Refuel Gas Stations",
+      "location": "",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "Sep 2026",
@@ -1159,6 +1233,7 @@
       "tech": "Nick Scarpa",
       "job": "",
       "customer": "Hickory Tavern",
+      "location": "",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "Sep 2026",
@@ -1170,6 +1245,7 @@
       "tech": "Javi Vazquez",
       "job": "",
       "customer": "Grube. Inc.",
+      "location": "",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "Sep 2026",
@@ -1181,6 +1257,7 @@
       "tech": "Kyle Freeman",
       "job": "",
       "customer": "America First Management",
+      "location": "",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "Sep 2026",
@@ -1192,6 +1269,7 @@
       "tech": "Ray Lambert",
       "job": "",
       "customer": "Yahnis Company",
+      "location": "",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "Sep 2026",
@@ -1203,6 +1281,7 @@
       "tech": "Kyle Freeman",
       "job": "",
       "customer": "Anto's Pizza Romana",
+      "location": "",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "Sep 2026",
@@ -1214,6 +1293,7 @@
       "tech": "Kyle Freeman",
       "job": "",
       "customer": "Founders Group Int'l",
+      "location": "",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "Sep 2026",
@@ -1225,6 +1305,7 @@
       "tech": "Ray Lambert",
       "job": "",
       "customer": "Grand Strand Dermatology MB",
+      "location": "",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "Sep 2026",
@@ -1236,6 +1317,7 @@
       "tech": "Kyle Freeman",
       "job": "",
       "customer": "E3 Bootcamp",
+      "location": "",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "Sep 2026",
@@ -1247,6 +1329,7 @@
       "tech": "Kyle Freeman",
       "job": "",
       "customer": "Reflections Assisted Living of Carolina Forest",
+      "location": "",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "Sep 2026",
@@ -1258,6 +1341,7 @@
       "tech": "Javi Vazquez",
       "job": "",
       "customer": "Bo Benton Inc. Bojangles'",
+      "location": "",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "Sep 2026",
@@ -1269,6 +1353,7 @@
       "tech": "Javi Vazquez",
       "job": "",
       "customer": "Team Dodge Ram Myrtle Beach",
+      "location": "",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "Sep 2026",
@@ -1280,116 +1365,127 @@
       "tech": "Nick Scarpa",
       "job": "",
       "customer": "Oceans One Rental Management",
+      "location": "",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "Sep 2026",
       "paid": false
     },
     {
-      "id": "cl_2026-08_1",
+      "id": "cl_4ef149ba4e",
       "month": "Aug 2026",
       "tech": "Nick Scarpa",
       "job": "",
       "customer": "El Patio",
+      "location": "El Patio",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "",
       "paid": false
     },
     {
-      "id": "cl_2026-08_2",
+      "id": "cl_1e6bdfc5fc",
       "month": "Aug 2026",
       "tech": "Ray Lambert",
       "job": "",
       "customer": "PF Chang's - MB #9997",
+      "location": "PF Chang's - MB",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "",
       "paid": false
     },
     {
-      "id": "cl_2026-08_3",
+      "id": "cl_89c1b125c8",
       "month": "Aug 2026",
       "tech": "Nick Scarpa",
       "job": "",
       "customer": "Comfort Keepers",
+      "location": "Comfort Keepers",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "",
       "paid": false
     },
     {
-      "id": "cl_2026-08_4",
+      "id": "cl_853acd120c",
       "month": "Aug 2026",
       "tech": "Ray Lambert",
       "job": "",
       "customer": "Bridgewater Academy",
+      "location": "Bridgewater Academy",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "",
       "paid": false
     },
     {
-      "id": "cl_2026-08_5",
+      "id": "cl_96c887361c",
       "month": "Aug 2026",
       "tech": "Ray Lambert",
       "job": "",
       "customer": "AMC Theaters",
+      "location": "AMC Theaters - NMB",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "",
       "paid": false
     },
     {
-      "id": "cl_2026-08_6",
+      "id": "cl_2283fb0427",
       "month": "Aug 2026",
       "tech": "Nick Scarpa",
       "job": "",
       "customer": "Huntington State Park",
+      "location": "Huntington State Park HB75",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "",
       "paid": false
     },
     {
-      "id": "cl_2026-08_7",
+      "id": "cl_f9538983c9",
       "month": "Aug 2026",
       "tech": "Ray Lambert",
       "job": "",
       "customer": "Grube. Inc.",
+      "location": "Buffalo Wild Wings-NMB",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "",
       "paid": false
     },
     {
-      "id": "cl_2026-08_8",
+      "id": "cl_eed872ea71",
       "month": "Aug 2026",
       "tech": "Nick Scarpa",
       "job": "",
       "customer": "Coyle, Marianne",
+      "location": "Coyle, Marianne",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "",
       "paid": false
     },
     {
-      "id": "cl_2026-08_9",
+      "id": "cl_cea961361f",
       "month": "Aug 2026",
       "tech": "Javi Vazquez",
       "job": "",
       "customer": "Kaul, Raymond",
+      "location": "Kaul, Raymond",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "",
       "paid": false
     },
     {
-      "id": "cl_2026-08_10",
+      "id": "cl_bf5d47517d",
       "month": "Aug 2026",
       "tech": "Javi Vazquez",
       "job": "",
       "customer": "Pure Property Management  of South Carolina",
+      "location": "RENTAL (230 Vesta Dr)",
       "status": "Pending",
       "spiff": 0,
       "payMonth": "",
@@ -1398,7 +1494,267 @@
   ],
   "carryForward": [
     {
-      "id": "cf_2026-08_1",
+      "id": "cf_f43a13add7",
+      "fromMonth": "May 2026",
+      "emp": "Jim LeBlanc",
+      "ref": "Job 157876582",
+      "type": "Lead Stage 2 \u2014 Parsons, Karen",
+      "amount": 75.0,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_724d021cf3",
+      "fromMonth": "May 2026",
+      "emp": "Jim LeBlanc",
+      "ref": "Job 158111360",
+      "type": "Lead Stage 2 \u2014 Sea-Mix LLC",
+      "amount": 75.0,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_a1c3a54e54",
+      "fromMonth": "May 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 156979623",
+      "type": "Lead Stage 2 \u2014 Ogletree, Bill",
+      "amount": 75.0,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_7a6b8cf59a",
+      "fromMonth": "May 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 157783679",
+      "type": "Lead Stage 2 \u2014 Bernard, Jonathan",
+      "amount": 75.0,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_8f1cef0460",
+      "fromMonth": "Jun 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 158235161",
+      "type": "Lead Stage 2 \u2014 O'Drobinak, Larry ",
+      "amount": 75.0,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_902ceb0505",
+      "fromMonth": "Jun 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 158878434",
+      "type": "Lead Stage 2 \u2014 Morris, Tonya",
+      "amount": 75.0,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_2c15ff12b2",
+      "fromMonth": "Jun 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 159113711",
+      "type": "Lead Stage 2 \u2014 Romero, Anais ",
+      "amount": 75.0,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_08dace9c0f",
+      "fromMonth": "Jun 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 159166309",
+      "type": "Lead Stage 2 \u2014 Garner, Kim",
+      "amount": 75.0,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_a01b0a2095",
+      "fromMonth": "Jun 2026",
+      "emp": "Karl Welch",
+      "ref": "",
+      "type": "Lead Stage 2 \u2014 Ard, Jim & Cherie",
+      "amount": 75.0,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_c9c51a80d3",
+      "fromMonth": "Jul 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 162072085",
+      "type": "Lead Stage 2 \u2014 Crutchfield, Jim",
+      "amount": 75.0,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_330edb81e4",
+      "fromMonth": "Jul 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 162819304",
+      "type": "Lead Stage 2 \u2014 Thigpen, Barry",
+      "amount": 75.0,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_08489944e3",
+      "fromMonth": "Jul 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 163202786",
+      "type": "Lead Stage 2 \u2014 BCR Capital Partners, LLC",
+      "amount": 75.0,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_8329931077",
+      "fromMonth": "Jul 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 163110556",
+      "type": "Lead Stage 2 \u2014 Link, Jesse",
+      "amount": 75.0,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_b16cd7dbf7",
+      "fromMonth": "Jul 2026",
+      "emp": "Karl Welch",
+      "ref": "Job 164058977",
+      "type": "Lead Stage 2 \u2014 Perrella, Patrick ",
+      "amount": 75.0,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_a01b0a2095_2",
+      "fromMonth": "Jul 2026",
+      "emp": "Karl Welch",
+      "ref": "",
+      "type": "Lead Stage 2 \u2014 Biddle, Larry",
+      "amount": 75.0,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_a01b0a2095_3",
+      "fromMonth": "Jul 2026",
+      "emp": "Karl Welch",
+      "ref": "",
+      "type": "Lead Stage 2 \u2014 Hannah, Bill",
+      "amount": 75.0,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_a01b0a2095_4",
+      "fromMonth": "Jul 2026",
+      "emp": "Karl Welch",
+      "ref": "",
+      "type": "Lead Stage 2 \u2014 Wofford, Walter",
+      "amount": 75.0,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_a01b0a2095_5",
+      "fromMonth": "Jul 2026",
+      "emp": "Karl Welch",
+      "ref": "",
+      "type": "Lead Stage 2 \u2014 Graham, Destiny",
+      "amount": 75.0,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_a01b0a2095_6",
+      "fromMonth": "Jul 2026",
+      "emp": "Karl Welch",
+      "ref": "",
+      "type": "Lead Stage 2 \u2014 Birchenough, Dave",
+      "amount": 75.0,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_a01b0a2095_7",
+      "fromMonth": "Jul 2026",
+      "emp": "Karl Welch",
+      "ref": "",
+      "type": "Lead Stage 2 \u2014 Rodriguez, Lupe",
+      "amount": 75.0,
+      "dept": "MB Install Residential",
+      "reason": "Stage 1 paid, still pending sold/installed/paid confirmation \u2014 carried forward again.",
+      "resolved": false,
+      "disposition": "",
+      "note": ""
+    },
+    {
+      "id": "cf_ea5fd51255",
       "fromMonth": "Aug 2026",
       "emp": "Andrew Babyak",
       "ref": "Job 165963362",
@@ -1411,7 +1767,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_2",
+      "id": "cf_5b65bc4c23",
       "fromMonth": "Aug 2026",
       "emp": "Andrew Babyak",
       "ref": "Job 167019764",
@@ -1424,7 +1780,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_3",
+      "id": "cf_151b6a1205",
       "fromMonth": "Aug 2026",
       "emp": "Andrew Babyak",
       "ref": "Job 167446142",
@@ -1437,7 +1793,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_4",
+      "id": "cf_06a58506c1",
       "fromMonth": "Aug 2026",
       "emp": "Andrew Babyak",
       "ref": "Job 167994897",
@@ -1450,7 +1806,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_5",
+      "id": "cf_9090644d66",
       "fromMonth": "Aug 2026",
       "emp": "Andrew Babyak",
       "ref": "Job 168367583",
@@ -1463,7 +1819,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_6",
+      "id": "cf_36c7aed9b1",
       "fromMonth": "Aug 2026",
       "emp": "Corey Ward",
       "ref": "Job 165512610",
@@ -1476,7 +1832,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_7",
+      "id": "cf_36d533d2d7",
       "fromMonth": "Aug 2026",
       "emp": "Corey Ward",
       "ref": "Job 165809871",
@@ -1489,7 +1845,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_8",
+      "id": "cf_8ecc66d125",
       "fromMonth": "Aug 2026",
       "emp": "Corey Ward",
       "ref": "Job 165972686",
@@ -1502,7 +1858,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_9",
+      "id": "cf_1db23a80f8",
       "fromMonth": "Aug 2026",
       "emp": "Corey Ward",
       "ref": "Job 168341386",
@@ -1515,7 +1871,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_10",
+      "id": "cf_41cc795c45",
       "fromMonth": "Aug 2026",
       "emp": "Jay Hall",
       "ref": "Job 166618356",
@@ -1528,7 +1884,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_11",
+      "id": "cf_692db7d1e7",
       "fromMonth": "Aug 2026",
       "emp": "Jay Hall",
       "ref": "Job 166626673",
@@ -1541,7 +1897,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_12",
+      "id": "cf_63900cadb4",
       "fromMonth": "Aug 2026",
       "emp": "Jay Hall",
       "ref": "Job 166732473",
@@ -1554,7 +1910,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_13",
+      "id": "cf_aa05ff7aa4",
       "fromMonth": "Aug 2026",
       "emp": "Jay Hall",
       "ref": "Job 165877108",
@@ -1567,7 +1923,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_14",
+      "id": "cf_7b97909e88",
       "fromMonth": "Aug 2026",
       "emp": "Jay Hall",
       "ref": "Job 167179616",
@@ -1580,20 +1936,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_15",
-      "fromMonth": "Aug 2026",
-      "emp": "Karl Welch",
-      "ref": "Job 164835577",
-      "type": "Lead Stage 2 \u2014 Rodriguez, Lupe",
-      "amount": 75,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid Aug 2026. Pay $75 when sold, installed, paid.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_16",
+      "id": "cf_feb26a16c6",
       "fromMonth": "Aug 2026",
       "emp": "Karl Welch",
       "ref": "Job 165741279",
@@ -1606,7 +1949,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_17",
+      "id": "cf_80b4a9a434",
       "fromMonth": "Aug 2026",
       "emp": "Karl Welch",
       "ref": "Job 167274700",
@@ -1619,7 +1962,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_18",
+      "id": "cf_89c72fe34a",
       "fromMonth": "Aug 2026",
       "emp": "Karl Welch",
       "ref": "Job 167352167",
@@ -1632,7 +1975,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_19",
+      "id": "cf_e04105f6ac",
       "fromMonth": "Aug 2026",
       "emp": "Karl Welch",
       "ref": "Job 167415018",
@@ -1645,7 +1988,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_20",
+      "id": "cf_c645cf56bd",
       "fromMonth": "Aug 2026",
       "emp": "Karl Welch",
       "ref": "Job 167460572",
@@ -1658,7 +2001,7 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_21",
+      "id": "cf_1cbbebf40f",
       "fromMonth": "Aug 2026",
       "emp": "Karl Welch",
       "ref": "Job 168000283",
@@ -1671,39 +2014,13 @@
       "note": ""
     },
     {
-      "id": "cf_2026-08_22",
+      "id": "cf_a41cfa4fd9",
       "fromMonth": "Aug 2026",
       "emp": "Steve Gordon",
       "ref": "Job 167918062",
       "type": "Lead Stage 2 \u2014 Langborgh, Richard",
       "amount": 75,
       "dept": "CH Install",
-      "reason": "Stage 1 paid Aug 2026. Pay $75 when sold, installed, paid.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_23",
-      "fromMonth": "Aug 2026",
-      "emp": "Karl Welch",
-      "ref": "",
-      "type": "Lead Stage 2 \u2014 Padro, Gina",
-      "amount": 75,
-      "dept": "MB Install Residential",
-      "reason": "Stage 1 paid Aug 2026. Pay $75 when sold, installed, paid.",
-      "resolved": false,
-      "disposition": "",
-      "note": ""
-    },
-    {
-      "id": "cf_2026-08_24",
-      "fromMonth": "Aug 2026",
-      "emp": "Karl Welch",
-      "ref": "",
-      "type": "Lead Stage 2 \u2014 Epstein, Dave & Madeline",
-      "amount": 75,
-      "dept": "MB Install Residential",
       "reason": "Stage 1 paid Aug 2026. Pay $75 when sold, installed, paid.",
       "resolved": false,
       "disposition": "",

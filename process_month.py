@@ -265,6 +265,26 @@ def compute_prior_carry_forward():
             "id": id_, "fromMonth": norm_month(from_month), "emp": emp, "ref": ref, "type": type_,
             "amount": float(amount), "dept": dept, "lnk": last_name_key(customer),
         })
+
+    # Manually-tracked pending items — created in the app from a manager note ("Track as pending
+    # payout") or a flag resolved "Pay next month" — never go through res_carry_forward on their
+    # own (that tab is only ever written by this function's own caller, main(), at the end of a
+    # run). Without this, one of these would show up correctly for the rest of the month it was
+    # created in (index.html replays `manual_carry_forward` client-side for that), then silently
+    # vanish the next time this pipeline runs, since nothing here knew it existed. Folding it in
+    # here gives it a real content-hashed id and durable multi-month tracking exactly like every
+    # auto-generated carry-forward item, from the next run onward.
+    latest_manual = {}
+    for r in sheet_get("manual_carry_forward"):
+        if len(r) < 8 or not r[1] or not r[3]:
+            continue
+        month, id_, _mgr, emp, type_, amount, dept, reason = r[:8]
+        latest_manual[id_] = {"emp": emp, "type": type_, "amount": float(amount or 0), "dept": dept,
+                               "reason": reason, "fromMonth": norm_month(month)}
+    for id_, m in latest_manual.items():
+        if resolved.get(id_) in ("paid", "dead"):
+            continue
+        out.append({**m, "id": id_, "ref": "", "lnk": ""})
     return out
 
 
@@ -284,12 +304,13 @@ def compute_carried_leads():
     out = []
     for r in prev_rows:
         _month, id_, lead_month, tech, job, customer, status, spiff, pay_month, paid = r[:10]
+        location = r[10] if len(r) > 10 else ""  # added 2026-09; older baseline rows just have none
         eff_status = latest_status.get(id_, status)
         if eff_status in terminal:
             continue
         out.append({
             "id": id_, "month": norm_month(lead_month), "tech": tech, "job": job, "customer": customer,
-            "status": eff_status, "spiff": 0, "payMonth": "", "paid": False,
+            "location": location, "status": eff_status, "spiff": 0, "payMonth": "", "paid": False,
         })
     return out
 
@@ -420,7 +441,7 @@ def main():
 
     emps = {}  # name -> {svc,ins,plb,com,chs,chi,dups}
     spiff_detail = defaultdict(list)  # name -> [{date,job,customer,type,item,spiff}]
-    flags = {"steven": [], "caleb": []}
+    flags = {"steven": [], "caleb": [], "jenny": []}
     office_mems = defaultdict(float)
     office_mem_details = defaultdict(list)
     # Content-derived, not a sequence counter — flags/details raised for the same underlying
@@ -581,17 +602,16 @@ def main():
         if lnk in tgl_set_keys.get(name, set()):
             continue  # Stage 1 already paid via MPF
 
-        mgr = team_of(name)
-        date = (row.get("LastModifiedDate") or "")[:10]
-        is_comm = name in COMM_TECHS
-        # Residential Stage 1 = $25 best-guess add; commercial leads go into the rolling log, not a flat add
-        if is_comm:
-            continue  # handled by commercial lead log, not a per-line spiff
-        col = "chi" if name in CH_TECHS else "ins"
-        add_spiff(name, col, 25.0, date, "", customer, "TGL Lead Set Res",
-                  "Lead Stage 1 — quote delivered (auto-added, not on pay file)", auto_added=True)
-        stage1_paid_detail[(name, lnk)] = {"job": "", "customer": customer,
-                                            "dept": "CH Install" if name in CH_TECHS else "MB Install Residential"}
+        # Residential Stage 1 only counts when it's actually confirmed paid via the Master Pay
+        # File. A lead that shows up on the Lead Request Report but never made it onto MPF means
+        # the salesperson wasn't able to get in front of the customer to actually quote the job
+        # (confirmed by Billy, 2026-09) — not a payable event, so no auto-add, no flag, and no
+        # carry-forward gets generated from it. Previously this auto-added a $25 Stage 1 anyway
+        # (via add_spiff(..., auto_added=True)), which for at least one real case (Karl Welch /
+        # Epstein, job 165972686) went on to generate a phantom Stage 2 carry-forward next month
+        # that duplicated a real payout already made to a different technician (Corey Ward) for
+        # the same job.
+        continue
 
     if unresolved_completers:
         for c in unresolved_completers:
@@ -706,6 +726,10 @@ def main():
         if not resolved or name not in COMM_TECHS:
             continue
         customer = (row.get("CustomerName") or row.get("LocationName") or "").strip()
+        # Captured separately from `customer` (which falls back to LocationName only when
+        # CustomerName is blank) so a customer with multiple locations — the exact case Billy
+        # flagged as making the log unusable — shows both, instead of only ever showing the name.
+        location = (row.get("LocationName") or "").strip()
         lnk = last_name_key(customer)
         key = (name, lnk)
         if key in known_leads or lnk in mpf_customer_keys.get(name, set()):
@@ -713,7 +737,7 @@ def main():
         known_leads.add(key)
         comm_leads_out.append({
             "id": new_cl_id(name, lnk), "month": MONTH_LABEL, "tech": name, "job": "",
-            "customer": customer, "status": "Pending", "spiff": 0, "payMonth": "", "paid": False,
+            "customer": customer, "location": location, "status": "Pending", "spiff": 0, "payMonth": "", "paid": False,
         })
 
     # ── 7) Rich Smith commission (3%) ──
@@ -760,12 +784,19 @@ def main():
                 "job": d["job"], "customer": d["customer"], "type": "Commission (3%)",
                 "item": d["item"], "amount": d["commission"], "source": "rich-commission",
             })
-        for name_, total_ in office_mems.items():
-            entries.append({
-                "month": MONTH_LABEL, "mgr": "", "employee": name_,
-                "job": "", "customer": "", "type": "Membership Spiff",
-                "item": "Office membership spiffs", "amount": total_, "source": "office-membership",
-            })
+        # One ledger row per sale (not one aggregated row per employee per month) — needed so the
+        # duplicate check below has a customer name to match on. Office/CCS staff previously had
+        # zero duplicate-detection coverage: an aggregated per-employee-per-month row has no job
+        # number and no customer, so it could never match anything (confirmed 2026-09, Billy
+        # asked why the Call Center Supervisor page never shows any flags).
+        for name_, details in office_mem_details.items():
+            for d in details:
+                entries.append({
+                    "month": MONTH_LABEL, "mgr": "jenny", "employee": name_,
+                    "job": "", "customer": d.get("customer", ""), "type": "Membership Spiff",
+                    "item": f"{d.get('type', '')} — {d.get('activation', '')}".strip(" —"),
+                    "amount": d.get("amount", 0), "source": "office-membership",
+                })
         return entries
 
     def fetch_ledger():
@@ -780,24 +811,80 @@ def main():
 
     ledger_entries = build_ledger_entries()
     prior_ledger = fetch_ledger()
-    prior_job_keys = set()
+    prior_job_keys = set()          # (employee, job) already paid in a prior month — same-tech repeat
+    prior_owner_by_job = defaultdict(set)      # job -> {employees} paid in a prior month — cross-tech
+    prior_owner_by_custkey = defaultdict(set)  # last-name key -> {employees}, only for job-less entries
     for row in prior_ledger:
-        if len(row) < 4:
+        if len(row) < 5:
             continue
-        prior_month, _mgr, prior_emp, prior_job = row[0], row[1], row[2], row[3]
-        if norm_month(prior_month) != MONTH_LABEL and prior_job:
+        prior_month, _mgr, prior_emp, prior_job, prior_cust = row[0], row[1], row[2], row[3], row[4]
+        if norm_month(prior_month) == MONTH_LABEL:
+            continue
+        if prior_job:
             prior_job_keys.add((prior_emp, str(prior_job)))
+            prior_owner_by_job[str(prior_job)].add(prior_emp)
+        elif prior_cust:
+            prior_owner_by_custkey[last_name_key(prior_cust)].add(prior_emp)
 
+    # This month's own entries, grouped the same way, to catch two different technicians both
+    # getting credited for the same job/customer within the same run (not just across months) —
+    # e.g. Karl Welch and Corey Ward both credited for the same Epstein job in the same month.
+    this_month_owner_by_job = defaultdict(set)
+    this_month_owner_by_custkey = defaultdict(set)
     for entry in ledger_entries:
-        if entry["job"] and (entry["employee"], str(entry["job"])) in prior_job_keys:
-            mgr_for_flag = entry["mgr"] or team_of(entry["employee"])
-            if mgr_for_flag in flags:
-                add_flag(mgr_for_flag, entry["employee"], f"Job #{entry['job']}",
-                          f"Possible duplicate payment — job #{entry['job']} already paid in a prior month",
-                          f"{entry['employee']} is being paid {fmt_amt(entry['amount'])} for job #{entry['job']} "
-                          f"({entry['item']}) this month, but the ledger shows this same job/employee combination "
-                          f"was already paid in a previous month. Verify this isn't a duplicate before approving.",
-                          sev="red")
+        if entry["job"]:
+            this_month_owner_by_job[str(entry["job"])].add(entry["employee"])
+        elif entry["customer"]:
+            this_month_owner_by_custkey[last_name_key(entry["customer"])].add(entry["employee"])
+
+    flagged_dup_keys = set()  # avoid raising the same (employees, job/customer) combo twice
+    for entry in ledger_entries:
+        emp = entry["employee"]
+        job = str(entry["job"]) if entry["job"] else ""
+        cust_key = last_name_key(entry["customer"]) if entry["customer"] else ""
+        mgr_for_flag = entry["mgr"] or team_of(emp)
+        if mgr_for_flag not in flags:
+            continue
+
+        if job and (emp, job) in prior_job_keys:
+            add_flag(mgr_for_flag, emp, f"Job #{job}",
+                      f"Possible duplicate payment — job #{job} already paid in a prior month",
+                      f"{emp} is being paid {fmt_amt(entry['amount'])} for job #{job} "
+                      f"({entry['item']}) this month, but the ledger shows this same job/employee combination "
+                      f"was already paid in a previous month. Verify this isn't a duplicate before approving.",
+                      sev="red")
+            continue  # same-tech repeat already explains it — don't also raise the cross-tech check below
+
+        # Cross-technician check: same job (or, when no job number exists, same customer by last
+        # name) credited to a *different* employee, either in a prior month or this same run.
+        other_owners = set()
+        basis = ""
+        if job:
+            other_owners |= (prior_owner_by_job.get(job, set()) - {emp})
+            other_owners |= (this_month_owner_by_job.get(job, set()) - {emp})
+            basis = f"job #{job}"
+        elif cust_key:
+            other_owners |= (prior_owner_by_custkey.get(cust_key, set()) - {emp})
+            other_owners |= (this_month_owner_by_custkey.get(cust_key, set()) - {emp})
+            basis = f"customer \"{entry['customer']}\""
+        if not other_owners:
+            continue
+        dup_key = tuple(sorted([emp, *other_owners])) + (job or cust_key,)
+        if dup_key in flagged_dup_keys:
+            continue
+        flagged_dup_keys.add(dup_key)
+        others_str = ", ".join(sorted(other_owners))
+        add_flag(mgr_for_flag, emp, f"Job #{job}" if job else entry["customer"],
+                  f"Possible duplicate spiff — {basis} credited to more than one technician",
+                  f"{emp} is being paid {fmt_amt(entry['amount'])} for {basis} ({entry['item']}), but the payout "
+                  f"ledger also shows {others_str} credited for the same {'job' if job else 'customer'}"
+                  f"{' (no job number on this line, matched by customer name — verify manually)' if not job else ''}. "
+                  f"Verify only one technician should be paid before approving.",
+                  sev="red")
+        ensure_emp(emp)["dups"].append(dup_key[-1])
+        for other in other_owners:
+            if other in emps:
+                emps[other]["dups"].append(dup_key[-1])
 
     if os.environ.get("ORACLE_DRY_RUN"):
         print(f"  [ORACLE_DRY_RUN] Skipping spiff_ledger write ({len(ledger_entries)} entries would have been sent)")
@@ -820,8 +907,8 @@ def main():
     sheet_write_table("res_carry_forward", ["month", "id", "fromMonth", "emp", "ref", "type", "amount", "dept", "reason"],
                        cf_rows, mode="replaceMonth", month=MONTH_LABEL)
     cl_rows = [[MONTH_LABEL, l["id"], l["month"], l["tech"], l["job"], l["customer"], l["status"],
-                l["spiff"], l["payMonth"], l["paid"]] for l in comm_leads_out]
-    sheet_write_table("res_comm_leads", ["month", "id", "leadMonth", "tech", "job", "customer", "status", "spiff", "payMonth", "paid"],
+                l["spiff"], l["payMonth"], l["paid"], l.get("location", "")] for l in comm_leads_out]
+    sheet_write_table("res_comm_leads", ["month", "id", "leadMonth", "tech", "job", "customer", "status", "spiff", "payMonth", "paid", "location"],
                        cl_rows, mode="replaceMonth", month=MONTH_LABEL)
     print(f"  Wrote {len(cf_rows)} carry-forward rows and {len(cl_rows)} comm-lead rows to the Sheet for next month's seed")
 
@@ -868,7 +955,7 @@ def main():
     print(f"Caleb's team: {len(caleb_emps)} employees with spiffs")
     if unclassified_names:
         print(f"UNCLASSIFIED (flagged, paid under Steven by default): {unclassified_names}")
-    print(f"Flags — Steven: {len(flags['steven'])}, Caleb: {len(flags['caleb'])}")
+    print(f"Flags — Steven: {len(flags['steven'])}, Caleb: {len(flags['caleb'])}, Jenny: {len(flags['jenny'])}")
     print(f"Rich Smith commission: ${rich_commission} (base ${rich_total_base:.2f})")
     print(f"Commercial leads log: {len(comm_leads_out)} entries "
           f"({sum(1 for l in comm_leads_out if l['paid'])} paid this month, "

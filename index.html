@@ -84,17 +84,26 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#F0EDE8;min-height:10
 .dup-warn{background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:3px 8px;font-size:.68rem;color:#92400e;margin-top:4px;display:inline-block}
 .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:#1a1a1a;color:#fff;padding:.75rem 1.25rem;border-radius:10px;font-size:.8rem;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
 .toast.on{opacity:1}
+.busy{position:fixed;top:1.25rem;right:1.25rem;display:none;align-items:center;gap:7px;background:#1a1a1a;color:#fff;padding:.5rem .9rem;border-radius:20px;font-size:.75rem;z-index:1000;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+.busy.on{display:inline-flex}
+.spin{width:12px;height:12px;border-radius:50%;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+button:disabled{opacity:.55;cursor:not-allowed!important}
 .pin-wrap{max-width:320px;margin:4rem auto;text-align:center}
 .pin-wrap h2{font-size:1rem;font-weight:600;margin-bottom:.5rem}
 .pin-wrap p{font-size:.8rem;color:#999;margin-bottom:1.5rem}
 .pin-input{width:100%;font-size:1.5rem;text-align:center;padding:.75rem;border:1px solid #ddd;border-radius:10px;letter-spacing:.5rem;font-family:'DM Mono',monospace;background:#fff}
 .pin-err{color:#991b1b;font-size:.78rem;margin-top:.75rem;min-height:1.2rem}
 @media print{
-  .nav,.role-wrap,.btn,.nb,.conn{display:none!important}
+  @page{size:landscape;margin:0.5in}
+  .nav,.role-wrap,.btn,.nb,.conn,.toast,.busy{display:none!important}
+  .shell{max-width:100%!important;padding:0!important}
   .card{border:1px solid #ccc;break-inside:auto}
-  .at,.et,.rev-t{break-inside:auto}
+  .at,.et,.rev-t{break-inside:auto;width:100%;table-layout:fixed}
   .at tr,.et tr,.rev-t tr{break-inside:avoid;break-after:auto}
-  .aw{overflow:visible!important}
+  .at,.at th,.at td{font-size:.62rem!important}
+  .at td:first-child,.at th:first-child{min-width:0;width:16%;overflow-wrap:break-word}
+  .aw{overflow:visible!important;width:100%}
 }
 </style>
 </head>
@@ -119,6 +128,7 @@ body{font-family:'DM Sans',system-ui,sans-serif;background:#F0EDE8;min-height:10
   <div id="views"></div>
 </div>
 <div class="toast" id="toast"></div>
+<div class="busy" id="busy-badge"><span class="spin"></span><span>Saving…</span></div>
 <script>
 const SHEET_ID='1E3p3clqh1svM_F8dOXAh7pbFUqQCUFRetyHeElpDXTI'; // kept for reference
 const MONTH='Aug 2026', PREV_M='Jul 2026', NEXT_M='Sep 2026';
@@ -131,7 +141,31 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwHV_lR6gQQGs4LOmst5
 // it stops casual access, it is not a hard security boundary.
 const SHARED_KEY = '684f00e3b85b76a4af6992a3d0ed3968';
 
+// Every network call in the app funnels through these four functions — centralizing the busy
+// indicator here (instead of at each of the 20+ call sites) means every save/load gets visible
+// feedback for free, and a button that triggered one gets disabled for its duration so a manager
+// can't wonder "did that take?" and click it again mid-flight.
+let BUSY_COUNT=0;
+function busyStart(){
+  BUSY_COUNT++;
+  document.getElementById('busy-badge').classList.add('on');
+  // Disable every button app-wide for the duration of any in-flight save/load — belt-and-
+  // suspenders alongside the badge above, since the badge is easy to miss but a greyed-out
+  // button under your cursor isn't. Safe to be this blunt: the round trip is normally under a
+  // couple seconds, and whichever view is open re-renders (with fresh, enabled buttons) right
+  // after its own action's await resolves regardless.
+  document.querySelectorAll('.btn').forEach(b=>b.disabled=true);
+}
+function busyEnd(){
+  BUSY_COUNT=Math.max(0,BUSY_COUNT-1);
+  if(BUSY_COUNT===0){
+    document.getElementById('busy-badge').classList.remove('on');
+    document.querySelectorAll('.btn').forEach(b=>b.disabled=false);
+  }
+}
+
 async function sGet(range){
+  busyStart();
   try{
     const sheet = range.split('!')[0];
     const r = range.includes('!') ? range.split('!')[1] : null;
@@ -142,7 +176,7 @@ async function sGet(range){
     clearTimeout(t);
     const data = await res.json();
     return data.values || [];
-  } catch(e) { console.warn('sGet failed', e); return null; }
+  } catch(e) { console.warn('sGet failed', e); return null; } finally { busyEnd(); }
 }
 
 // One round trip for every boot-path tab instead of 12 concurrent sGet calls — browsers cap
@@ -151,6 +185,7 @@ async function sGet(range){
 // A single call reading all 12 tabs measured 5-7.5s server-side (Apps Script's per-sheet-open
 // overhead dominates, not payload size) — 8s cut it too close, so this gets real headroom.
 async function sGetMulti(sheets){
+  busyStart();
   try{
     const params = new URLSearchParams({action:'getMulti', sheets:sheets.join(','), key:SHARED_KEY});
     const ctrl = new AbortController();
@@ -159,10 +194,11 @@ async function sGetMulti(sheets){
     clearTimeout(t);
     const data = await res.json();
     return data.tabs || {};
-  } catch(e) { console.warn('sGetMulti failed', e); return {}; }
+  } catch(e) { console.warn('sGetMulti failed', e); return {}; } finally { busyEnd(); }
 }
 
 async function sAppend(tab, values){
+  busyStart();
   try{
     const params = new URLSearchParams({
       action: 'append',
@@ -171,10 +207,11 @@ async function sAppend(tab, values){
       key: SHARED_KEY
     });
     await fetch(`${SCRIPT_URL}?${params}`);
-  } catch(e) { console.warn('sAppend failed', e); }
+  } catch(e) { console.warn('sAppend failed', e); } finally { busyEnd(); }
 }
 
 async function sPut(range, values){
+  busyStart();
   try{
     const sheet = range.split('!')[0];
     const r = range.split('!')[1];
@@ -186,7 +223,7 @@ async function sPut(range, values){
       key: SHARED_KEY
     });
     await fetch(`${SCRIPT_URL}?${params}`);
-  } catch(e) { console.warn('sPut failed', e); }
+  } catch(e) { console.warn('sPut failed', e); } finally { busyEnd(); }
 }
 
 // ── State ───────────────────────────────────────────────
@@ -228,6 +265,8 @@ const S={
     steven:[
     ],
     caleb:[
+    ],
+    jenny:[
     ],
   },
   commLeads:[
@@ -586,18 +625,22 @@ function toggleDetailRow(cell){
 // ── Load from Sheets ──────────────────────────────────────
 async function loadSheets(){
   const tabs=await sGetMulti(['submissions','revenue_actuals','flags','manual_adds','spiff_corrections',
-    'carry_forward_resolutions','jay_jobs','commlead_updates','month_status','manager_notes','run_requests','roster']);
+    'carry_forward_resolutions','jay_jobs','commlead_updates','month_status','manager_notes','run_requests','roster',
+    'manual_carry_forward']);
   // getMulti returns the full sheet including its header row; sGet's old A2:... ranges never did — drop row 0 to match.
   const strip=name=>(tabs[name]||[]).slice(1);
   const subs=strip('submissions'),rev=strip('revenue_actuals'),flags=strip('flags'),mans=strip('manual_adds'),
     corrections=strip('spiff_corrections'),cfRes=strip('carry_forward_resolutions'),jayJobLog=strip('jay_jobs'),
     commLeadLog=strip('commlead_updates'),monthStatusLog=strip('month_status'),notesLog=strip('manager_notes'),
-    runReqLog=strip('run_requests'),rosterLog=strip('roster');
+    runReqLog=strip('run_requests'),rosterLog=strip('roster'),mcfLog=strip('manual_carry_forward');
   if(rosterLog) ROSTER=loadRosterFrom(rosterLog);
   if(subs)subs.forEach(r=>{
     if(normMonth(r[0])===MONTH&&r[1]){const m=r[1].toLowerCase();if(m in S.submissions){S.submissions[m]=r[2]||'not_started';S.pushback[m]=(r[4]==='pushed_back'&&r[5])?r[5]:null;}}
   });
-  if(rev)rev.forEach(r=>{if(normMonth(r[0])===MONTH){const row=S.revenue.find(x=>x.dept===r[1]);if(row&&r[3])row.actual=parseFloat(r[3]);}});
+  // Goal (r[2]) was already being written by saveRevenue() every save but never read back here —
+  // so an edited goal target silently reverted to the hardcoded default on the next reload. Only
+  // the actual (r[3]) was ever replayed. Fixed 2026-09.
+  if(rev)rev.forEach(r=>{if(normMonth(r[0])===MONTH){const row=S.revenue.find(x=>x.dept===r[1]);if(row){if(r[2])row.goal=parseFloat(r[2])||row.goal;if(r[3])row.actual=parseFloat(r[3]);}}});
   if(flags)flags.forEach(r=>{
     if(normMonth(r[0])!==MONTH||!r[1]||!r[2])return;
     const mgr=r[1];if(!S.flags[mgr])return;
@@ -613,11 +656,11 @@ async function loadSheets(){
     mans.forEach(r=>{
       if(normMonth(r[0])!==MONTH||!r[1])return;
       const id=manualKey(r);
-      latestManual[id]={mgr:r[1],name:r[2],reason:r[3],amount:parseFloat(r[4])||0,dept:r[5],status:r[8]||'added',id};
+      latestManual[id]={mgr:r[1],name:r[2],reason:r[3],amount:parseFloat(r[4])||0,dept:r[5],status:r[8]||'added',id,ref:r[10]||''};
     });
     Object.values(latestManual).forEach(m=>{
       if(m.status==='removed')return;
-      if(S.manuals[m.mgr]) S.manuals[m.mgr].push({id:m.id,name:m.name,reason:m.reason,amount:m.amount,dept:m.dept});
+      if(S.manuals[m.mgr]) S.manuals[m.mgr].push({id:m.id,name:m.name,reason:m.reason,ref:m.ref,amount:m.amount,dept:m.dept});
     });
   }
   // Load bonus approvals from Sheet (approved state only — amounts stay hardcoded)
@@ -667,6 +710,29 @@ async function loadSheets(){
       }
     });
   }
+  // Replay manually-tracked carry-forward items (from a note's "Track as pending payout", or a
+  // flag resolved "Pay next month") BEFORE the resolutions replay just below, so a resolution
+  // recorded this same month against one of these can actually find it. Not month-filtered on
+  // this side, since one of these can be created in an earlier month and still be waiting to get
+  // picked up by process_month.py's own compute_prior_carry_forward() (which folds it into the
+  // real res_carry_forward baseline with a fresh content-hashed id the next time that runs).
+  // Matched here by (emp,type) rather than this row's own mcf_ id, specifically so that once
+  // Python HAS absorbed it under a new id, this replay recognizes the baked-in entry as the same
+  // item and skips re-adding a duplicate.
+  if(mcfLog){
+    const latestMcf={};
+    mcfLog.forEach(r=>{
+      const [month,id,mgr,emp,type,amount,dept,reason]=r;
+      if(!id||!emp)return;
+      latestMcf[id]={id,mgr,emp,type,amount:parseFloat(amount)||0,dept,reason,fromMonth:normMonth(month)};
+    });
+    Object.values(latestMcf).forEach(c=>{
+      if(!S.carryForward.some(x=>x.emp===c.emp&&x.type===c.type)){
+        S.carryForward.push({id:c.id,fromMonth:c.fromMonth||MONTH,emp:c.emp,ref:'',type:c.type,amount:c.amount,
+          dept:c.dept,reason:c.reason,resolved:false,disposition:'',note:'',manual:true});
+      }
+    });
+  }
   // Replay carry-forward resolutions (mark paid/dead) the same way — a "paid"
   // disposition also needs to re-apply the payout, since S.emps/spiffDetail
   // reset to the hardcoded baseline on every load.
@@ -683,6 +749,10 @@ async function loadSheets(){
       if(c.disposition==='paid'||c.disposition==='dead'){
         cf.resolved=true;cf.disposition=c.disposition;cf.note=c.note;
         if(c.disposition==='paid') payOutCarryForward(c.mgr,cf);
+      }else if(c.disposition==='reviewed'){
+        // Not a real resolution — just this month's "already looked at it" marker. See
+        // reviewCarryForward(). Deliberately doesn't touch resolved/disposition/note.
+        cf.reviewedThisMonth=true;
       }else{
         cf.resolved=false;cf.disposition='';cf.note='';
       }
@@ -709,9 +779,9 @@ async function loadSheets(){
   if(commLeadLog){
     const latestCL={};
     commLeadLog.forEach(r=>{
-      const [month,id,tech,customer,job,status,spiff,payMonth,ts,disposition,note]=r;
+      const [month,id,tech,customer,job,status,spiff,payMonth,ts,disposition,note,location]=r;
       if(normMonth(month)!==MONTH||!id)return;
-      latestCL[id]={tech,customer,job,status,spiff:parseFloat(spiff)||0,payMonth:normMonth(payMonth),disposition:disposition||'',note:note||''};
+      latestCL[id]={tech,customer,job,status,spiff:parseFloat(spiff)||0,payMonth:normMonth(payMonth),disposition:disposition||'',note:note||'',location:location||''};
     });
     Object.entries(latestCL).forEach(([id,c])=>{
       let lead=S.commLeads.find(l=>l.id===id);
@@ -721,6 +791,7 @@ async function loadSheets(){
       }
       lead.status=c.status;lead.spiff=c.spiff;lead.payMonth=c.payMonth;
       lead.disposition=c.disposition;lead.note=c.note;
+      if(c.location) lead.location=c.location;
       if(lead.status==='Sold & Completed'){
         const mgr=mgrForEmployee(lead.tech);
         if(mgr){payOutCommLead(mgr,lead);lead.paid=true;}
@@ -764,7 +835,7 @@ const NAVS={
   billy:[{id:'overview',label:'Overview'},{id:'review',label:'Manager Review'},{id:'revenue',label:'Revenue & Budgets'},{id:'bonuses',label:'Bonus Approvals'},{id:'output',label:'Accounting Output'},{id:'roster',label:'Roster'},{id:'lookup',label:'Lookup'}],
   steven:[{id:'myteam',label:'My Team'},{id:'flags',label:'Flags to Resolve'},{id:'commleads',label:'Commercial Leads'},{id:'lookup',label:'Lookup'}],
   caleb:[{id:'myteam',label:'My Team'},{id:'flags',label:'Flags to Resolve'},{id:'lookup',label:'Lookup'}],
-  jenny:[{id:'membership',label:'Membership Review'},{id:'lookup',label:'Lookup'}],
+  jenny:[{id:'membership',label:'Membership Review'},{id:'flags',label:'Flags to Resolve'},{id:'lookup',label:'Lookup'}],
 };
 const RENDERS={overview:rOverview,review:rReview,revenue:rRevenue,bonuses:rBonuses,output:rOutput,roster:rRoster,myteam:()=>rTeam(S.role),flags:()=>rFlags(S.role),commleads:rCommLeads,lookup:rLookup,membership:rMembershipReview};
 
@@ -791,8 +862,9 @@ function vw(){return document.querySelector('.view');}
 // ── OVERVIEW ─────────────────────────────────────────────
 function rOverview(){
   const v=vw();
-  const allF=[...S.flags.steven,...S.flags.caleb];
+  const allF=[...S.flags.steven,...S.flags.caleb,...(S.flags.jenny||[])];
   const open=allF.filter(f=>!f.resolved).length;
+  const cfPending=S.carryForward.filter(c=>!c.resolved).length;
   const subs=Object.values(S.submissions).filter(s=>s==='submitted'||s==='approved').length;
   const rs=S.runStatus||{};
   const targetMonth=lastCalendarMonthLabel();
@@ -849,21 +921,18 @@ function rOverview(){
   <div class="sg">
     <div class="sc"><div class="sl">Est. total spiffs</div><div class="sv">${fp(grandTotal())}</div></div>
     <div class="sc"><div class="sl">Open flags</div><div class="sv">${open}</div></div>
+    <div class="sc"><div class="sl">Carry-forward pending</div><div class="sv" style="${cfPending?'color:#92400e':''}">${cfPending}</div></div>
     <div class="sc"><div class="sl">Submissions</div><div class="sv">${subs} / 3</div></div>
     <div class="sc"><div class="sl">Steven bonus</div><div class="sv">${fp(stevenBonus())}</div></div>
   </div>
   <div class="card">
     <div class="ctitle">Manager submissions</div>
-    ${['steven','caleb'].map(m=>{
-      const s=S.submissions[m];const lbl=m==='steven'?'Steven — Myrtle Beach':'Caleb — Charleston';
-      const oc=S.flags[m].filter(f=>!f.resolved).length;
-      const badge=s==='approved'?'<span class="badge bok">Approved</span>':s==='submitted'?'<span class="badge binfo">Submitted</span>':s==='pushed_back'?'<span class="badge bdanger">Pushed back</span>':`<span class="badge bwarn">${oc} flag${oc!==1?'s':''} open</span>`;
+    ${['steven','caleb','jenny'].map(m=>{
+      const s=S.submissions[m];const lbl=m==='steven'?'Steven — Myrtle Beach':m==='caleb'?'Caleb — Charleston':'Jenny — Call Center';
+      const oc=(S.flags[m]||[]).filter(f=>!f.resolved).length;
+      const badge=s==='approved'?'<span class="badge bok">Approved</span>':s==='submitted'?'<span class="badge binfo">Submitted</span>':s==='pushed_back'?'<span class="badge bdanger">Pushed back</span>':oc?`<span class="badge bwarn">${oc} flag${oc!==1?'s':''} open</span>`:'<span class="badge bgray">Not submitted</span>';
       return `<div class="ri"><div class="ril"><span style="font-weight:500">${lbl}</span></div>${badge}</div>`;
     }).join('')}
-    ${(()=>{const s=S.submissions.jenny;
-      const badge=s==='approved'?'<span class="badge bok">Approved</span>':s==='submitted'?'<span class="badge binfo">Submitted</span>':s==='pushed_back'?'<span class="badge bdanger">Pushed back</span>':'<span class="badge bgray">Not submitted</span>';
-      return `<div class="ri"><div class="ril"><span style="font-weight:500">Jenny — Call Center</span></div>${badge}</div>`;
-    })()}
   </div>
   <div class="card">
     <div class="ctitle">Your action items</div>
@@ -877,17 +946,18 @@ function rOverview(){
   <div class="card">
     <div class="ctitle">Manual spiff additions (Owner)</div>
     <div style="font-size:.75rem;color:#999;margin-bottom:.5rem">Add a one-off spiff for anyone — technicians, office/call-center staff, or a name not yet on any roster.</div>
-    <div class="mg" style="grid-template-columns:1.5fr 1fr 1.5fr 90px 1fr auto">
+    <div class="mg" style="grid-template-columns:1.3fr 1fr 1.3fr 1fr 90px 1fr auto">
       <div><label>Employee</label><input type="text" id="om-emp" list="all-names" placeholder="Type a name" oninput="autoSelectTeam('om-emp','om-mgr')"></div>
       <div><label>Team</label><select id="om-mgr"><option value="">Select…</option><option value="steven">Myrtle Beach (Steven)</option><option value="caleb">Charleston (Caleb)</option><option value="jenny">Office / Call Center (Jenny)</option></select></div>
-      <div><label>Reason</label><input type="text" id="om-rsn" placeholder="e.g. Lead Stage 1 — Gaines Tracy"></div>
+      <div><label>Reason</label><input type="text" id="om-rsn" placeholder="e.g. Lead Stage 1"></div>
+      <div><label>Job # / Customer</label><input type="text" id="om-ref" placeholder="e.g. 165972686 or Gaines Tracy"></div>
       <div><label>Amount ($)</label><input type="number" id="om-amt" min="0" step="0.01" placeholder="0.00"></div>
       <div><label>Dept pays</label><select id="om-dept"><option>MB Residential Service</option><option>MB Install Residential</option><option>MB Plumbing</option><option>MB Service Commercial</option><option>CH Service</option><option>CH Install</option></select></div>
       <div><label>&nbsp;</label><button class="btn btnp" onclick="addManualOwner()">Add</button></div>
     </div>
     ${(()=>{const all=[...S.manuals.steven.map((a,i)=>({...a,mgr:'steven',i})),...S.manuals.caleb.map((a,i)=>({...a,mgr:'caleb',i})),...S.manuals.jenny.map((a,i)=>({...a,mgr:'jenny',i}))];
       const mgrLbl={steven:'MB',caleb:'CH',jenny:'Office'};
-      return all.length?`<div style="margin-top:.75rem">${all.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;font-size:.78rem;padding:5px 0;border-top:1px solid #F0EDE8"><span>${a.name} — ${a.reason} <span style="color:#999">(${a.dept} · ${mgrLbl[a.mgr]})</span></span><span style="display:flex;gap:8px;align-items:center"><strong style="font-family:'DM Mono',monospace">${fp(a.amount)}</strong><button class="btn bsm" onclick="removeManualOwner('${a.mgr}',${a.i})">Remove</button></span></div>`).join('')}</div>`:'';})()}
+      return all.length?`<div style="margin-top:.75rem">${all.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;font-size:.78rem;padding:5px 0;border-top:1px solid #F0EDE8"><span>${a.name} — ${a.reason}${a.ref?` <span style="color:#666;font-family:'DM Mono',monospace">(${a.ref})</span>`:''} <span style="color:#999">(${a.dept} · ${mgrLbl[a.mgr]})</span></span><span style="display:flex;gap:8px;align-items:center"><strong style="font-family:'DM Mono',monospace">${fp(a.amount)}</strong><button class="btn bsm" onclick="removeManualOwner('${a.mgr}',${a.i})">Remove</button></span></div>`).join('')}</div>`:'';})()}
   </div>`;
 }
 function allKnownNames(){
@@ -913,21 +983,22 @@ async function addManualOwner(){
   const name=document.getElementById('om-emp').value.trim();
   const mgr=document.getElementById('om-mgr').value;
   const reason=document.getElementById('om-rsn').value.trim();
+  const ref=document.getElementById('om-ref').value.trim();
   const amount=parseFloat(document.getElementById('om-amt').value)||0;
   const dept=document.getElementById('om-dept').value;
   if(!name){toast('Please enter an employee name.');return;}
   if(!mgr){toast('Please select which team this employee is on.');return;}
   if(!reason||amount<=0){toast('Please enter a reason and amount.');return;}
   const id=manualAddId();
-  S.manuals[mgr].push({id,name,reason,amount,dept});
-  await sAppend('manual_adds',[[MONTH,mgr,name,reason,amount,dept,S.role,new Date().toISOString(),'added',id]]);
+  S.manuals[mgr].push({id,name,reason,ref,amount,dept});
+  await sAppend('manual_adds',[[MONTH,mgr,name,reason,amount,dept,S.role,new Date().toISOString(),'added',id,ref]]);
   toast('Manual spiff added');rOverview();
 }
 async function removeManualOwner(mgr,i){
   if(guardClosed())return;
   const m=S.manuals[mgr][i]; if(!m)return;
   S.manuals[mgr].splice(i,1);
-  await sAppend('manual_adds',[[MONTH,mgr,m.name,m.reason,m.amount,m.dept,S.role,new Date().toISOString(),'removed',m.id]]);
+  await sAppend('manual_adds',[[MONTH,mgr,m.name,m.reason,m.amount,m.dept,S.role,new Date().toISOString(),'removed',m.id,m.ref||'']]);
   rOverview();
 }
 
@@ -984,12 +1055,18 @@ function rReview(){
   }).join('') + (()=>{
     const s=S.submissions.jenny;const canApprove=s==='submitted';
     const total=S.officeMems.reduce((a,m)=>a+m.total,0);
+    const jf=S.flags.jenny||[];const jfOpen=jf.filter(f=>!f.resolved).length;
     return `<div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.875rem">
         <div class="ctitle" style="margin:0">Call Center Supervisor — Office Membership Sales</div>
         <span class="badge ${s==='approved'?'bok':s==='submitted'?'binfo':s==='pushed_back'?'bdanger':'bgray'}">${s==='approved'?'Approved':s==='submitted'?'Submitted':s==='pushed_back'?'Pushed back':'Not submitted'}</span>
       </div>
-      <div class="ctitle">Membership spiffs — ${MONTH}</div>
+      ${jf.length?`<div class="ctitle">Flags ${jfOpen?`<span class="badge bwarn" style="margin-left:6px">${jfOpen} open</span>`:'<span class="badge bok" style="margin-left:6px">all resolved</span>'}</div>
+      ${jf.map(f=>`<div style="padding:6px 0;border-bottom:1px solid #F0EDE8;font-size:.78rem;display:flex;justify-content:space-between;gap:8px">
+        <div><div style="font-weight:500">${f.title}</div><div style="font-size:.68rem;color:#999;font-family:'DM Mono',monospace">${f.emp} · ${f.ref}</div></div>
+        <span class="badge ${f.resolved?(f.disp==='Pay this month'?'bok':f.disp==='Pay next month'?'binfo':'bdanger'):'bwarn'}">${f.resolved?f.disp:'Open'}</span>
+      </div>`).join('')}`:''}
+      <div class="ctitle" style="${jf.length?'margin-top:.875rem':''}">Membership spiffs — ${MONTH}</div>
       ${S.officeMems.length?S.officeMems.map(m=>`<div style="padding:7px 0;border-bottom:1px solid #F0EDE8;font-size:.82rem">
         <div style="display:flex;justify-content:space-between"><span style="font-weight:500">${m.name}</span><span style="font-family:'DM Mono',monospace;font-weight:600">${fp(m.total)}${m.originalTotal?` <span style="font-size:.65rem;color:#999;font-weight:400;text-decoration:line-through">${fp(m.originalTotal)}</span>`:''}</span></div>
         ${m.note?`<div style="font-size:.7rem;color:#991b1b;margin-top:2px">${m.note}</div>`:''}
@@ -1029,7 +1106,7 @@ function rRevenue(){
   const v=vw();
   v.innerHTML=`<div class="card">
     <div class="ctitle">Revenue & budgets — ${MONTH}</div>
-    <div style="font-size:.75rem;color:#999;margin-bottom:1rem">Enter MTD revenue from the end-of-month Daily Revenue Scorecard email.</div>
+    <div style="font-size:.75rem;color:#999;margin-bottom:1rem">Enter MTD revenue from the end-of-month Daily Revenue Scorecard email. Goal targets are editable too — update them each month; the automation doesn't pull department budgets from anywhere, so this is the only place they change.</div>
     <table class="rev-t">
       <thead><tr><th style="text-align:left">Department</th><th>Goal</th><th>Actual</th><th>$ to goal</th><th>% to goal</th><th>Goal met?</th><th>Steven bonus</th></tr></thead>
       <tbody>${S.revenue.map((r,i)=>{
@@ -1039,7 +1116,7 @@ function rRevenue(){
         const bonus=r.se&&met?350:0;
         return `<tr>
           <td>${r.dept}</td>
-          <td style="font-family:'DM Mono',monospace;font-size:.78rem">${fp(r.goal)}</td>
+          <td><input type="number" value="${r.goal||''}" min="0" step="0.01" placeholder="Enter goal" onchange="S.revenue[${i}].goal=parseFloat(this.value)||S.revenue[${i}].goal;rRevenue()"></td>
           <td><input type="number" value="${r.actual||''}" min="0" step="0.01" placeholder="Enter actual" onchange="S.revenue[${i}].actual=parseFloat(this.value)||null;rRevenue()"></td>
           <td style="font-family:'DM Mono',monospace;font-size:.78rem">${diff!==null?fp(diff):'—'}</td>
           <td>${r.actual?pct+'%':'—'}</td>
@@ -1262,15 +1339,16 @@ function rMembershipReview(){
   <div class="card">
     <div class="ctitle">Manual spiff additions</div>
     <div style="font-size:.75rem;color:#999;margin-bottom:.5rem">Add one-off spiffs not captured automatically.</div>
-    <div class="mg">
+    <div class="mg" style="grid-template-columns:1.2fr 1.2fr 1fr 90px 1fr auto">
       <div><label>Employee</label><input type="text" id="m-emp" list="all-names" placeholder="Type a name"></div>
       <div><label>Reason</label><input type="text" id="m-rsn" placeholder="e.g. Membership sale missed on report"></div>
+      <div><label>Job # / Customer</label><input type="text" id="m-ref" placeholder="distinguishes multiple adds"></div>
       <div><label>Amount ($)</label><input type="number" id="m-amt" min="0" step="0.01" placeholder="0.00"></div>
       <div><label>Dept pays</label><select id="m-dept"><option>MB Residential Service</option><option>MB Install Residential</option><option>MB Plumbing</option><option>MB Service Commercial</option><option>CH Service</option><option>CH Install</option></select></div>
       <div><label>&nbsp;</label><button class="btn btnp" onclick="addManual('jenny')">Add</button></div>
       <datalist id="all-names">${allKnownNames().map(n=>`<option value="${n}">`).join('')}</datalist>
     </div>
-    ${(S.manuals.jenny||[]).length?`<div style="margin-top:.75rem">${S.manuals.jenny.map((a,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;font-size:.78rem;padding:5px 0;border-top:1px solid #F0EDE8"><span>${a.name} — ${a.reason} <span style="color:#999">(${a.dept})</span></span><span style="display:flex;gap:8px;align-items:center"><strong style="font-family:'DM Mono',monospace">${fp(a.amount)}</strong><button class="btn bsm" onclick="removeManual('jenny',${i})">Remove</button></span></div>`).join('')}</div>`:''}
+    ${(S.manuals.jenny||[]).length?`<div style="margin-top:.75rem">${S.manuals.jenny.map((a,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;font-size:.78rem;padding:5px 0;border-top:1px solid #F0EDE8"><span>${a.name} — ${a.reason}${a.ref?` <span style="color:#666;font-family:'DM Mono',monospace">(${a.ref})</span>`:''} <span style="color:#999">(${a.dept})</span></span><span style="display:flex;gap:8px;align-items:center"><strong style="font-family:'DM Mono',monospace">${fp(a.amount)}</strong><button class="btn bsm" onclick="removeManual('jenny',${i})">Remove</button></span></div>`).join('')}</div>`:''}
   </div>`;
 }
 function toggleMemDetail(i){
@@ -1530,15 +1608,16 @@ function rTeam(mgr){
   <div class="card">
     <div class="ctitle">Manual spiff additions</div>
     <div style="font-size:.75rem;color:#999;margin-bottom:.5rem">Add one-off spiffs not captured automatically.</div>
-    <div class="mg">
+    <div class="mg" style="grid-template-columns:1.2fr 1.2fr 1fr 90px 1fr auto">
       <div><label>Employee</label><input type="text" id="m-emp" list="team-names-${mgr}" placeholder="Type a name"></div>
-      <div><label>Reason</label><input type="text" id="m-rsn" placeholder="e.g. Lead Stage 1 — Gaines Tracy"></div>
+      <div><label>Reason</label><input type="text" id="m-rsn" placeholder="e.g. Lead Stage 1"></div>
+      <div><label>Job # / Customer</label><input type="text" id="m-ref" placeholder="distinguishes multiple adds"></div>
       <div><label>Amount ($)</label><input type="number" id="m-amt" min="0" step="0.01" placeholder="0.00"></div>
       <div><label>Dept pays</label><select id="m-dept"><option>MB Residential Service</option><option>MB Install Residential</option><option>MB Plumbing</option><option>MB Service Commercial</option><option>CH Service</option><option>CH Install</option></select></div>
       <div><label>&nbsp;</label><button class="btn btnp" onclick="addManual('${mgr}')">Add</button></div>
       <datalist id="team-names-${mgr}">${d.map(e=>`<option value="${e.name}">`).join('')}</datalist>
     </div>
-    ${adds.length?`<div style="margin-top:.75rem">${adds.map((a,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;font-size:.78rem;padding:5px 0;border-top:1px solid #F0EDE8"><span>${a.name} — ${a.reason} <span style="color:#999">(${a.dept})</span></span><span style="display:flex;gap:8px;align-items:center"><strong style="font-family:'DM Mono',monospace">${fp(a.amount)}</strong><button class="btn bsm" onclick="removeManual('${mgr}',${i})">Remove</button></span></div>`).join('')}</div>`:''}
+    ${adds.length?`<div style="margin-top:.75rem">${adds.map((a,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;font-size:.78rem;padding:5px 0;border-top:1px solid #F0EDE8"><span>${a.name} — ${a.reason}${a.ref?` <span style="color:#666;font-family:'DM Mono',monospace">(${a.ref})</span>`:''} <span style="color:#999">(${a.dept})</span></span><span style="display:flex;gap:8px;align-items:center"><strong style="font-family:'DM Mono',monospace">${fp(a.amount)}</strong><button class="btn bsm" onclick="removeManual('${mgr}',${i})">Remove</button></span></div>`).join('')}</div>`:''}
   </div>
   <div class="card">
     <div class="ctitle">Notes</div>
@@ -1555,9 +1634,10 @@ function rTeam(mgr){
         <span class="risub" style="font-family:'DM Mono',monospace">${n.author||'?'} · ${n.timestamp?new Date(n.timestamp).toLocaleDateString():''}</span>
         ${n.verified?`<span class="risub" style="color:#065f46">✓ Verified${n.verifiedNote?': '+n.verifiedNote:''}</span>`:''}
       </div>
-      <div>${n.verified?
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${n.verified?
         `<button class="btn bsm" onclick="unverifyNote('${n.id}')">Undo</button>`
-        :`<button class="btn btnp bsm" onclick="verifyNote('${n.id}')">Mark verified</button>`}
+        :`<button class="btn bsm" onclick="trackNoteAsCarryForward('${n.id}')" title="Turn this into a real tracked item on the Flags to Resolve page, with Paid/Dead resolution — use this for anything the note is really saying &quot;pay this once it's confirmed,&quot; not just an FYI.">Track as pending payout</button>
+         <button class="btn btnp bsm" onclick="verifyNote('${n.id}')">Mark verified</button>`}
       </div>
     </div>`).join('')}</div>`:'<div style="font-size:.82rem;color:#999;padding:6px 0">No notes for this team.</div>'}
   </div>`;
@@ -1570,20 +1650,22 @@ async function addManual(mgr){
   if(guardClosed())return;
   const name=document.getElementById('m-emp').value.trim();
   const reason=document.getElementById('m-rsn').value.trim();
+  const refEl=document.getElementById('m-ref');
+  const ref=refEl?refEl.value.trim():'';
   const amount=parseFloat(document.getElementById('m-amt').value)||0;
   const dept=document.getElementById('m-dept').value;
   if(!name){toast('Please enter an employee name.');return;}
   if(!reason||amount<=0){toast('Please enter a reason and amount.');return;}
   const id=manualAddId();
-  S.manuals[mgr].push({id,name,reason,amount,dept});
-  await sAppend('manual_adds',[[MONTH,mgr,name,reason,amount,dept,S.role,new Date().toISOString(),'added',id]]);
+  S.manuals[mgr].push({id,name,reason,ref,amount,dept});
+  await sAppend('manual_adds',[[MONTH,mgr,name,reason,amount,dept,S.role,new Date().toISOString(),'added',id,ref]]);
   toast('Manual spiff added');rerenderManualAddView(mgr);
 }
 async function removeManual(mgr,i){
   if(guardClosed())return;
   const m=S.manuals[mgr][i]; if(!m)return;
   S.manuals[mgr].splice(i,1);
-  await sAppend('manual_adds',[[MONTH,mgr,m.name,m.reason,m.amount,m.dept,S.role,new Date().toISOString(),'removed',m.id]]);
+  await sAppend('manual_adds',[[MONTH,mgr,m.name,m.reason,m.amount,m.dept,S.role,new Date().toISOString(),'removed',m.id,m.ref||'']]);
   rerenderManualAddView(mgr);
 }
 
@@ -1615,6 +1697,28 @@ async function unverifyNote(id){
   n.verified=false;n.verifiedNote='';
   await sAppend('manager_notes',[[id,n.mgr,n.emp,n.text,n.author,n.timestamp,'false','']]);
   toast('Reopened.');
+  rTeam(n.mgr);
+}
+// A note like "pay in August spiffs since installation was completed" is really describing a
+// pending payout, not just an FYI — but "Mark verified" only ever flipped a checkbox, with no
+// path to an actual trackable, resolvable item (confirmed gap, 2026-09: Billy added a note like
+// this for Karl Welch and it never surfaced anywhere as something to actually pay). This turns
+// it into a real S.carryForward entry using the same shared helper "Pay next month" uses below.
+async function trackNoteAsCarryForward(id){
+  if(guardClosed())return;
+  const n=S.notes.find(x=>x.id===id);
+  if(!n)return;
+  const amountStr=prompt(`Amount to carry forward for ${n.emp}?\n\nFrom note: "${n.text}"`);
+  if(amountStr===null)return;
+  const amount=parseFloat(amountStr);
+  if(!amount||amount<=0){toast('Please enter a valid amount.');return;}
+  const dept=prompt('Which department pays this?\n(MB Residential Service / MB Install Residential / MB Plumbing / MB Service Commercial / CH Service / CH Install)','MB Install Residential');
+  if(dept===null)return;
+  await addManualCarryForward(n.mgr,n.emp,`Manager note — ${n.text}`,amount,dept.trim(),
+    `Added from a manager note (${n.author||'?'}, ${n.timestamp?new Date(n.timestamp).toLocaleDateString():'?'}): "${n.text}"`);
+  n.verified=true;n.verifiedNote='Converted to a pending carry-forward — see Flags to Resolve.';
+  await sAppend('manager_notes',[[id,n.mgr,n.emp,n.text,n.author,n.timestamp,'true',n.verifiedNote]]);
+  toast('Added as a pending carry-forward — resolve it (paid/dead) from Flags to Resolve.');
   rTeam(n.mgr);
 }
 async function submitWorkbook(){
@@ -1685,8 +1789,8 @@ function rCommLeads(){
     <div class="ctitle">Pay in ${MONTH} — sold &amp; in progress</div>
     ${active.map(l=>`<div class="ri">
       <div class="ril">
-        <span style="font-weight:500">${l.tech} — ${l.customer}</span>
-        <span class="risub">Job #${l.job} · Added ${l.month} · ${l.status}</span>
+        <span style="font-weight:500">${l.tech} — ${l.customer}${l.location&&l.location!==l.customer?` <span style="color:#999;font-weight:400">(${l.location})</span>`:''}</span>
+        <span class="risub">Job #${l.job||'—'} · Added ${l.month} · ${l.status}</span>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <span style="font-weight:600;font-family:'DM Mono',monospace">\$${l.spiff}</span>
@@ -1705,7 +1809,8 @@ function rCommLeads(){
       <div style="display:grid;grid-template-columns:1fr 180px 100px;gap:8px;align-items:center">
         <div>
           <div style="font-weight:500">${l.tech} — ${l.customer}${stale?` <span class="badge bdanger">⚠ ${age} months old — review for dismissal</span>`:''}</div>
-          <div style="font-size:.7rem;color:#999;font-family:'DM Mono',monospace">Job #${l.job} · ${l.month}</div>
+          <div style="font-size:.7rem;color:#999;font-family:'DM Mono',monospace">Job #${l.job||'—'} · ${l.month}${l.location?` · ${l.location}`:''}</div>
+          ${!l.location?`<div style="margin-top:3px"><input type="text" placeholder="Add location — helps tell apart customers with multiple sites" style="font-size:.68rem;padding:2px 6px;border:1px solid #ddd;border-radius:4px;width:260px" onchange="setCommLeadLocation('${l.id}',this.value)"></div>`:''}
         </div>
         <div style="display:flex;gap:4px;align-items:center">
         <select style="font-size:.78rem;padding:4px 6px;border:1px solid #ddd;border-radius:6px;background:#fff;font-family:inherit"
@@ -1732,13 +1837,15 @@ function rCommLeads(){
 
   <div class="card">
     <div class="ctitle">Add new commercial lead</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 130px auto;gap:8px;align-items:end">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 130px auto;gap:8px;align-items:end">
       <div><label style="font-size:.7rem;color:#999;display:block;margin-bottom:3px">Tech</label>
         <select id="cl-tech" style="width:100%;font-size:.8rem;padding:6px 8px;border:1px solid #ddd;border-radius:7px;background:#fff;font-family:inherit">
           ${['Nick Scarpa','Javi Vazquez','Ray Lambert','Kyle Freeman','Stuart Akel'].map(t=>`<option>${t}</option>`).join('')}
         </select></div>
       <div><label style="font-size:.7rem;color:#999;display:block;margin-bottom:3px">Customer / Business</label>
         <input type="text" id="cl-cust" placeholder="e.g. Ocean Lakes Resort" style="width:100%;font-size:.8rem;padding:6px 8px;border:1px solid #ddd;border-radius:7px;background:#fff;font-family:inherit"></div>
+      <div><label style="font-size:.7rem;color:#999;display:block;margin-bottom:3px">Location</label>
+        <input type="text" id="cl-loc" placeholder="e.g. 501 21st Ave N" style="width:100%;font-size:.8rem;padding:6px 8px;border:1px solid #ddd;border-radius:7px;background:#fff;font-family:inherit"></div>
       <div><label style="font-size:.7rem;color:#999;display:block;margin-bottom:3px">Job Number</label>
         <input type="text" id="cl-job" placeholder="e.g. 158354782" style="width:100%;font-size:.8rem;padding:6px 8px;border:1px solid #ddd;border-radius:7px;background:#fff;font-family:inherit"></div>
       <div><label style="font-size:.7rem;color:#999;display:block;margin-bottom:3px">&nbsp;</label>
@@ -1777,7 +1884,7 @@ async function updateCommLead(id, status){
     lead.spiff=0; lead.payMonth='';
   }
   rCommLeads();
-  await sAppend('commlead_updates',[[MONTH,id,lead.tech,lead.customer,lead.job,status,lead.spiff,lead.payMonth,new Date().toISOString(),'','']]);
+  await sAppend('commlead_updates',[[MONTH,id,lead.tech,lead.customer,lead.job,status,lead.spiff,lead.payMonth,new Date().toISOString(),'','',lead.location||'']]);
 }
 
 // Separate from the status progression above — for a lead that's being closed out WITHOUT
@@ -1799,7 +1906,7 @@ async function dismissCommLead(id){
   lead.status='Dismissed';lead.disposition=disp;lead.note=note;lead.spiff=0;lead.payMonth='';
   toast('Lead dismissed — will not carry forward again.');
   rCommLeads();
-  await sAppend('commlead_updates',[[MONTH,id,lead.tech,lead.customer,lead.job,lead.status,lead.spiff,lead.payMonth,new Date().toISOString(),disp,note]]);
+  await sAppend('commlead_updates',[[MONTH,id,lead.tech,lead.customer,lead.job,lead.status,lead.spiff,lead.payMonth,new Date().toISOString(),disp,note,lead.location||'']]);
 }
 
 async function undoCommLead(id){
@@ -1819,44 +1926,68 @@ async function undoCommLead(id){
   }
   toast('Status reverted.');
   rCommLeads();
-  await sAppend('commlead_updates',[[MONTH,id,lead.tech,lead.customer,lead.job,lead.status,lead.spiff,lead.payMonth,new Date().toISOString(),'','']]);
+  await sAppend('commlead_updates',[[MONTH,id,lead.tech,lead.customer,lead.job,lead.status,lead.spiff,lead.payMonth,new Date().toISOString(),'','',lead.location||'']]);
+}
+
+// Location has no source on the ServiceTitan Lead Request Report (only a customer name), so an
+// auto-detected lead is created without one — this backfills it once a manager knows it, which
+// is exactly the "customer with multiple locations" case Billy flagged as making the log
+// unusable (job number alone doesn't help either, since most auto-detected leads have none).
+async function setCommLeadLocation(id,value){
+  if(guardClosed())return;
+  const lead=S.commLeads.find(l=>l.id===id);
+  const loc=(value||'').trim();
+  if(!lead||!loc)return;
+  lead.location=loc;
+  rCommLeads();
+  await sAppend('commlead_updates',[[MONTH,id,lead.tech,lead.customer,lead.job,lead.status,lead.spiff,lead.payMonth,new Date().toISOString(),lead.disposition||'',lead.note||'',loc]]);
+  toast('Location saved.');
 }
 
 async function addCommLead(){
   if(guardClosed())return;
   const tech=document.getElementById('cl-tech').value;
   const cust=document.getElementById('cl-cust').value.trim();
+  const loc=document.getElementById('cl-loc').value.trim();
   const job=document.getElementById('cl-job').value.trim();
   if(!cust||!job){toast('Please enter customer and job number.');return;}
   const id='cl_'+Date.now();
-  S.commLeads.push({id,month:MONTH,tech,job,customer:cust,status:'Pending',spiff:0,payMonth:'',paid:false});
+  S.commLeads.push({id,month:MONTH,tech,job,customer:cust,location:loc,status:'Pending',spiff:0,payMonth:'',paid:false});
   document.getElementById('cl-cust').value='';
+  document.getElementById('cl-loc').value='';
   document.getElementById('cl-job').value='';
   // Write to commlead_updates (not flags — that was a bug: leads never persisted, so a new
   // lead added here would silently vanish on reload).
-  await sAppend('commlead_updates',[[MONTH,id,tech,cust,job,'Pending',0,'',new Date().toISOString(),'','']]);
+  await sAppend('commlead_updates',[[MONTH,id,tech,cust,job,'Pending',0,'',new Date().toISOString(),'','',loc]]);
   toast('Commercial lead added to log.');
   rCommLeads();
 }
 
 function rFlags(mgr){
-  const v=vw();const flags=S.flags[mgr];
+  const v=vw();const flags=S.flags[mgr]||[];
   const open=flags.filter(f=>!f.resolved).length;
   const cf=S.carryForward.filter(c=>c.emp&&(S.emps[mgr]||[]).find(e=>e.name===c.emp));
+  const cfPending=cf.filter(c=>!c.resolved).length;
   v.innerHTML=`
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
     <div style="font-size:1rem;font-weight:600">Flags to resolve</div>
-    <span class="badge bwarn">${open} open</span>
+    <span style="display:flex;gap:6px">
+      <span class="badge bwarn">${open} flag${open!==1?'s':''} open</span>
+      ${cf.length?`<span class="badge binfo">${cfPending} carry-forward pending</span>`:''}
+    </span>
   </div>
   ${cf.length?`<div class="card" style="border-left:3px solid #3b82f6;margin-bottom:1rem">
     <div class="ctitle">Carried forward from ${PREV_M}</div>
+    <div style="font-size:.75rem;color:#999;margin-bottom:.5rem">Every pending item here still needs a look each month — it doesn't stop showing up just because nothing changed. Use "Mark reviewed" once you've checked one and decided it's still genuinely pending, so you (or the next manager) can tell at a glance which ones were already looked at this month vs. brand new.</div>
     ${cf.map(c=>{
       const age=monthsAgo(c.fromMonth);
       const stale=!c.resolved&&age!==null&&age>=4;
       return `<div class="ri" style="${c.resolved?'opacity:.5':''};align-items:flex-start">
       <div class="ril">
         <span class="cf-badge">Carry forward</span>
+        ${c.manual?`<span class="badge bgray" style="margin-left:4px">Manually added</span>`:''}
         ${stale?`<span class="badge bdanger" style="margin-left:4px">⚠ ${age} months old — review for dismissal</span>`:''}
+        ${(!c.resolved&&c.reviewedThisMonth)?`<span class="badge bok" style="margin-left:4px">✓ Reviewed for ${MONTH}</span>`:''}
         <span style="font-size:.82rem;margin-top:3px;font-weight:500">${c.emp} — ${c.type}</span>
         <span class="risub">${c.ref} · ${c.reason}</span>
         ${c.resolved?`<span class="risub" style="color:${c.disposition==='paid'?'#065f46':'#991b1b'}">${c.disposition==='paid'?'✓ Paid this month':'✕ Marked dead — '+c.note}</span>`:''}
@@ -1865,7 +1996,8 @@ function rFlags(mgr){
         <span style="font-weight:600;font-family:'DM Mono',monospace">${fp(c.amount)}</span>
         ${c.resolved?
           `<button onclick="undoCarryForward('${mgr}','${c.id}')" style="font-size:.65rem;padding:2px 8px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;color:#666">Undo</button>`
-          :`<select id="cf-disp-${c.id}" style="font-size:.7rem;padding:3px 6px;border:1px solid #ddd;border-radius:6px;background:#fff">
+          :`${!c.reviewedThisMonth?`<button class="btn bsm" onclick="reviewCarryForward('${mgr}','${c.id}')">Mark reviewed — still pending</button>`:''}
+            <select id="cf-disp-${c.id}" style="font-size:.7rem;padding:3px 6px;border:1px solid #ddd;border-radius:6px;background:#fff">
               <option value="">Select…</option>
               <option value="paid">Pay this month</option>
               <option value="dead">Mark dead — didn't convert</option>
@@ -1899,7 +2031,7 @@ function rFlags(mgr){
         <button class="btn btnp bsm" onclick="resolveFlag('${mgr}','${f.id}')">Resolve</button>
       </div>`}
   </div>`).join('')}
-  ${!flags.length?`<div class="card" style="text-align:center;color:#999;font-size:.85rem;padding:2rem">No flags for your team this month.</div>`:''}`;
+  ${!flags.length&&!cf.length?`<div class="card" style="text-align:center;color:#999;font-size:.85rem;padding:2rem">No flags or pending carry-forward items for your team this month.</div>`:''}`;
 }
 function renderJayJobs(){
   const list=document.getElementById('jay-jobs-list');
@@ -2019,6 +2151,23 @@ async function undoFlag(mgr,id){
   if(btn){btn.textContent=`1 flag needs resolution`;btn.style.background='#ccc';btn.style.cursor='not-allowed';}
 }
 
+// Shared by "Pay next month" (on a flag) and "Track as pending payout" (on a note) — both are
+// the same underlying need: a dollar amount that isn't payable yet but must not be forgotten.
+// Writes to `manual_carry_forward` (auto-created by the Apps Script backend on first use) and
+// pushes straight into S.carryForward so it shows up immediately in Flags to Resolve, using the
+// exact same paid/dead/reviewed machinery every other carry-forward item already has.
+// Persists past this month too: process_month.py's compute_prior_carry_forward() also reads this
+// tab and folds any still-unresolved row into next month's real res_carry_forward baseline — see
+// that function for why matching is done by (emp,type) there and in loadSheets() below, not by
+// this row's own id (which gets superseded by a content-hashed id once Python absorbs it).
+async function addManualCarryForward(mgr,emp,type,amount,dept,reason){
+  const id='mcf_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+  const cf={id,fromMonth:MONTH,emp,ref:'',type,amount,dept,reason,resolved:false,disposition:'',note:'',manual:true};
+  S.carryForward.push(cf);
+  await sAppend('manual_carry_forward',[[MONTH,id,mgr,emp,type,amount,dept,reason,S.role,new Date().toISOString()]]);
+  return cf;
+}
+
 async function resolveFlag(mgr,id){
   if(guardClosed())return;
   const f=S.flags[mgr].find(x=>x.id===id);
@@ -2026,9 +2175,20 @@ async function resolveFlag(mgr,id){
   if(f.disp==='Not paid'&&!f.note.trim()){toast("Please add a note explaining why.");return;}
   f.resolved=true;
   await sAppend('flags',[[MONTH,mgr,id,f.sev,f.sev,f.emp,f.ref,'',f.detail,f.disp,f.note,'true',new Date().toISOString()]]);
-  if(f.disp==='Pay next month')
-    await sAppend('carry_forward',[[MONTH,NEXT_M,f.emp,f.ref,'',f.title,'','',f.note||f.detail,'pending','']]);
-  toast(f.disp==='Pay next month'?'Carried forward to June.':'Flag resolved.');
+  if(f.disp==='Pay next month'){
+    const amountStr=prompt(`Amount to carry forward for ${f.emp} — ${f.title}?`);
+    const amount=parseFloat(amountStr)||0;
+    if(amount<=0){toast('No amount entered — this will NOT be tracked as a pending payout. Resolve it again to fix.');}
+    else{
+      // Guess a department from the flag's own detected roster membership so this doesn't
+      // default to whatever the manual-add dropdown happened to show first — a manager can
+      // still correct it from the carry-forward item once it shows up below.
+      const isCH=ROSTER.chTechs.has(f.emp);
+      const dept=isCH?'CH Install':'MB Install Residential';
+      await addManualCarryForward(mgr,f.emp,f.title,amount,dept,f.note||f.detail);
+    }
+  }
+  toast(f.disp==='Pay next month'?`Carried forward to ${NEXT_M} — enter the amount from the Flags to Resolve page.`:'Flag resolved.');
   rFlags(mgr);
   const btn=document.querySelector('button[onclick="submitWorkbook()"]');
   if(btn&&S.flags[mgr].filter(x=>!x.resolved).length===0){btn.textContent='Submit to Billy';btn.style.background='#1a1a1a';btn.style.cursor='pointer';}
@@ -2059,6 +2219,21 @@ async function undoCarryForward(mgr,id){
   c.resolved=false; c.disposition=''; c.note='';
   await sAppend('carry_forward_resolutions',[[MONTH,mgr,id,c.emp,c.ref,c.type,c.amount,'','',new Date().toISOString()]]);
   toast('Reopened — will carry forward again next month.');
+  rFlags(mgr);
+}
+
+// "Reviewed" isn't a real resolution (money doesn't move, and it doesn't stop the item carrying
+// forward) — it's purely a per-month marker so a manager can tell "I already looked at this one
+// and confirmed it's still genuinely pending" apart from "this just showed up, never seen it."
+// Piggybacks on the same carry_forward_resolutions log as paid/dead (loadSheets() distinguishes
+// the 'reviewed' disposition and does NOT set resolved=true for it) so it needs no new tab.
+async function reviewCarryForward(mgr,id){
+  if(guardClosed())return;
+  const c=S.carryForward.find(x=>x.id===id);
+  if(!c) return;
+  c.reviewedThisMonth=true;
+  await sAppend('carry_forward_resolutions',[[MONTH,mgr,id,c.emp,c.ref,c.type,c.amount,'reviewed','',new Date().toISOString()]]);
+  toast(`Marked reviewed for ${MONTH} — still pending.`);
   rFlags(mgr);
 }
 

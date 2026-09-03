@@ -24,8 +24,9 @@ def js(s):
 
 
 def emp_line(e):
+    dups_js = "[" + ",".join(js(d) for d in (e.get("dups") or [])) + "]"
     return (f"{{name:{js(e['name'])}, svc:{e['svc']:g}, ins:{e['ins']:g}, plb:{e['plb']:g}, "
-            f"com:{e['com']:g}, chs:{e['chs']:g}, chi:{e['chi']:g}, dups:[]}}")
+            f"com:{e['com']:g}, chs:{e['chs']:g}, chi:{e['chi']:g}, dups:{dups_js}}}")
 
 
 def flag_line(f):
@@ -43,7 +44,7 @@ def spiff_detail_line(d):
 
 def comm_lead_line(l):
     return (f"{{id:{js(l['id'])},month:{js(l['month'])},tech:{js(l['tech'])},job:{js(l['job'])},"
-            f"customer:{js(l['customer'])},status:{js(l['status'])},spiff:{l['spiff']:g},"
+            f"customer:{js(l['customer'])},location:{js(l.get('location', ''))},status:{js(l['status'])},spiff:{l['spiff']:g},"
             f"payMonth:{js(l['payMonth'])},paid:{'true' if l['paid'] else 'false'}}}")
 
 
@@ -60,7 +61,10 @@ lines.append("  notes:[],")  # must exist before loadSheets()' replay resolves â
 lines.append("  runStatus:{month:null,status:null,message:'',at:null},")
 lines.append("  submissions:{steven:'not_started',caleb:'not_started'},")
 lines.append("  pushback:{steven:null,caleb:null},")
-lines.append("  revenue:[")
+lines.append("  revenue:[")  # goal is just a fallback default now â€” index.html's loadSheets() overwrites
+# it from revenue_actuals (column C) once a manager has entered that month's real goal via the
+# now-editable Goal column on the Revenue & Budgets page (fixed 2026-09; previously never read
+# back at all, so an edited goal always silently reverted to whatever's hardcoded here).
 lines.append("    {dept:'MB Service-Residential',goal:123437,actual:null,se:true},")
 lines.append("    {dept:'MB Service-Commercial', goal:216964,actual:null,se:true},")
 lines.append("    {dept:'MB Plumbing',           goal:69934, actual:null,se:true},")
@@ -90,9 +94,9 @@ for mgr in ("steven", "caleb"):
 lines.append("  },")
 
 lines.append("  flags:{")
-for mgr in ("steven", "caleb"):
+for mgr in ("steven", "caleb", "jenny"):
     lines.append(f"    {mgr}:[")
-    for f in r["flags"][mgr]:
+    for f in r["flags"].get(mgr, []):
         lines.append(f"      {flag_line(f)},")
     lines.append("    ],")
 lines.append("  },")

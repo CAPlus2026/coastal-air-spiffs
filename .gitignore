@@ -5,3 +5,4 @@ __pycache__/
 *.xlsx
 *.pdf
 full_S_block.js
+.pytest_cache/

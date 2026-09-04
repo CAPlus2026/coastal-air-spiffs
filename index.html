@@ -558,8 +558,18 @@ function jayCommissionTotal(){return S.jayJobs.reduce((a,j)=>a+jayJobAmt(j),0);}
 function payOutCarryForward(mgr,c){
   // Actually add the confirmed amount into this month's payout — otherwise
   // "Mark paid" would just dismiss the reminder without paying anyone.
-  const emp=S.emps[mgr].find(e=>e.name===c.emp);
-  if(!emp) return;
+  // BUG FOUND 2026-09-04 (via a test, not a bug report — Jim LeBlanc currently has $150 in real
+  // pending carry-forward with no other spiff activity this month, so no S.emps entry at all):
+  // `if(!emp) return` meant marking his carry-forward "paid" would flip the badge to "✓ Paid this
+  // month" while silently adding $0 — an employee whose ONLY current-month activity is a
+  // carry-forward has no S.emps entry to find in the first place, since that list only ever
+  // gets populated from MPF/accessory/membership lines. Now creates one instead of giving up.
+  if(!S.emps[mgr])S.emps[mgr]=[];
+  let emp=S.emps[mgr].find(e=>e.name===c.emp);
+  if(!emp){
+    emp={name:c.emp,svc:0,ins:0,plb:0,com:0,chs:0,chi:0,dups:[]};
+    S.emps[mgr].push(emp);
+  }
   const col=deptToCol(c.dept);
   emp[col]=(emp[col]||0)+c.amount;
   if(!S.spiffDetail[mgr])S.spiffDetail[mgr]={};
@@ -587,8 +597,14 @@ function reversePayoutCarryForward(mgr,c){
 // Accounting Output. Commercial techs are always on Steven's roster today, so mgr is always
 // 'steven', but this resolves it generically via mgrForEmployee() rather than hardcoding that.
 function payOutCommLead(mgr,l){
-  const emp=S.emps[mgr]&&S.emps[mgr].find(e=>e.name===l.tech);
-  if(!emp) return;
+  // Same fix as payOutCarryForward above, same reasoning — a tech whose only activity this
+  // month is a newly-sold commercial lead has no other reason to already be in S.emps[mgr].
+  if(!S.emps[mgr])S.emps[mgr]=[];
+  let emp=S.emps[mgr].find(e=>e.name===l.tech);
+  if(!emp){
+    emp={name:l.tech,svc:0,ins:0,plb:0,com:0,chs:0,chi:0,dups:[]};
+    S.emps[mgr].push(emp);
+  }
   emp.com=(emp.com||0)+l.spiff;
   if(!S.spiffDetail[mgr])S.spiffDetail[mgr]={};
   if(!S.spiffDetail[mgr][l.tech])S.spiffDetail[mgr][l.tech]=[];
@@ -981,6 +997,18 @@ function mgrForEmployee(name){
   if(S.emps.steven.some(e=>e.name===name)) return 'steven';
   if(S.emps.caleb.some(e=>e.name===name)) return 'caleb';
   if(S.officeMems.some(m=>m.name===name)) return 'jenny';
+  // BUG FOUND 2026-09-04: S.emps only ever contains people with OTHER spiff activity already
+  // this month (MPF/accessory/membership lines) — a tech whose only current-month event is a
+  // newly-sold commercial lead has no S.emps entry yet, so this returned null and
+  // updateCommLead()'s `if(mgr){payOutCommLead(...)}` guard silently skipped the payout entirely
+  // while the UI still showed "Sold & Completed" as if it had been paid. Confirmed live: Kyle
+  // Freeman and Javi Vazquez (both real, currently-active commercial techs) have zero S.emps
+  // entries this month despite having pending commercial leads. Falling back to the roster (which
+  // persists every known person regardless of this month's activity) fixes it for anyone on it;
+  // payOutCarryForward/payOutCommLead separately create the missing S.emps entry once a manager
+  // actually calls them, but resolving the manager correctly has to happen first.
+  const onRoster=(ROSTER.rows||[]).find(r=>r.name===name);
+  if(onRoster) return onRoster.team==='caleb'?'caleb':(onRoster.role==='office'?'jenny':'steven');
   return null;
 }
 // Convenience only — pre-fills the Team select when a typed name matches a known roster

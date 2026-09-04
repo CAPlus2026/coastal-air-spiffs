@@ -82,16 +82,31 @@ class ServiceTitanClient:
             json=body,
         )
 
-    def get_report_data_all_pages(self, category, report_id, parameters=None, page_size=500):
-        """Fetch every page of a report's data and return the combined field/data structure."""
+    def get_report_data_all_pages(self, category, report_id, parameters=None, page_size=500, max_pages=200):
+        """Fetch every page of a report's data and return the combined field/data structure.
+
+        max_pages is a hard cap (200 * 500 = 100k rows), not a tuning knob — it exists so a
+        malformed/missing parameter (e.g. a report queried without a From/To date range) turns
+        into a clear error instead of an unbounded loop. Found 2026-09-04: an ad hoc smoke test
+        of a report omitted its date-range params and this looped silently for 20+ minutes with
+        no progress output before being killed by hand; the GitHub Actions workflow that calls
+        this has no job-level timeout either, so in CI the same mistake would run for hours."""
         page = 1
         first = self.get_report_data(category, report_id, parameters, page=page, page_size=page_size)
         fields = first.get("fields", [])
         rows = list(first.get("data", []))
         has_more = first.get("hasMore", False)
+        print(f"    page {page}: {len(rows)} rows so far" + (" (more...)" if has_more else ""))
         while has_more:
+            if page >= max_pages:
+                raise RuntimeError(
+                    f"get_report_data_all_pages: hit max_pages={max_pages} for report {report_id} "
+                    f"({len(rows)} rows fetched) — likely a missing/wrong filter parameter rather "
+                    f"than a genuinely huge report. Check `parameters` (e.g. From/To dates)."
+                )
             page += 1
             nxt = self.get_report_data(category, report_id, parameters, page=page, page_size=page_size)
             rows.extend(nxt.get("data", []))
             has_more = nxt.get("hasMore", False)
+            print(f"    page {page}: {len(rows)} rows so far" + (" (more...)" if has_more else ""))
         return fields, rows

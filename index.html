@@ -2098,7 +2098,12 @@ async function flagSpiffLine(mgr,empName,idx){
   // this month (which regenerates spiffDetail fresh from ServiceTitan) can still find the exact
   // same line by content instead of by array position, which shifts if the line count/order
   // changes between runs. idx is kept as a fallback for rows written before this existed.
-  await sAppend('spiff_corrections',[[MONTH,mgr,empName,String(idx),'flagged',reason,new Date().toISOString(),detail[idx].lineId||'']]);
+  // job/customer/type/item/amount (further trailing columns, added 2026-09-04) are the line's own
+  // natural-key fields — without them, a FUTURE change to how lineId gets computed would leave
+  // this row with nothing to re-match against except the unsafe positional idx (see
+  // audit_orphans.py / migrate_log_ids.py, which rely on these columns to migrate legacy rows).
+  const dline=detail[idx];
+  await sAppend('spiff_corrections',[[MONTH,mgr,empName,String(idx),'flagged',reason,new Date().toISOString(),dline.lineId||'',dline.job||'',dline.customer||'',dline.type||'',dline.item||'',dline.spiff||'']]);
   toast('Line flagged — excluded from totals. Noted for payroll reversal.');
   rTeam(mgr);
 }
@@ -2116,7 +2121,8 @@ async function unflagSpiffLine(mgr,empName,idx){
     const col=spiffFieldFor(mgr,empName,detail[idx].type);
     emp[col]=(emp[col]||0)+wasSpiff;
   }
-  await sAppend('spiff_corrections',[[MONTH,mgr,empName,String(idx),'unflagged','',new Date().toISOString(),detail[idx].lineId||'']]);
+  const dline2=detail[idx];
+  await sAppend('spiff_corrections',[[MONTH,mgr,empName,String(idx),'unflagged','',new Date().toISOString(),dline2.lineId||'',dline2.job||'',dline2.customer||'',dline2.type||'',dline2.item||'',dline2.spiff||'']]);
   toast('Flag removed — spiff restored to total.');
   rTeam(mgr);
 }

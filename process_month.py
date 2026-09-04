@@ -203,15 +203,31 @@ def norm_month(v):
     return str(v)
 
 
-def sheet_get(sheet_name, timeout=20):
-    """GET a full Sheet tab via the Apps Script backend. Returns [] on any failure — every
-    caller here is a best-effort seed, not something that should ever crash a run."""
+class SheetFetchError(RuntimeError):
+    """Raised by sheet_get(..., required=True) when a Sheet read fails. Used for tabs where an
+    empty/failed read must NOT be treated as "genuinely nothing pending" — carry-forward/comm-lead
+    baselines, resolution logs, and the payout ledger all get written back via replaceMonth later
+    in the run, which would otherwise turn one transient Apps Script hiccup into a permanent,
+    silent erasure of the entire backlog (found 2026-09-04, after months of "resolved" items
+    mysteriously reappearing — this fail-open behavior is the leading suspect for that pattern,
+    separate from and in addition to the one-off id-migration incident diagnosed the same day)."""
+
+
+def sheet_get(sheet_name, timeout=20, required=False):
+    """GET a full Sheet tab via the Apps Script backend.
+
+    By default (required=False) returns [] on any failure — fine for tabs where "couldn't read
+    it" and "genuinely empty" are safe to treat the same way. Pass required=True for any tab
+    where that's NOT true (see SheetFetchError above) — this raises instead of returning [],
+    so a caller can't accidentally proceed as if a failed read meant "nothing there"."""
     try:
         resp = requests.get(APPS_SCRIPT_URL, params={"action": "get", "sheet": sheet_name, "key": SHARED_KEY},
                              timeout=timeout)
         resp.raise_for_status()
         return resp.json().get("values") or []
     except Exception as e:
+        if required:
+            raise SheetFetchError(f"Required read of '{sheet_name}' failed: {e}") from e
         print(f"  (couldn't fetch {sheet_name}: {e})")
         return []
 
@@ -232,10 +248,10 @@ def sheet_write_table(sheet_name, headers, rows, mode="replaceMonth", month=None
         return None
 
 
-def fetch_disposition_map(sheet_name, id_col, disposition_col, valid_dispositions=("paid", "dead")):
+def fetch_disposition_map(sheet_name, id_col, disposition_col, valid_dispositions=("paid", "dead"), required=False):
     """Generic last-row-wins reader for an append-only resolutions log. Returns {id: disposition}."""
     resolved = {}
-    for row in sheet_get(sheet_name):
+    for row in sheet_get(sheet_name, required=required):
         if len(row) <= max(id_col, disposition_col):
             continue
         rid, disp = row[id_col], row[disposition_col]
@@ -252,9 +268,9 @@ def compute_prior_carry_forward():
     carry_forward_resolutions (what's been resolved since). Replaces the hand-maintained
     snapshot that used to require manually diffing the live app before every run — the single
     most error-prone step in this whole pipeline historically."""
-    baseline = sheet_get("res_carry_forward")
+    baseline = sheet_get("res_carry_forward", required=True)
     prev_rows = [r for r in baseline if len(r) >= 9 and norm_month(r[0]) == PREV_LABEL]
-    resolved = fetch_disposition_map("carry_forward_resolutions", id_col=2, disposition_col=7)
+    resolved = fetch_disposition_map("carry_forward_resolutions", id_col=2, disposition_col=7, required=True)
     out = []
     for r in prev_rows:
         _month, id_, from_month, emp, ref, type_, amount, dept, reason = r[:9]
@@ -274,8 +290,11 @@ def compute_prior_carry_forward():
     # vanish the next time this pipeline runs, since nothing here knew it existed. Folding it in
     # here gives it a real content-hashed id and durable multi-month tracking exactly like every
     # auto-generated carry-forward item, from the next run onward.
+    # (emp, type) of every item already represented above (from the res_carry_forward baseline) —
+    # needed for the dedup check below.
+    already_carried = {(o["emp"], o["type"]) for o in out}
     latest_manual = {}
-    for r in sheet_get("manual_carry_forward"):
+    for r in sheet_get("manual_carry_forward", required=True):
         if len(r) < 8 or not r[1] or not r[3]:
             continue
         month, id_, _mgr, emp, type_, amount, dept, reason = r[:8]
@@ -283,6 +302,17 @@ def compute_prior_carry_forward():
                                "reason": reason, "fromMonth": norm_month(month)}
     for id_, m in latest_manual.items():
         if resolved.get(id_) in ("paid", "dead"):
+            continue
+        # BUG FOUND 2026-09-04 (introduced same day this whole block was added): once one of these
+        # gets absorbed into res_carry_forward by a run (and shows up in `out` above via the
+        # normal prev_rows path, with a fresh content-hashed id), this loop kept re-adding the
+        # SAME item again from its original manual_carry_forward creation row every subsequent
+        # month — that row never goes away (append-only), and this had no check against what's
+        # already represented. Each recurrence minted a new numeric-suffixed id
+        # (make_id_factory's collision handling) so the duplicate was invisible as an "exact
+        # repeat" but very visible as an extra $-amount row. Matching on (emp, type) mirrors the
+        # same rule index.html's client-side replay already uses for the identical reason.
+        if (m["emp"], m["type"]) in already_carried:
             continue
         out.append({**m, "id": id_, "ref": "", "lnk": ""})
     return out
@@ -292,10 +322,10 @@ def compute_carried_leads():
     """Same idea for the commercial lead rolling log — reads res_comm_leads (last month's
     computed output) + commlead_updates (resolutions since, not month-filtered since an update
     can reference a lead first seeded many months back), drops anything paid or dismissed."""
-    baseline = sheet_get("res_comm_leads")
+    baseline = sheet_get("res_comm_leads", required=True)
     prev_rows = [r for r in baseline if len(r) >= 10 and norm_month(r[0]) == PREV_LABEL]
     latest_status = {}
-    for r in sheet_get("commlead_updates"):
+    for r in sheet_get("commlead_updates", required=True):
         if len(r) < 6:
             continue
         _month, id_, tech, customer, job, status = r[:6]
@@ -330,7 +360,7 @@ def load_roster():
     # appending a new row for that name, not mutating the old one, so this dedup step is what
     # makes an edit actually take effect instead of leaving the person in two states at once.
     latest = {}
-    for r in sheet_get("roster"):
+    for r in sheet_get("roster", required=True):
         if len(r) < 6 or not r[0]:
             continue
         name, team, role, eligible, active, reason = r[:6]
@@ -629,27 +659,13 @@ def main():
     prior_carry_forward = compute_prior_carry_forward()
     # Manual resolutions from the app (Steven/Caleb marking a carry-forward item "paid" or "dead" directly) —
     # respect these so a dead lead doesn't keep rolling forward forever, and a manually-paid one doesn't reappear.
-    def fetch_carry_forward_resolutions():
-        import requests as _requests
-        try:
-            resp = _requests.get(APPS_SCRIPT_URL, params={"action": "get", "sheet": "carry_forward_resolutions", "key": SHARED_KEY}, timeout=10)
-            resp.raise_for_status()
-            data = resp.json().get("values") or []
-        except Exception as e:
-            print(f"  (couldn't fetch carry_forward_resolutions — treating as none: {e})")
-            return {}
-        resolved = {}
-        for row in data:
-            if len(row) < 8:
-                continue
-            _month, _mgr, cf_id, emp, ref, type_, amount, disposition = row[:8]
-            if disposition in ("paid", "dead"):
-                resolved[cf_id] = disposition
-            elif cf_id in resolved:
-                del resolved[cf_id]  # undone
-        return resolved
-
-    manually_resolved = fetch_carry_forward_resolutions()
+    # This used to be its own copy-pasted nested function with a silent-failure try/except
+    # (found 2026-09-04, alongside the identical duplicate `fetch_ledger()` a bit further down) —
+    # consolidated to reuse fetch_disposition_map (already called with these exact same
+    # arguments inside compute_prior_carry_forward()) so there's one implementation instead of
+    # two that can silently drift, and required=True so a transient fetch failure here aborts the
+    # run instead of quietly treating every carry-forward item as unresolved.
+    manually_resolved = fetch_disposition_map("carry_forward_resolutions", id_col=2, disposition_col=7, required=True)
 
     carry_forward_out = []
     resolved_keys = set()
@@ -669,7 +685,12 @@ def main():
         carry_forward_out.append({
             "id": new_cf_id(cf["emp"], cf["ref"]), "fromMonth": cf["fromMonth"], "emp": cf["emp"], "ref": cf["ref"],
             "type": cf["type"], "amount": cf["amount"], "dept": cf["dept"],
-            "reason": "Stage 1 paid, still pending sold/installed/paid confirmation — carried forward again.",
+            # A manual item (from a note or a "Pay next month" flag) carries its own real `reason`
+            # through compute_prior_carry_forward() — use it if present instead of clobbering it
+            # with the generic Stage-2 explanation below, which was a bug (found 2026-09-04):
+            # every manually-tracked item's actual explanation was silently replaced with text
+            # about "Stage 1" that often didn't even apply to it.
+            "reason": cf.get("reason") or "Stage 1 paid, still pending sold/installed/paid confirmation — carried forward again.",
             "resolved": False, "disposition": "", "note": "",
         })
 
@@ -760,16 +781,26 @@ def main():
 
     def build_ledger_entries():
         entries = []
-        for mgr_ in ("steven", "caleb"):
-            for emp_name, lines in spiff_detail.get(mgr_, {}).items():
-                for line in lines:
-                    entries.append({
-                        "month": MONTH_LABEL, "mgr": mgr_, "employee": emp_name,
-                        "job": line.get("job", ""), "customer": line.get("customer", ""),
-                        "type": line.get("type", ""), "item": line.get("item", ""),
-                        "amount": line.get("spiff", 0),
-                        "source": "auto-added" if line.get("note") else "MPF",
-                    })
+        # BUG FOUND 2026-09-04: this used to do `spiff_detail.get(mgr_, {})` for mgr_ in
+        # ("steven","caleb") — but spiff_detail is keyed by EMPLOYEE NAME (see `spiff_detail =
+        # defaultdict(list)` + `spiff_detail[name].append(...)` above), never by manager. That
+        # lookup always returned {} and silently produced ZERO technician ledger entries for as
+        # long as this function has existed — meaning cross-month duplicate-payment detection
+        # for techs (the entire point of this ledger) has never actually run. Confirmed via a
+        # real run: the ledger's 40 written entries were 100% Rich Smith + office membership,
+        # zero tech lines. Fixed by iterating spiff_detail directly and deriving mgr the same way
+        # the final result["spiffDetail"] split does (team_of/CALEB_ROSTER), so the two paths
+        # can't drift apart again.
+        for emp_name, lines in spiff_detail.items():
+            mgr_ = team_of(emp_name)
+            for line in lines:
+                entries.append({
+                    "month": MONTH_LABEL, "mgr": mgr_, "employee": emp_name,
+                    "job": line.get("job", ""), "customer": line.get("customer", ""),
+                    "type": line.get("type", ""), "item": line.get("item", ""),
+                    "amount": line.get("spiff", 0),
+                    "source": "auto-added" if line.get("note") else "MPF",
+                })
         for lead in comm_leads_out:
             if lead.get("paid"):
                 entries.append({
@@ -799,18 +830,12 @@ def main():
                 })
         return entries
 
-    def fetch_ledger():
-        import requests as _requests
-        try:
-            resp = _requests.get(APPS_SCRIPT_URL, params={"action": "get", "sheet": "spiff_ledger", "key": SHARED_KEY}, timeout=15)
-            resp.raise_for_status()
-            return resp.json().get("values") or []
-        except Exception as e:
-            print(f"  (couldn't fetch spiff_ledger — skipping duplicate check: {e})")
-            return []
-
+    # Was its own copy-pasted nested function with a silent-failure try/except (found 2026-09-04,
+    # same pattern as fetch_carry_forward_resolutions() above) — consolidated to sheet_get(...,
+    # required=True) so a transient fetch failure aborts the run instead of silently disabling
+    # every cross-month duplicate-payment check with only a print statement to show for it.
     ledger_entries = build_ledger_entries()
-    prior_ledger = fetch_ledger()
+    prior_ledger = sheet_get("spiff_ledger", required=True)
     prior_job_keys = set()          # (employee, job) already paid in a prior month — same-tech repeat
     prior_owner_by_job = defaultdict(set)      # job -> {employees} paid in a prior month — cross-tech
     prior_owner_by_custkey = defaultdict(set)  # last-name key -> {employees}, only for job-less entries

@@ -18,6 +18,12 @@ concurrency:
 jobs:
   process:
     runs-on: ubuntu-latest
+    # Without this, the default is 6 HOURS — found 2026-09-04 after an ad hoc ServiceTitan report
+    # query with a missing filter parameter looped for 20+ minutes with no cap before being killed
+    # by hand (see get_report_data_all_pages's max_pages guard in st_client.py, which now also
+    # catches this at the source). This is the second layer: a normal run finishes in a couple of
+    # minutes, so 15 is generous headroom, not a tight budget.
+    timeout-minutes: 15
     permissions:
       contents: write
     steps:

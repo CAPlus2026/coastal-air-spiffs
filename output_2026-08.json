@@ -30,7 +30,9 @@
         "com": 0,
         "chs": 0,
         "chi": 0,
-        "dups": []
+        "dups": [
+          "harris"
+        ]
       },
       {
         "name": "Ray Lambert",
@@ -97,7 +99,19 @@
     ]
   },
   "flags": {
-    "steven": [],
+    "steven": [
+      {
+        "id": "flag_578851ee74",
+        "sev": "red",
+        "emp": "Nick Scarpa",
+        "ref": "Harris, Heather",
+        "resolved": false,
+        "disp": "",
+        "note": "",
+        "title": "Possible duplicate spiff \u2014 customer \"Harris, Heather\" credited to more than one technician",
+        "detail": "Nick Scarpa is being paid $25.00 for customer \"Harris, Heather\" (Standard Membership - 2 Systems \u2014 New Sale), but the payout ledger also shows Jenny Miller credited for the same customer (no job number on this line, matched by customer name \u2014 verify manually). Verify only one technician should be paid before approving."
+      }
+    ],
     "caleb": [],
     "jenny": []
   },

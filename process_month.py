@@ -284,6 +284,43 @@ def fetch_disposition_map(sheet_name, id_col, disposition_col, valid_disposition
     return resolved
 
 
+def fetch_carry_forward_disposition_by_customer(required=True):
+    """Same last-row-wins disposition tracking as fetch_disposition_map(), but keyed by
+    (employee, full_customer_key(customer)) instead of id. Uses the strict full-name key (not
+    last_name_key, which main() uses elsewhere for MPF-sold matching) since a false match here
+    means silently excluding a genuinely different, still-open item — the same reasoning that
+    introduced full_customer_key() for cross-employee duplicate-payment detection earlier this
+    session applies just as much to a single employee having two customers who share a surname.
+
+    BUG FOUND 2026-09-04: a carry-forward item's id is supposed to be a stable content hash of
+    (employee, ref), but when ref is blank — common for a Stage 1 lead with no job number
+    recorded yet — and an employee has MULTIPLE such items (confirmed live: Karl Welch had 7),
+    they all hash to the same base id, so make_id_factory appends a numeric suffix (_2, _3, ...)
+    to tell them apart. That suffix is NOT a stable identity: which item gets which suffix
+    depends on how many of its same-employee, blank-ref siblings are ALSO still unresolved in
+    this specific run, which shifts every time any one of them gets resolved or a new one
+    appears. A manager's own genuine "mark paid" click, recorded correctly against the id
+    displayed at the time, can silently stop matching for this reason alone — confirmed live:
+    Steven's real "paid" resolution for Karl Welch's "Rodriguez, Lupe" stopped matching the very
+    next run, purely because a different sibling's resolution changed the suffix count. Matching
+    by (employee, customer) sidesteps the suffix entirely."""
+    resolved = {}
+    for row in sheet_get("carry_forward_resolutions", required=required):
+        if len(row) < 8:
+            continue
+        _month, _mgr, _id, emp, _ref, type_, _amount, disp = row[:8]
+        customer = type_.split(" — ", 1)[-1].strip() if " — " in type_ else ""
+        full_key = full_customer_key(customer)
+        if not emp or not full_key:
+            continue
+        key = (emp, full_key)
+        if disp in ("paid", "dead"):
+            resolved[key] = disp
+        elif key in resolved:
+            del resolved[key]  # undone
+    return resolved
+
+
 def compute_prior_carry_forward():
     """Auto-computes the carry-forward seed for this run from res_carry_forward (last month's
     computed output, written by that month's run — see write-back at the end of main()) plus
@@ -293,9 +330,11 @@ def compute_prior_carry_forward():
     baseline = sheet_get("res_carry_forward", required=True)
     prev_rows = [r for r in baseline if len(r) >= 9 and norm_month(r[0]) == PREV_LABEL]
     resolved = fetch_disposition_map("carry_forward_resolutions", id_col=2, disposition_col=7, required=True)
+    resolved_by_customer = fetch_carry_forward_disposition_by_customer()
     out = []
     for r in prev_rows:
         _month, id_, from_month, emp, ref, type_, amount, dept, reason = r[:9]
+        customer = type_.split(" — ", 1)[-1].strip() if " — " in type_ else ""
         # BUG FOUND 2026-09-04: res_carry_forward baseline rows keep whatever id they were
         # written with — some months (e.g. Jul 2026, committed before the stable_id migration)
         # still hold pre-migration sequential ids like "cf_2026-07_1". A resolution recorded
@@ -305,11 +344,18 @@ def compute_prior_carry_forward():
         # behind "carry-forwards I already resolved keep reappearing" across the last few months,
         # not just the one browser-tab-stale-id incident diagnosed earlier this session. Checking
         # the recomputed content id as a fallback makes this resilient regardless of what's frozen
-        # in old baseline rows.
+        # in old baseline rows. The natural-key check (by employee+customer) additionally covers
+        # the blank-ref suffix-collision case — see fetch_carry_forward_disposition_by_customer() —
+        # but ONLY when this item itself has no ref: the same customer can legitimately have two
+        # separate, unrelated jobs months apart (confirmed live: Karl Welch had a resolved July
+        # "Rodriguez, Lupe" and a brand-new, genuinely unresolved August "Rodriguez, Lupe" with a
+        # different job number). A blank ref is the specific case a real job number can't already
+        # disambiguate; applying the natural-key check unconditionally wrongly excluded that
+        # legitimate new item on first pass — found and fixed in the same sitting.
         content_id = stable_id("cf", emp, ref)
-        if resolved.get(id_) in ("paid", "dead") or resolved.get(content_id) in ("paid", "dead"):
+        if (resolved.get(id_) in ("paid", "dead") or resolved.get(content_id) in ("paid", "dead")
+                or (not ref and resolved_by_customer.get((emp, full_customer_key(customer))) in ("paid", "dead"))):
             continue
-        customer = type_.split(" — ", 1)[-1].strip() if " — " in type_ else ""
         out.append({
             "id": id_, "fromMonth": norm_month(from_month), "emp": emp, "ref": ref, "type": type_,
             "amount": float(amount), "dept": dept, "lnk": last_name_key(customer),
@@ -334,7 +380,9 @@ def compute_prior_carry_forward():
         latest_manual[id_] = {"emp": emp, "type": type_, "amount": float(amount or 0), "dept": dept,
                                "reason": reason, "fromMonth": norm_month(month)}
     for id_, m in latest_manual.items():
-        if resolved.get(id_) in ("paid", "dead"):
+        m_customer = m["type"].split(" — ", 1)[-1].strip() if " — " in m["type"] else ""
+        if (resolved.get(id_) in ("paid", "dead")
+                or resolved_by_customer.get((m["emp"], full_customer_key(m_customer))) in ("paid", "dead")):
             continue
         # BUG FOUND 2026-09-04 (introduced same day this whole block was added): once one of these
         # gets absorbed into res_carry_forward by a run (and shows up in `out` above via the
@@ -712,6 +760,11 @@ def compute(month_label):
     # two that can silently drift, and required=True so a transient fetch failure here aborts the
     # run instead of quietly treating every carry-forward item as unresolved.
     manually_resolved = fetch_disposition_map("carry_forward_resolutions", id_col=2, disposition_col=7, required=True)
+    # Natural-key fallback (employee + customer last name) — see
+    # fetch_carry_forward_disposition_by_customer()'s docstring: a blank-ref item's id can carry
+    # an unstable numeric suffix when an employee has multiple such items, so a real resolution
+    # can stop matching by id alone even though nothing about the resolution itself is wrong.
+    manually_resolved_by_customer = fetch_carry_forward_disposition_by_customer()
 
     carry_forward_out = []
     resolved_keys = set()
@@ -726,7 +779,9 @@ def compute(month_label):
             # Stage 2 was paid this month via MPF (already counted in the main MPF loop) — drop from the list.
             resolved_keys.add(key)
             continue
-        if cf.get("id") and manually_resolved.get(cf["id"]) in ("paid", "dead"):
+        cf_customer = cf["type"].split(" — ", 1)[-1].strip() if " — " in cf["type"] else ""
+        if ((cf.get("id") and manually_resolved.get(cf["id"]) in ("paid", "dead"))
+                or (not cf["ref"] and manually_resolved_by_customer.get((cf["emp"], full_customer_key(cf_customer))) in ("paid", "dead"))):
             continue  # manually resolved in the app — don't carry forward again
         carry_forward_out.append({
             "id": new_cf_id(cf["emp"], cf["ref"]), "fromMonth": cf["fromMonth"], "emp": cf["emp"], "ref": cf["ref"],
@@ -754,7 +809,8 @@ def compute(month_label):
         # posted in *this* run's own month, resolved "paid"/"dead" before a same-month re-run,
         # would regenerate unconditionally every time, ignoring the resolution completely (not
         # just under a stale id — under any id, since there was no check here whatsoever).
-        if manually_resolved.get(stable_id("cf", name, ref)) in ("paid", "dead"):
+        if (manually_resolved.get(stable_id("cf", name, ref)) in ("paid", "dead")
+                or (not ref and manually_resolved_by_customer.get((name, full_customer_key(detail["customer"]))) in ("paid", "dead"))):
             continue
         carry_forward_out.append({
             "id": new_cf_id(name, ref), "fromMonth": MONTH_LABEL, "emp": name,

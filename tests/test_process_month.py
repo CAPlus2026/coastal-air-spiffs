@@ -81,6 +81,72 @@ def test_manual_carry_forward_keeps_its_own_reason(mock_pipeline):
     )
 
 
+# ── Blank-ref suffix instability — 2026-09-04 finding E ─────────────────────────────────────
+def test_carry_forward_natural_key_fallback_handles_blank_ref_suffix_collision(mock_pipeline):
+    """BUG FOUND 2026-09-04: when an employee has multiple pending items with no job number
+    recorded, they all hash to the same content-hash base id, so make_id_factory appends a
+    numeric suffix to tell them apart — but that suffix isn't a stable identity, since it depends
+    on which OTHER same-employee blank-ref items are ALSO still unresolved in a given run. A
+    manager's own correctly-recorded resolution against the suffixed id can stop matching purely
+    because a sibling item's own resolution changes how many items compete for a suffix.
+    Confirmed live: Steven's real "paid" click for Karl Welch's "Rodriguez, Lupe" stopped
+    matching the very next run for exactly this reason. Natural-key (employee + customer)
+    matching is immune to the suffix entirely."""
+    mock_pipeline.tabs["res_carry_forward"] = [
+        ["Jul 2026", "cf_2026-07_1", "Jul 2026", "Test Tech One", "",
+         "Lead Stage 2 — Customer, Alpha", "75", "MB Install Residential", "reason"],
+        ["Jul 2026", "cf_2026-07_2", "Jul 2026", "Test Tech One", "",
+         "Lead Stage 2 — Customer, Beta", "75", "MB Install Residential", "reason"],
+    ]
+    # Resolved using an id that will never match this run's own suffix assignment for "Beta" —
+    # simulating exactly what happens when a sibling's own resolution shifts the suffix count.
+    mock_pipeline.tabs["carry_forward_resolutions"] = [
+        ["Aug 2026", "steven", "cf_some_stale_suffixed_id_2", "Test Tech One", "",
+         "Lead Stage 2 — Customer, Beta", "75", "paid", "", "2026-08-01T00:00:00.000Z"],
+    ]
+    result = run_month("Aug 2026")
+    assert not any(c["emp"] == "Test Tech One" and "Beta" in c["type"] for c in result["carryForward"]), (
+        "a resolution recorded against a suffixed id (unstable across runs for blank-ref "
+        "siblings) was ignored — natural-key fallback should have caught it"
+    )
+    # The sibling ("Alpha") was never resolved and must still correctly carry forward.
+    assert any(c["emp"] == "Test Tech One" and "Alpha" in c["type"] for c in result["carryForward"])
+
+
+def test_carry_forward_natural_key_fallback_does_not_cross_contaminate_different_job(mock_pipeline, fixture_reports):
+    """The natural-key fallback above must NOT fire when the pending item has its own real job
+    number — the same customer can legitimately have two separate, unrelated jobs months apart
+    (confirmed live: Karl Welch had a resolved July "Rodriguez, Lupe" job and a brand-new,
+    genuinely unresolved August "Rodriguez, Lupe" job with a different job number). Matching by
+    customer name alone, without also requiring a blank ref, would have wrongly excluded the new,
+    real, still-open item too — found and fixed in the same sitting as the fallback itself."""
+    mock_pipeline.tabs["res_carry_forward"] = [
+        ["Jul 2026", "cf_old_id", "Jul 2026", "Test Tech One", "Job 111",
+         "Lead Stage 2 — Customer, Alpha", "75", "MB Install Residential", "reason"],
+    ]
+    mock_pipeline.tabs["carry_forward_resolutions"] = [
+        ["Aug 2026", "steven", "cf_old_id", "Test Tech One", "Job 111",
+         "Lead Stage 2 — Customer, Alpha", "75", "paid", "", "2026-08-01T00:00:00.000Z"],
+    ]
+    # A brand-new Stage 1 this month, same customer, a different job — must stay pending.
+    # Uses compute() directly (not run_month()) since this scenario deliberately creates the
+    # same (employee, type) collision the preflight orphan-audit correctly can't resolve on its
+    # own — that ambiguity is a separate, expected concern (see the Rodriguez/Karl Welch case
+    # this was modeled on), not something this test is checking.
+    fixture_reports["masterPayFile"] = [
+        {"EmployeeName": "Test Tech One", "Activity": "TGL Lead Set Res", "Date": "2026-08-05",
+         "JobNumber": "222", "GrossPay": 25.0, "CustomerName": "Customer, Alpha",
+         "LocationName": "", "LaborTypeCode": ""},
+    ]
+    result = pm.compute("Aug 2026")["result"]
+    new_item = next((c for c in result["carryForward"]
+                      if c["emp"] == "Test Tech One" and c["ref"] == "Job 222"), None)
+    assert new_item is not None, (
+        "the natural-key fallback wrongly excluded a genuinely new, unresolved item just "
+        "because it shares a customer name with an unrelated, already-resolved one"
+    )
+
+
 # ── Carry-forward resolutions silently ignored — 2026-09-04 finding C ───────────────────────
 # The real explanation (very likely the bulk of it) behind months of "carry-forwards I already
 # resolved keep reappearing": res_carry_forward baseline rows keep whatever id they were written

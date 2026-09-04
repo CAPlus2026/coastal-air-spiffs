@@ -81,6 +81,56 @@ def test_manual_carry_forward_keeps_its_own_reason(mock_pipeline):
     )
 
 
+# ── Carry-forward resolutions silently ignored — 2026-09-04 finding C ───────────────────────
+# The real explanation (very likely the bulk of it) behind months of "carry-forwards I already
+# resolved keep reappearing": res_carry_forward baseline rows keep whatever id they were written
+# with, and some months (committed before the stable_id migration) still hold pre-migration
+# sequential ids. A resolution recorded against the item's *current* content-hash id — what the
+# app, migrate_log_ids.py, and reconcile_carry_forward.py all actually use — silently never
+# matched the stale baseline id, so the item carried forward forever even after being marked paid.
+# Found live: 40 of 41 real pending carry-forward items, approved paid by the business owner and
+# written to carry_forward_resolutions, still showed up as pending on the very next recompute.
+def test_carry_forward_resolution_matches_despite_stale_baseline_id(mock_pipeline):
+    mock_pipeline.tabs["res_carry_forward"] = [
+        ["Jul 2026", "cf_2026-07_1", "Jul 2026", "Test Tech One", "Job 12345",
+         "Lead Stage 2 — Test Customer, Old", "75", "MB Install Residential",
+         "Stage 1 paid Jul 2026. Pay $75 when sold, installed, paid."],
+    ]
+    content_id = pm.stable_id("cf", "Test Tech One", "Job 12345")
+    mock_pipeline.tabs["carry_forward_resolutions"] = [
+        ["Aug 2026", "reconciliation", content_id, "Test Tech One", "Job 12345",
+         "Lead Stage 2 — Test Customer, Old", "75", "paid", "test note",
+         "2026-09-04T00:00:00.000Z"],
+    ]
+    result = run_month("Aug 2026")
+    assert not any(c["emp"] == "Test Tech One" and "Old" in c["type"] for c in result["carryForward"]), (
+        "resolution recorded against the current content-hash id was ignored because the "
+        "baseline row's own (stale) id was checked instead"
+    )
+
+
+# ── Same-month Stage 1 carry-forward never checked resolutions at all — 2026-09-04 finding D ──
+def test_same_month_carry_forward_respects_existing_resolution(mock_pipeline, fixture_reports):
+    """A Stage 1 that posts in the same month being processed goes through a separate code path
+    (new-this-month, not baseline-sourced) that had NO resolution check whatsoever — a manager
+    marking it paid/dead before a same-month re-run was silently ignored unconditionally."""
+    fixture_reports["masterPayFile"] = [
+        {"EmployeeName": "Test Tech One", "Activity": "TGL Lead Set Res", "Date": "2026-08-05",
+         "JobNumber": "99001", "GrossPay": 25.0, "CustomerName": "Test Customer, New",
+         "LocationName": "", "LaborTypeCode": ""},
+    ]
+    content_id = pm.stable_id("cf", "Test Tech One", "Job 99001")
+    mock_pipeline.tabs["carry_forward_resolutions"] = [
+        ["Aug 2026", "reconciliation", content_id, "Test Tech One", "Job 99001",
+         "Lead Stage 2 — Test Customer, New", "75", "paid", "test note",
+         "2026-09-04T00:00:00.000Z"],
+    ]
+    result = run_month("Aug 2026")
+    assert not any(c["emp"] == "Test Tech One" and "New" in c["type"] for c in result["carryForward"]), (
+        "a same-month Stage 1 carry-forward candidate ignored an existing 'paid' resolution"
+    )
+
+
 # ── Ledger dict-key bug — 2026-09-04 finding B ───────────────────────────────────────────────
 def test_ledger_contains_technician_lines(mock_pipeline, fixture_reports):
     fixture_reports["masterPayFile"] = [
@@ -179,6 +229,19 @@ def test_preflight_does_not_block_a_genuinely_fresh_deployment(mock_pipeline, fi
 
 
 def test_preflight_blocks_on_money_moving_orphan(mock_pipeline):
+    """The real risk case: an old-id resolution that doesn't match anything by id, but a
+    *different* id for the exact same (emp, type) is still genuinely pending this run — real
+    ambiguity about whether that resolution was ever actually honored, worth a human's attention.
+
+    (2026-09-04: a zero-candidate "obsolete" orphan — nothing pending at all for that key, under
+    any id — was found to carry none of this risk and was demoted to non-blocking; see
+    audit_carry_forward()'s verdict-based money_moving fix. This test now exercises the genuinely
+    risky "recoverable" case instead of the vacuous one it originally used.)"""
+    mock_pipeline.tabs["res_carry_forward"] = [
+        ["Jul 2026", "cf_2026-07_1", "Jul 2026", "Test Tech One", "some ref",
+         "Lead Stage 2 — Nonexistent Customer", "75", "MB Install Residential",
+         "Stage 1 paid Jul 2026. Pay $75 when sold, installed, paid."],
+    ]
     mock_pipeline.tabs["carry_forward_resolutions"] = [
         ["Aug 2026", "steven", "cf_stale_id_that_wont_match", "Test Tech One", "some ref",
          "Lead Stage 2 — Nonexistent Customer", "75", "paid", "", "2026-08-01T00:00:00.000Z"],
@@ -215,6 +278,10 @@ def test_preflight_blocks_on_large_payout_swing_on_rerun(mock_pipeline, fixture_
 
 
 def test_preflight_blocked_run_raises_from_main_without_force(mock_pipeline):
+    mock_pipeline.tabs["res_carry_forward"] = [
+        ["Jul 2026", "cf_2026-07_1", "Jul 2026", "Test Tech One", "ref", "Lead Stage 2 — X",
+         "75", "MB Install Residential", "Stage 1 paid Jul 2026. Pay $75 when sold, installed, paid."],
+    ]
     mock_pipeline.tabs["carry_forward_resolutions"] = [
         ["Aug 2026", "steven", "cf_stale", "Test Tech One", "ref", "Lead Stage 2 — X",
          "75", "paid", "", "2026-08-01T00:00:00.000Z"],
@@ -224,6 +291,10 @@ def test_preflight_blocked_run_raises_from_main_without_force(mock_pipeline):
 
 
 def test_preflight_force_override_proceeds_despite_block(mock_pipeline):
+    mock_pipeline.tabs["res_carry_forward"] = [
+        ["Jul 2026", "cf_2026-07_1", "Jul 2026", "Test Tech One", "ref", "Lead Stage 2 — X",
+         "75", "MB Install Residential", "Stage 1 paid Jul 2026. Pay $75 when sold, installed, paid."],
+    ]
     mock_pipeline.tabs["carry_forward_resolutions"] = [
         ["Aug 2026", "steven", "cf_stale", "Test Tech One", "ref", "Lead Stage 2 — X",
          "75", "paid", "", "2026-08-01T00:00:00.000Z"],

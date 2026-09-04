@@ -82,6 +82,27 @@ class ServiceTitanClient:
             json=body,
         )
 
+    # ── Generic REST (non-Reporting-API) endpoints ──────────────────────────
+    def get_paged(self, path, params=None, page_size=500, max_pages=200):
+        """Pages through any plain ServiceTitan REST endpoint using the standard
+        {page, pageSize, hasMore, data} shape (confirmed live 2026-09-04 against both
+        /jpm/v2/.../jobs and /crm/v2/.../customers — the same shape fetch_all_settings() already
+        handles for /settings/v2/... calls, just generalized here instead of hand-rolled again).
+        Same max_pages safety rationale as get_report_data_all_pages."""
+        page = 1
+        params = dict(params or {})
+        rows = []
+        while True:
+            params["page"] = page
+            params["pageSize"] = page_size
+            resp = self._request("GET", path, params=params)
+            rows.extend(resp.get("data", []))
+            if not resp.get("hasMore"):
+                return rows
+            if page >= max_pages:
+                raise RuntimeError(f"get_paged: hit max_pages={max_pages} for {path} ({len(rows)} rows fetched)")
+            page += 1
+
     def get_report_data_all_pages(self, category, report_id, parameters=None, page_size=500, max_pages=200):
         """Fetch every page of a report's data and return the combined field/data structure.
 

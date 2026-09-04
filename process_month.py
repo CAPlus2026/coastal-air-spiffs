@@ -296,7 +296,18 @@ def compute_prior_carry_forward():
     out = []
     for r in prev_rows:
         _month, id_, from_month, emp, ref, type_, amount, dept, reason = r[:9]
-        if resolved.get(id_) in ("paid", "dead"):
+        # BUG FOUND 2026-09-04: res_carry_forward baseline rows keep whatever id they were
+        # written with — some months (e.g. Jul 2026, committed before the stable_id migration)
+        # still hold pre-migration sequential ids like "cf_2026-07_1". A resolution recorded
+        # against this item's *current* content-hash id (what the app and every migration/
+        # reconciliation tool actually use) would silently never match `id_` here, so the item
+        # carries forward forever even after being marked paid — very likely the real explanation
+        # behind "carry-forwards I already resolved keep reappearing" across the last few months,
+        # not just the one browser-tab-stale-id incident diagnosed earlier this session. Checking
+        # the recomputed content id as a fallback makes this resilient regardless of what's frozen
+        # in old baseline rows.
+        content_id = stable_id("cf", emp, ref)
+        if resolved.get(id_) in ("paid", "dead") or resolved.get(content_id) in ("paid", "dead"):
             continue
         customer = type_.split(" — ", 1)[-1].strip() if " — " in type_ else ""
         out.append({
@@ -738,6 +749,13 @@ def compute(month_label):
         if any(cf["emp"] == name and cf["lnk"] == lnk for cf in prior_carry_forward):
             continue  # already represented above
         ref = f"Job {detail['job']}" if detail["job"] else ""
+        # BUG FOUND 2026-09-04 (same root cause as the res_carry_forward baseline-id fallback
+        # above): this branch never checked manually_resolved at all — an item whose Stage 1
+        # posted in *this* run's own month, resolved "paid"/"dead" before a same-month re-run,
+        # would regenerate unconditionally every time, ignoring the resolution completely (not
+        # just under a stale id — under any id, since there was no check here whatsoever).
+        if manually_resolved.get(stable_id("cf", name, ref)) in ("paid", "dead"):
+            continue
         carry_forward_out.append({
             "id": new_cf_id(name, ref), "fromMonth": MONTH_LABEL, "emp": name,
             "ref": ref,

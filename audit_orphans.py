@@ -129,6 +129,18 @@ def audit_carry_forward(output, month_label):
             continue  # an "undone" row — nothing to check
         if id_ in current_by_id:
             continue  # still matches — not an orphan
+        # compute_prior_carry_forward() (2026-09-04 fix) now excludes an item whenever a
+        # resolution matches EITHER the baseline row's own id OR the item's current content-hash
+        # id, specifically so a resolution recorded under the canonical id always works regardless
+        # of what's frozen in a stale baseline row. That means an id that's already the canonical
+        # content-hash id for its own (emp, ref), and is absent from current output with a
+        # terminal disposition, isn't an orphan at all — it's a resolution that worked exactly as
+        # intended. Without this, every one of these looked identical to a genuine lost/mismatched
+        # resolution and blocked the preflight gate on legitimate, already-successful paid items
+        # (confirmed live 2026-09-04: 40 real approved resolutions, all correctly excluded, would
+        # otherwise have been reported as 40 money-moving orphans).
+        if id_ == pm.stable_id("cf", r["emp"], r["ref"]):
+            continue
         candidates = current_by_key.get((r["emp"], r["type"]), [])
         # Already fixed by a separate corrective row under the new id (append-only logs never
         # remove the original orphaned row, so it would otherwise be reported as open forever,
@@ -142,13 +154,23 @@ def audit_carry_forward(output, month_label):
                 "candidates": candidates, "verdict": "already_remediated",
             })
             continue
+        # BUG FOUND 2026-09-04, alongside the res_carry_forward baseline-id fallback fix: an
+        # "obsolete" verdict (zero current candidates for this emp/type) means nothing is
+        # currently pending under that key at all — there's no live item this stale row could be
+        # silently failing to exclude, so it carries none of the "silently reappeared" risk this
+        # gate exists to catch. Marking it money-moving anyway blocked a real run over old,
+        # already-superseded resolution rows for items a later resolution had already correctly
+        # excluded (confirmed live: 18 such rows, all genuinely harmless). Only "recoverable"/
+        # "ambiguous" — where a real live candidate's fate is actually uncertain — keep the
+        # original money-moving severity.
+        verdict = ("recoverable" if len(candidates) == 1 else
+                   "ambiguous" if len(candidates) > 1 else "obsolete")
         orphans.append({
             "tab": "carry_forward_resolutions", "old_id": id_, "emp": r["emp"], "type": r["type"],
             "disposition": r["disposition"], "note": r["note"],
-            "money_moving": r["disposition"] in ("paid",),
+            "money_moving": r["disposition"] in ("paid",) and verdict != "obsolete",
             "candidates": candidates,
-            "verdict": ("recoverable" if len(candidates) == 1 else
-                        "ambiguous" if len(candidates) > 1 else "obsolete"),
+            "verdict": verdict,
         })
     return orphans
 
@@ -176,12 +198,13 @@ def audit_commlead(output, month_label):
                 "candidates": candidates, "verdict": "already_remediated",
             })
             continue
+        verdict = ("recoverable" if len(candidates) == 1 else
+                   "ambiguous" if len(candidates) > 1 else "obsolete")
         orphans.append({
             "tab": "commlead_updates", "old_id": id_, "tech": r["tech"], "customer": r["customer"],
-            "status": r["status"], "money_moving": r["status"] in terminal,
+            "status": r["status"], "money_moving": r["status"] in terminal and verdict != "obsolete",
             "candidates": candidates,
-            "verdict": ("recoverable" if len(candidates) == 1 else
-                        "ambiguous" if len(candidates) > 1 else "obsolete"),
+            "verdict": verdict,
         })
     return orphans
 
@@ -210,13 +233,14 @@ def audit_flags(output, month_label):
                 "money_moving": False, "candidates": candidates, "verdict": "already_remediated",
             })
             continue
+        verdict = ("recoverable" if len(candidates) == 1 else
+                   "ambiguous" if len(candidates) > 1 else "obsolete")
         orphans.append({
             "tab": "flags", "old_id": id_, "mgr": r["mgr"], "emp": r["emp"], "ref": r["ref"],
             "detail": r["detail"], "disposition": r["disp"], "note": r["note"],
-            "money_moving": r["disp"] == "Pay this month",
+            "money_moving": r["disp"] == "Pay this month" and verdict != "obsolete",
             "candidates": candidates,
-            "verdict": ("recoverable" if len(candidates) == 1 else
-                        "ambiguous" if len(candidates) > 1 else "obsolete"),
+            "verdict": verdict,
         })
     return orphans
 
@@ -266,13 +290,14 @@ def audit_spiff_corrections(output, month_label):
                 "money_moving": False, "candidates": candidates, "verdict": "already_remediated",
             })
             continue
+        verdict = ("recoverable" if len(candidates) == 1 else
+                   "ambiguous" if len(candidates) > 1 else "obsolete")
         orphans.append({
             "tab": "spiff_corrections", "old_id": key, "mgr": r["mgr"], "emp": r["emp"],
             "idx": r["idx"], "action": r["action"], "reason": r["reason"],
-            "money_moving": r["action"] == "flagged",
+            "money_moving": r["action"] == "flagged" and verdict != "obsolete",
             "candidates": candidates,
-            "verdict": ("recoverable" if len(candidates) == 1 else
-                        "ambiguous" if len(candidates) > 1 else "obsolete"),
+            "verdict": verdict,
         })
     return orphans
 

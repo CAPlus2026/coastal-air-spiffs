@@ -69,16 +69,22 @@ def latest_commlead_updates(month_label):
 
 
 def latest_flags(month_label):
-    """id -> {mgr, emp, ref, detail, resolved, disp} for rows recorded against `month_label`."""
+    """id -> {mgr, emp, ref, detail, resolved, disp, note} for rows recorded against
+    `month_label`. BUG FOUND 2026-09-04 (while finishing this module out for real use): this
+    used to skip columns 5/6 (emp/ref) entirely, so audit_flags()'s matching key was silently
+    always (mgr, "", "", detail) — happened to still work in practice because `detail` alone is
+    usually unique enough, but it's exactly the kind of silent partial-key bug this whole project
+    has been full of, so fixed rather than left as "probably fine."""
     latest = {}
     for r in pm.sheet_get("flags", required=True):
         if len(r) < 12:
             continue
-        month, mgr, id_ = r[0], r[1], r[2]
+        month, mgr, id_, _sev1, _sev2, emp, ref = r[:7]
         detail, disp, note, resolved = r[8], r[9], r[10], r[11]
         if pm.norm_month(month) != month_label or not id_ or not mgr:
             continue
-        latest[id_] = {"mgr": mgr, "detail": detail or "", "disp": disp or "", "note": note or "",
+        latest[id_] = {"mgr": mgr, "emp": emp or "", "ref": ref or "", "detail": detail or "",
+                        "disp": disp or "", "note": note or "",
                         "resolved": str(resolved).lower() == "true"}
     return latest
 
@@ -187,17 +193,27 @@ def audit_flags(output, month_label):
         for f in flags:
             current_by_id.add(f["id"])
             current_by_key[(mgr, f["emp"], f["ref"], f["detail"])].append(f["id"])
+    all_flags = latest_flags(month_label)
 
     orphans = []
-    for id_, r in latest_flags(month_label).items():
+    for id_, r in all_flags.items():
         if not r["disp"] and not r["resolved"]:
             continue
         if id_ in current_by_id:
             continue
-        candidates = current_by_key.get((r["mgr"], r.get("emp", ""), r.get("ref", ""), r["detail"]), [])
+        candidates = current_by_key.get((r["mgr"], r["emp"], r["ref"], r["detail"]), [])
+        # Same "already fixed by a separate corrective row" check as the other tabs.
+        if len(candidates) == 1 and all_flags.get(candidates[0], {}).get("disp"):
+            orphans.append({
+                "tab": "flags", "old_id": id_, "mgr": r["mgr"], "emp": r["emp"], "ref": r["ref"],
+                "detail": r["detail"], "disposition": r["disp"], "note": r["note"],
+                "money_moving": False, "candidates": candidates, "verdict": "already_remediated",
+            })
+            continue
         orphans.append({
-            "tab": "flags", "old_id": id_, "mgr": r["mgr"], "detail": r["detail"],
-            "disposition": r["disp"], "money_moving": r["disp"] == "Pay this month",
+            "tab": "flags", "old_id": id_, "mgr": r["mgr"], "emp": r["emp"], "ref": r["ref"],
+            "detail": r["detail"], "disposition": r["disp"], "note": r["note"],
+            "money_moving": r["disp"] == "Pay this month",
             "candidates": candidates,
             "verdict": ("recoverable" if len(candidates) == 1 else
                         "ambiguous" if len(candidates) > 1 else "obsolete"),
@@ -219,26 +235,43 @@ def audit_spiff_corrections(output, month_label):
                        line.get("type", ""), line.get("item", ""), str(line.get("spiff", "")))
                 current_by_key[key].append(lid)
 
+    all_corrections = latest_spiff_corrections(month_label)
     orphans = []
-    for key, r in latest_spiff_corrections(month_label).items():
+    for key, r in all_corrections.items():
         if r["action"] not in ("flagged", "unflagged"):
-            continue
+            continue  # includes acknowledged_obsolete rows — already handled, nothing to check
         if r["lineId"] and r["lineId"] in current_line_ids:
             continue  # still matches by lineId — not an orphan
         if not r["recoverable"]:
             orphans.append({
-                "tab": "spiff_corrections", "old_id": key, "emp": r["emp"], "action": r["action"],
+                "tab": "spiff_corrections", "old_id": key, "mgr": r["mgr"], "emp": r["emp"],
+                "idx": r["idx"], "action": r["action"], "reason": r["reason"],
                 "money_moving": r["action"] == "flagged",
                 "candidates": [], "verdict": "unrecoverable_legacy_row",
             })
             continue
         natural_key = (r["mgr"], r["emp"], r["job"], r["customer"], r["type"], r["item"], str(r["amount"]))
-        candidates = current_by_key.get(natural_key, [])
+        candidates = [c for c in current_by_key.get(natural_key, []) if c]
+        # Already fixed by a separate corrective row using the real lineId — same check as the
+        # other three tabs. Keyed by lineId here (not a synthetic mgr|emp|idx key), since a
+        # migrated spiff_corrections row IS keyed by its real lineId once corrected.
+        already_fixed = len(candidates) == 1 and any(
+            other["lineId"] == candidates[0] and other["action"] in ("flagged", "unflagged")
+            for other in all_corrections.values()
+        )
+        if already_fixed:
+            orphans.append({
+                "tab": "spiff_corrections", "old_id": key, "mgr": r["mgr"], "emp": r["emp"],
+                "idx": r["idx"], "action": r["action"], "reason": r["reason"],
+                "money_moving": False, "candidates": candidates, "verdict": "already_remediated",
+            })
+            continue
         orphans.append({
-            "tab": "spiff_corrections", "old_id": key, "emp": r["emp"], "action": r["action"],
+            "tab": "spiff_corrections", "old_id": key, "mgr": r["mgr"], "emp": r["emp"],
+            "idx": r["idx"], "action": r["action"], "reason": r["reason"],
             "money_moving": r["action"] == "flagged",
-            "candidates": [c for c in candidates if c],
-            "verdict": ("recoverable" if len([c for c in candidates if c]) == 1 else
+            "candidates": candidates,
+            "verdict": ("recoverable" if len(candidates) == 1 else
                         "ambiguous" if len(candidates) > 1 else "obsolete"),
         })
     return orphans
@@ -273,6 +306,10 @@ def main():
         by_verdict[o["verdict"]].append(o)
 
     print(f"=== Orphan audit for {args.month} ({len(orphans)} total) ===\n")
+    already = by_verdict.get("already_remediated", [])
+    if already:
+        print(f"-- already_remediated ({len(already)}) — orphaned rows that were already fixed "
+              f"by a separate corrective row; nothing to do, shown for audit trail only --")
     for verdict in ("recoverable", "ambiguous", "obsolete", "unrecoverable_legacy_row"):
         rows = by_verdict.get(verdict, [])
         if not rows:

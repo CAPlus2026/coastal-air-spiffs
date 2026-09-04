@@ -12,9 +12,13 @@ Usage:
   python migrate_log_ids.py "Aug 2026" --sheet carry_forward_resolutions
   python migrate_log_ids.py "Aug 2026" --apply          # actually write the corrected rows
 
-Only handles the "recoverable" verdict (exactly one unambiguous candidate) — "ambiguous" and
-"obsolete"/"unrecoverable_legacy_row" orphans need a human to look at them directly (see
-audit_orphans.py's own output for those) rather than a guess baked into an automated tool.
+Covers all four at-risk tabs (carry_forward_resolutions, commlead_updates, flags,
+spiff_corrections) — but only ever handles the "recoverable" verdict (exactly one unambiguous
+candidate). "ambiguous" and "obsolete"/"unrecoverable_legacy_row" orphans need a human to look at
+them directly (see audit_orphans.py's own output for those) rather than a guess baked into an
+automated tool. spiff_corrections in particular is often unrecoverable outright — a legacy row
+with no natural-key columns at all has nothing to match against; see the Karl Welch idx 29/30/31
+case (2026-09-04) for how those get resolved by hand instead of through this tool.
 """
 import argparse
 import json
@@ -61,12 +65,48 @@ def apply_commlead(orphan, output, month_label):
 APPLY_FNS["commlead_updates"] = apply_commlead
 
 
+def apply_flags(orphan, output, month_label):
+    new_id = orphan["candidates"][0]
+    current = next(f for mgr_flags in output["flags"].values() for f in mgr_flags if f["id"] == new_id)
+    row = [month_label, orphan["mgr"], new_id, current["sev"], current["sev"], current["emp"],
+           current["ref"], "", current["detail"], orphan["disposition"], orphan.get("note", ""),
+           "true", _timestamp(), orphan["old_id"]]
+    pm.sheet_write_table("flags",
+                          ["month", "mgr", "id", "sev", "sev2", "emp", "ref", "blank", "detail",
+                           "disp", "note", "resolved", "timestamp", "migratedFrom"],
+                          [row], mode="append")
+    return row
+
+
+APPLY_FNS["flags"] = apply_flags
+
+
+def apply_spiff_corrections(orphan, output, month_label):
+    """Only ever called for the "recoverable" verdict — a legacy row that DOES carry natural-key
+    data (post-2026-09-04) but whose lineId changed. A legacy row with NO natural-key data at all
+    (verdict "unrecoverable_legacy_row") can't go through this path; see the Karl Welch idx 29/30/31
+    case from 2026-09-04 for how those get resolved by hand instead."""
+    new_line_id = orphan["candidates"][0]
+    mgr, emp = orphan["mgr"], orphan["emp"]
+    line = next(l for l in output["spiffDetail"][mgr][emp] if l.get("lineId") == new_line_id)
+    row = [month_label, mgr, emp, orphan["idx"], orphan["action"], orphan["reason"], _timestamp(),
+           new_line_id, line.get("job", ""), line.get("customer", ""), line.get("type", ""),
+           line.get("item", ""), line.get("spiff", ""), orphan["old_id"]]
+    pm.sheet_write_table("spiff_corrections",
+                          ["month", "mgr", "empName", "idx", "action", "reason", "timestamp",
+                           "lineId", "job", "customer", "type", "item", "amount", "migratedFrom"],
+                          [row], mode="append")
+    return row
+
+
+APPLY_FNS["spiff_corrections"] = apply_spiff_corrections
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("month", help='e.g. "Aug 2026"')
-    ap.add_argument("--sheet", choices=["carry_forward_resolutions", "commlead_updates"],
-                     help="Only migrate this tab (default: both — flags/spiff_corrections need "
-                          "a human, not this tool, so they're never included here).")
+    ap.add_argument("--sheet", choices=list(APPLY_FNS.keys()),
+                     help="Only migrate this tab (default: all four).")
     ap.add_argument("--apply", action="store_true", help="Actually write the corrected rows (default: dry run).")
     args = ap.parse_args()
 
@@ -78,6 +118,8 @@ def main():
     audits = {
         "carry_forward_resolutions": audit_orphans.audit_carry_forward,
         "commlead_updates": audit_orphans.audit_commlead,
+        "flags": audit_orphans.audit_flags,
+        "spiff_corrections": audit_orphans.audit_spiff_corrections,
     }
     tabs = [args.sheet] if args.sheet else list(audits.keys())
 
@@ -89,8 +131,8 @@ def main():
         print(f"=== {tab}: {len(recoverable)} recoverable, {len(skipped)} need a human ===")
         for o in recoverable:
             who = o.get("emp") or o.get("tech")
-            print(f"  {o['old_id']} -> {o['candidates'][0]} | {who}"
-                  + (f" | {o.get('type') or o.get('customer')}"))
+            what = o.get("type") or o.get("customer") or o.get("detail") or o.get("action") or ""
+            print(f"  {o['old_id']} -> {o['candidates'][0]} | {who} | {what}")
             if args.apply:
                 APPLY_FNS[tab](o, output, args.month)
                 total_applied += 1

@@ -21,14 +21,15 @@ differ between runs for the same real-world item (see full docstring on each mat
 
 No writes. Usage: python audit_orphans.py "Aug 2026" [--json out.json]
 
-Known limitation: this reports every orphaned row it finds, even one that's already been fixed
-by a separate corrective row under the new id (append-only logs mean the original orphaned row
-never goes away). It does NOT currently check "does a row with this candidate id and a matching
-disposition already exist" before reporting something as an open orphan. For now that's a
-deliberate simplification — Phase 3's migrate_log_ids.py needs that same "already migrated" check
-anyway (via a migratedFrom provenance column), so it'll live there rather than being duplicated
-here. Until then, treat this tool's output as "orphans that existed at some point," not "orphans
-still needing action" — cross-check against what's already been migrated by hand.
+carry_forward_resolutions and commlead_updates recognize an "already_remediated" verdict: if an
+orphan's single candidate id ALREADY has its own recorded disposition/status, it's been fixed by
+a separate corrective row (append-only logs never remove the original orphaned row, so without
+this it would be reported as an open, money-moving orphan forever, even after being migrated).
+Added 2026-09-04 after this exact thing blocked a real pre-flight run over 13 items that had
+already been corrected the day before. flags and spiff_corrections don't have this check yet —
+spiff_corrections in particular often can't be automatically remapped at all (a legacy row
+without natural-key columns has nothing to match against), so those need a human to look at
+audit_orphans.py's raw output rather than trusting an "already handled" inference.
 """
 import argparse
 import json
@@ -114,14 +115,27 @@ def audit_carry_forward(output, month_label):
     current_by_key = defaultdict(list)
     for c in output["carryForward"]:
         current_by_key[(c["emp"], c["type"])].append(c["id"])
+    all_resolutions = latest_carry_forward_resolutions(month_label)
 
     orphans = []
-    for id_, r in latest_carry_forward_resolutions(month_label).items():
+    for id_, r in all_resolutions.items():
         if not r["disposition"]:
             continue  # an "undone" row — nothing to check
         if id_ in current_by_id:
             continue  # still matches — not an orphan
         candidates = current_by_key.get((r["emp"], r["type"]), [])
+        # Already fixed by a separate corrective row under the new id (append-only logs never
+        # remove the original orphaned row, so it would otherwise be reported as open forever,
+        # even after being migrated by hand or by migrate_log_ids.py). Confirmed real 2026-09-04:
+        # without this check, the pre-flight gate blocked a live run over 13 items that had
+        # already been corrected the day before.
+        if len(candidates) == 1 and all_resolutions.get(candidates[0], {}).get("disposition"):
+            orphans.append({
+                "tab": "carry_forward_resolutions", "old_id": id_, "emp": r["emp"], "type": r["type"],
+                "disposition": r["disposition"], "note": r["note"], "money_moving": False,
+                "candidates": candidates, "verdict": "already_remediated",
+            })
+            continue
         orphans.append({
             "tab": "carry_forward_resolutions", "old_id": id_, "emp": r["emp"], "type": r["type"],
             "disposition": r["disposition"], "note": r["note"],
@@ -138,15 +152,24 @@ def audit_commlead(output, month_label):
     current_by_key = defaultdict(list)
     for l in output["commLeads"]:
         current_by_key[(l["tech"], pm.last_name_key(l["customer"]))].append(l["id"])
+    all_updates = latest_commlead_updates(month_label)
 
     terminal = {"Sold & Completed", "Did Not Sell — Close Lead", "Dismissed"}
     orphans = []
-    for id_, r in latest_commlead_updates(month_label).items():
+    for id_, r in all_updates.items():
         if not r["status"]:
             continue
         if id_ in current_by_id:
             continue
         candidates = current_by_key.get((r["tech"], pm.last_name_key(r["customer"])), [])
+        # Same "already fixed by a separate corrective row" check as carry-forward above.
+        if len(candidates) == 1 and all_updates.get(candidates[0], {}).get("status"):
+            orphans.append({
+                "tab": "commlead_updates", "old_id": id_, "tech": r["tech"], "customer": r["customer"],
+                "status": r["status"], "money_moving": False,
+                "candidates": candidates, "verdict": "already_remediated",
+            })
+            continue
         orphans.append({
             "tab": "commlead_updates", "old_id": id_, "tech": r["tech"], "customer": r["customer"],
             "status": r["status"], "money_moving": r["status"] in terminal,

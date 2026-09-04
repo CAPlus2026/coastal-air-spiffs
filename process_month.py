@@ -994,13 +994,116 @@ def compute(month_label):
     return {"result": result, "ledger_entries": ledger_entries}
 
 
-def preflight(computed):
-    """Placeholder for Phase 2 of the reliability plan — this is the seam a real pre-flight gate
-    hooks into (comparing what computed["result"] is about to overwrite against what the
-    resolution logs still reference), sitting between compute() and commit() so nothing gets
-    written until it passes. Not yet implemented; always passes for now. Returns
-    {"blocked": bool, "warnings": [str, ...], "message": str}."""
-    return {"blocked": False, "warnings": [], "message": ""}
+def _grand_total(result):
+    total = 0.0
+    for mgr in ("steven", "caleb"):
+        for e in result["emps"][mgr]:
+            total += e["svc"] + e["ins"] + e["plb"] + e["com"] + e["chs"] + e["chi"]
+    for m in result["officeMems"]:
+        total += m["total"]
+    for b in result["bonuses"]:
+        total += b["amount"]
+    return total
+
+
+def _output_path_for(month_label):
+    mon_str, year_str = month_label.split()
+    return f"output_{year_str}-{_MONTH_NAMES.index(mon_str) + 1:02d}.json"
+
+
+def preflight(computed, bootstrap=False):
+    """Runs after compute(), before commit() — the gate a run must pass before it's allowed to
+    touch the live Sheet. Returns {"blocked": bool, "warnings": [str, ...], "message": str}.
+
+    Three checks (a fourth — fetch integrity — is already fully handled by compute() itself:
+    a required Sheet read failure raises SheetFetchError before compute() ever returns, so
+    preflight() never even runs in that case):
+
+    1. Baseline presence — a completely missing res_carry_forward baseline for the month right
+       before this one almost always means a month got skipped, which would otherwise silently
+       drop the entire pending carry-forward backlog rather than surfacing it. `bootstrap=True`
+       is the explicit override for the one legitimate case (a brand-new deployment with no
+       carry-forward history anywhere yet).
+    2. Orphan diff, reusing audit_orphans.py's exact matching rules (same module a human would
+       run by hand) so this can't drift from what a manual investigation would find. Blocks on
+       any orphan whose disposition moves money; warns on cosmetic ones.
+    3. Re-run deltas — only meaningful when output_<month>.json already exists on disk (i.e.
+       this exact month was already processed once). Large unexplained swings in total payout or
+       pending-carry-forward count get blocked rather than silently committed.
+    """
+    import audit_orphans  # deferred: audit_orphans imports this module, so importing it back at
+    # module level here would be a circular import at load time. Safe here since preflight() only
+    # runs after both modules have fully finished loading.
+
+    result = computed["result"]
+    month_label = result["month"]
+    blocking = []
+    warnings = []
+
+    # 1) Baseline presence for the prior month.
+    baseline = sheet_get("res_carry_forward")
+    prev_rows = [r for r in baseline if r and norm_month(r[0]) == PREV_LABEL]
+    if not prev_rows and not bootstrap and baseline:
+        # `baseline` non-empty but nothing for PREV_LABEL specifically = other months' data
+        # exists but this one's predecessor is missing — that's the skipped-month signature.
+        # (An entirely empty baseline is a legitimate brand-new deployment, not a skip.)
+        blocking.append(
+            f"No res_carry_forward baseline found for {PREV_LABEL} (the month right before "
+            f"{month_label}), but other months' data exists in that tab — this usually means a "
+            f"month was skipped, which would silently drop the entire pending carry-forward "
+            f"backlog instead of carrying it forward. Pass bootstrap=True only if this is a "
+            f"deliberate new start."
+        )
+
+    # 2) Orphan diff.
+    orphans = audit_orphans.run_audit(month_label, result)
+    money_moving = [o for o in orphans if o["money_moving"]]
+    cosmetic = [o for o in orphans if not o["money_moving"]]
+    if money_moving:
+        example = money_moving[0]
+        blocking.append(
+            f"{len(money_moving)} money-moving resolution(s) reference an id that no longer "
+            f"matches this run's output (e.g. [{example['tab']}] {example['old_id']}). Run "
+            f"`python audit_orphans.py \"{month_label}\"` to see all of them, then "
+            f"migrate_log_ids.py to fix them, before proceeding."
+        )
+    if cosmetic:
+        warnings.append(
+            f"{len(cosmetic)} cosmetic (non-money-moving) orphaned resolution(s) found — "
+            f"run audit_orphans.py \"{month_label}\" for detail."
+        )
+
+    # 3) Re-run deltas — only checked if this exact month has already been committed once.
+    existing_path = _output_path_for(month_label)
+    if os.path.exists(existing_path):
+        with open(existing_path) as f:
+            existing = json.load(f)
+        old_total, new_total = _grand_total(existing), _grand_total(result)
+        if old_total > 0 and abs(new_total - old_total) / old_total > 0.10:
+            blocking.append(
+                f"Re-running {month_label}: total computed payout moved from "
+                f"${old_total:.2f} to ${new_total:.2f} "
+                f"({abs(new_total - old_total) / old_total * 100:.0f}% change) — larger than "
+                f"expected for a routine re-run. Verify this is intentional."
+            )
+        old_pending = sum(1 for c in existing["carryForward"] if not c["resolved"])
+        new_pending = sum(1 for c in result["carryForward"] if not c["resolved"])
+        if old_pending - new_pending > max(5, old_pending * 0.25):
+            blocking.append(
+                f"Re-running {month_label}: pending carry-forward count dropped from "
+                f"{old_pending} to {new_pending} — larger than expected without that many "
+                f"matching resolutions."
+            )
+
+    return {"blocked": bool(blocking), "warnings": warnings, "message": " | ".join(blocking)}
+
+
+class PreflightBlocked(Exception):
+    """Raised by main() when preflight() blocks a run and it wasn't overridden with
+    force_preflight=True. A distinct exception (rather than a plain RuntimeError) so the CLI
+    entry point can map it to its own exit code (3), separate from every other kind of crash —
+    run_requested_month.py uses that to record a 'blocked' status instead of 'failed', since the
+    remedy (run the migration helper, or bootstrap) is different from "something broke"."""
 
 
 def commit(computed):
@@ -1064,19 +1167,30 @@ def print_summary(result):
           f"{_MONTH_NAMES.index(result['month'].split()[0]) + 1:02d}.json")
 
 
-def main(month_label):
+def main(month_label, bootstrap=False, force_preflight=False):
     computed = compute(month_label)
-    pf = preflight(computed)
-    if pf["blocked"]:
-        raise RuntimeError(f"Preflight blocked this run: {pf['message']}")
+    pf = preflight(computed, bootstrap=bootstrap)
     for w in pf["warnings"]:
         print(f"  [preflight warning] {w}")
+    if pf["blocked"]:
+        if not force_preflight:
+            raise PreflightBlocked(pf["message"])
+        print(f"  [preflight] BLOCKED but proceeding anyway (force_preflight): {pf['message']}")
     commit(computed)
     print_summary(computed["result"])
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print('Usage: python process_month.py "Sep 2026"')
-        sys.exit(1)
-    main(sys.argv[1])
+    import argparse
+    parser = argparse.ArgumentParser(description='Process one month of Coastal Air spiffs.')
+    parser.add_argument("month", help='e.g. "Sep 2026"')
+    parser.add_argument("--bootstrap", action="store_true",
+                         help="Skip the missing-prior-month-baseline check — only for a genuinely new deployment.")
+    parser.add_argument("--force-preflight", action="store_true",
+                         help="Proceed even if pre-flight checks would otherwise block this run. Use with real caution.")
+    args = parser.parse_args()
+    try:
+        main(args.month, bootstrap=args.bootstrap, force_preflight=args.force_preflight)
+    except PreflightBlocked as e:
+        print(f"\nBLOCKED: {e}")
+        sys.exit(3)  # distinct from every other failure (exit 1) — see PreflightBlocked's docstring

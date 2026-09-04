@@ -902,9 +902,12 @@ function rOverview(){
   const rsActive=rsForTarget&&(rs.status==='queued'||rs.status==='running');
   const rsComplete=rsForTarget&&rs.status==='complete';
   const rsFailed=rsForTarget&&rs.status==='failed';
+  // 'blocked' is Phase 2's pre-flight gate refusing to proceed — distinct from 'failed' because
+  // the remedy is different (a migration/investigation, not "something crashed, just retry").
+  const rsBlocked=rsForTarget&&rs.status==='blocked';
   v.innerHTML=`
   <datalist id="all-names">${allKnownNames().map(n=>`<option value="${n}">`).join('')}</datalist>
-  <div class="card" style="border-left:3px solid ${rsActive?'#3b82f6':rsFailed?'#ef4444':rsComplete?'#065f46':'#999'}">
+  <div class="card" style="border-left:3px solid ${rsActive?'#3b82f6':(rsFailed||rsBlocked)?'#ef4444':rsComplete?'#065f46':'#999'}">
     <div class="ctitle">Self-service run</div>
     <div style="font-size:.75rem;color:#999;margin-bottom:.5rem">Always runs last month's payroll (currently ${targetMonth}) — pulls fresh data from ServiceTitan. <strong>Payroll approvals need to be unlocked prior to running.</strong> Safe to click more than once (e.g. if you clicked before approvals were actually unlocked) — running it again just pulls fresh data again.</div>
     ${rsActive?`
@@ -921,6 +924,12 @@ function rOverview(){
         </div>
       </div>
       <div style="font-size:.75rem;color:#999;margin-top:.5rem">The site takes a minute or two to redeploy after processing finishes — if it still shows ${MONTH}, wait a moment and reload again.</div>
+    `:rsBlocked?`
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div><span class="badge bdanger">⛔ Blocked</span> <span style="font-size:.82rem;margin-left:6px">A safety check stopped ${rs.month} from processing.</span></div>
+      </div>
+      <div style="font-size:.75rem;color:#991b1b;margin-top:.5rem">${rs.message||'No details recorded.'}</div>
+      <div style="font-size:.75rem;color:#999;margin-top:.5rem">This needs a look (a Claude Code session, or someone comfortable running the migration script) before it's safe to try again — clicking "Run payroll" again will just hit the same block. It is NOT something to click through with "Run again."</div>
     `:rsFailed?`
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
         <div><span class="badge bdanger">✕ Failed</span> <span style="font-size:.82rem;margin-left:6px">Processing ${rs.month} failed — ${rs.message||'no details recorded'}.</span></div>

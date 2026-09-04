@@ -122,7 +122,22 @@ def main():
     print(f"Processing {month}...")
     append_run_status(month, "running", "Started by GitHub Actions")
     try:
-        subprocess.run([sys.executable, "process_month.py", month], check=True)
+        # process_month.py exits 3 specifically when its pre-flight gate blocked the run (Phase 2
+        # of the reliability plan, 2026-09-04) — distinct from any other failure, since the
+        # remedy is different ("run migrate_log_ids.py / investigate", not "something crashed").
+        # check=False here so we can inspect the real exit code before deciding how to react;
+        # anything other than 0 or 3 falls through to check_returncode()'s normal exception path.
+        result = subprocess.run([sys.executable, "process_month.py", month], check=False)
+        if result.returncode == 3:
+            append_run_status(month, "blocked",
+                               "Pre-flight check blocked this run — a manager resolution may not "
+                               "match this run's freshly computed output. Run "
+                               f'`python audit_orphans.py "{month}"` to see why, then '
+                               "migrate_log_ids.py to fix it, before running again.")
+            print(f"BLOCKED processing {month} — pre-flight check failed. index.html untouched.")
+            sys.exit(3)
+        result.check_returncode()
+
         subprocess.run([sys.executable, "render_full_S.py", month], check=True)
         new_html = splice_s_block(month)
         validate(new_html)
@@ -130,6 +145,8 @@ def main():
             f.write(new_html)
         append_run_status(month, "complete", "Processed and spliced successfully")
         print(f"{month} processed and spliced successfully.")
+    except SystemExit:
+        raise
     except Exception as e:
         append_run_status(month, "failed", str(e)[:500])
         print(f"FAILED processing {month}: {e}")

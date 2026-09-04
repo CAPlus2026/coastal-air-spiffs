@@ -155,6 +155,84 @@ def test_norm_month_handles_iso_and_plain_string_identically():
     assert pm.norm_month("2026-08-01T04:00:00.000Z") == "Aug 2026"
 
 
+## ── Phase 2: preflight() ──────────────────────────────────────────────────────────────────────
+def test_preflight_blocks_on_skipped_month_baseline(mock_pipeline, fixture_reports):
+    fixture_reports["masterPayFile"] = [
+        {"EmployeeName": "Test Tech One", "Activity": "TGL Lead Set Res", "Date": "2026-05-05",
+         "JobNumber": "999010", "GrossPay": 25.0, "CustomerName": "Test Customer, Epsilon",
+         "LocationName": "", "LaborTypeCode": ""},
+    ]
+    run_month("May 2026")  # creates a real res_carry_forward baseline with 1 pending item
+    fixture_reports["masterPayFile"] = []
+    computed = pm.compute("Aug 2026")  # PREV_LABEL="Jul 2026" -- May exists, Jun/Jul don't
+    pf = pm.preflight(computed)
+    assert pf["blocked"], "a missing prior-month baseline (while other months exist) should block"
+    assert "Jul 2026" in pf["message"]
+
+
+def test_preflight_does_not_block_a_genuinely_fresh_deployment(mock_pipeline, fixture_reports):
+    """No res_carry_forward history AT ALL (not even for a different month) is a legitimate
+    brand-new deployment, not a skipped month -- must not require --bootstrap."""
+    computed = pm.compute("Aug 2026")
+    pf = pm.preflight(computed)
+    assert not pf["blocked"], pf["message"]
+
+
+def test_preflight_blocks_on_money_moving_orphan(mock_pipeline):
+    mock_pipeline.tabs["carry_forward_resolutions"] = [
+        ["Aug 2026", "steven", "cf_stale_id_that_wont_match", "Test Tech One", "some ref",
+         "Lead Stage 2 — Nonexistent Customer", "75", "paid", "", "2026-08-01T00:00:00.000Z"],
+    ]
+    computed = pm.compute("Aug 2026")
+    pf = pm.preflight(computed)
+    assert pf["blocked"]
+    assert "money-moving" in pf["message"]
+
+
+def test_preflight_warns_but_does_not_block_on_cosmetic_orphan(mock_pipeline):
+    mock_pipeline.tabs["carry_forward_resolutions"] = [
+        ["Aug 2026", "steven", "cf_stale_id_that_wont_match", "Test Tech One", "some ref",
+         "Lead Stage 2 — Nonexistent Customer", "75", "dead", "customer cancelled", "2026-08-01T00:00:00.000Z"],
+    ]
+    computed = pm.compute("Aug 2026")
+    pf = pm.preflight(computed)
+    assert not pf["blocked"], pf["message"]
+    assert any("cosmetic" in w for w in pf["warnings"])
+
+
+def test_preflight_blocks_on_large_payout_swing_on_rerun(mock_pipeline, fixture_reports):
+    fixture_reports["masterPayFile"] = [
+        {"EmployeeName": "Test Tech One", "Activity": "Sales Spiff", "Date": "2026-08-05",
+         "JobNumber": "999011", "GrossPay": 500.0, "CustomerName": "Test Customer, Zeta",
+         "LocationName": "", "LaborTypeCode": ""},
+    ]
+    run_month("Aug 2026")  # writes output_2026-08.json with $500 on the books
+    fixture_reports["masterPayFile"] = []  # simulate a data source suddenly going empty
+    computed = pm.compute("Aug 2026")
+    pf = pm.preflight(computed)
+    assert pf["blocked"]
+    assert "change" in pf["message"].lower()
+
+
+def test_preflight_blocked_run_raises_from_main_without_force(mock_pipeline):
+    mock_pipeline.tabs["carry_forward_resolutions"] = [
+        ["Aug 2026", "steven", "cf_stale", "Test Tech One", "ref", "Lead Stage 2 — X",
+         "75", "paid", "", "2026-08-01T00:00:00.000Z"],
+    ]
+    with pytest.raises(pm.PreflightBlocked):
+        pm.main("Aug 2026")
+
+
+def test_preflight_force_override_proceeds_despite_block(mock_pipeline):
+    mock_pipeline.tabs["carry_forward_resolutions"] = [
+        ["Aug 2026", "steven", "cf_stale", "Test Tech One", "ref", "Lead Stage 2 — X",
+         "75", "paid", "", "2026-08-01T00:00:00.000Z"],
+    ]
+    pm.main("Aug 2026", force_preflight=True)  # must not raise
+    import os
+    assert os.path.exists(pm._output_path_for("Aug 2026"))
+
+
 def test_carry_forward_resolution_replays_regardless_of_month_cell_format(mock_pipeline, fixture_reports):
     """The actual 2026-09-02 bug: Google Sheets silently converts a plain 'Aug 2026' cell into a
     Date on write, and every r[0]===MONTH-style comparison used to fail against that. Here:

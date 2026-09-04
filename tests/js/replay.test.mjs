@@ -162,6 +162,26 @@ test('mgrForEmployee falls back to the roster for someone with no current-month 
     `mgrForEmployee returned null for ${rosterOnly} even with a matching roster row present`);
 });
 
+// ── Incident: an approved bonus was double-counted in every total (found 2026-09-04) ─────────
+// buildRows()'s "Approved bonuses" block does `empMap[b.name].total+=b.amount` — r.total already
+// includes the bonus. Several render functions then ALSO added r.bonusAmt on top when computing
+// a displayed total (teamTotal, grandTotal(), rOutput()'s rowTotal), silently doubling every
+// approved bonus. Confirmed live: Rich Smith's real $408.07 commercial commission displayed and
+// totaled as $816.14 the first time it was approved.
+test('an approved bonus contributes its amount exactly once to buildRows() and grandTotal()', () => {
+  const { sandbox, S } = loadApp();
+  const bonus = S.bonuses.find(b => !b.approved) || S.bonuses[0];
+  assert.ok(bonus, 'fixture has no bonuses to test against');
+  const before = sandbox.grandTotal();
+  bonus.approved = true;
+  const row = sandbox.buildRows().find(r => r.name === bonus.name);
+  assert.ok(row, 'approved bonus did not produce a row in buildRows()');
+  assert.equal(row.bonusAmt, bonus.amount);
+  const after = sandbox.grandTotal();
+  assert.equal(after - before, bonus.amount,
+    `approving a $${bonus.amount} bonus changed grandTotal() by $${after - before} — should be exactly once`);
+});
+
 // ── Known open gap: commlead_updates create-if-missing can fabricate a paid phantom lead ─────
 // Documented and worked around by hand (2026-09-03/04), not yet fixed at the code level — see
 // the reliability plan's Phase 2 (pre-flight gate, phantom-lead check). This is intentionally a

@@ -1097,7 +1097,11 @@ function rReview(){
     // includes base spiffs, commercial lead payouts, Jay's commission, carry-forward
     // payouts, and resolved flags rolled in, so Review always matches Output exactly.
     const teamRows=allRows.filter(r=>S.emps[mgr].some(e=>e.name===r.name));
-    const teamTotal=teamRows.reduce((a,r)=>a+r.total+(r.bonusAmt||0),0);
+    // BUG FOUND 2026-09-04: r.total already includes bonusAmt (see buildRows()'s
+    // "Approved bonuses" block, which does empMap[b.name].total+=b.amount) — adding
+    // bonusAmt again here double-counted every approved bonus (confirmed live: Rich
+    // Smith's $408.07 commission showing as $816.14 the first time it was approved).
+    const teamTotal=teamRows.reduce((a,r)=>a+r.total,0);
     return `<div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.875rem">
         <div class="ctitle" style="margin:0">${lbl}</div>
@@ -1107,7 +1111,7 @@ function rReview(){
       ${teamRows.length?teamRows.map(r=>`<div style="padding:7px 0;border-bottom:1px solid #F0EDE8;font-size:.82rem">
         <div style="display:flex;justify-content:space-between;gap:8px">
           <span style="font-weight:500">${r.name}</span>
-          <span style="font-family:'DM Mono',monospace;font-weight:600">${fp(r.total+(r.bonusAmt||0))}</span>
+          <span style="font-family:'DM Mono',monospace;font-weight:600">${fp(r.total)}</span>
         </div>
         ${(r.details||[]).filter(Boolean).length?`<div style="font-size:.7rem;color:#888;margin-top:3px;line-height:1.6">${r.details.filter(Boolean).map(d=>`• ${d}`).join('<br>')}</div>`:''}
       </div>`).join(''):'<div style="font-size:.82rem;color:#999;padding:6px 0">No spiffs calculated for this team yet.</div>'}
@@ -1542,13 +1546,17 @@ function buildRows(){
     addToEmp('Steven (performance bonus)',v,`Performance bonus: ${r.dept} goal met — $350`,'');
   });
 
-  // Approved bonuses
+  // Approved bonuses. BUG FOUND 2026-09-04: this used to also call addToEmp() with a
+  // detail bullet for the same amount — since the bonus line below (rendered from
+  // bonusAmt/bonusNote) already shows the identical "type: amount" text, that duplicated
+  // the bonus in the UI (though not in the dollar total, since addToEmp() itself was
+  // passed zero vals) — confirmed live as Rich Smith's commission appearing twice.
   S.bonuses.filter(b=>b.approved).forEach(b=>{
-    addToEmp(b.name,[0,0,0,0,0,0],`${b.type}: ${fp(b.amount)}`,'');
     if(!empMap[b.name]) empMap[b.name]={name:b.name,vals:[0,0,0,0,0,0],details:[],total:0};
     empMap[b.name].total+=b.amount;
     empMap[b.name].bonusAmt=(empMap[b.name].bonusAmt||0)+b.amount;
     empMap[b.name].bonusNote=b.type;
+    empMap[b.name].bonusDept=b.dept;
   });
 
   // Office membership spiffs
@@ -1562,7 +1570,7 @@ function buildRows(){
 
   return Object.values(empMap).filter(r=>r.total>0);
 }
-function grandTotal(){return buildRows().reduce((a,r)=>a+r.total+(r.bonusAmt||0),0);}
+function grandTotal(){return buildRows().reduce((a,r)=>a+r.total,0);}
 
 let outputMode='detailed'; // 'detailed' shows the per-line audit trail under each name; 'summary' is just the numbers
 function setOutputMode(m){outputMode=m;rOutput();}
@@ -1571,11 +1579,13 @@ function rOutput(){
   const simple=outputMode==='summary';
   const tbody=rows.map(r=>{
     r.vals.forEach((x,i)=>ct[i]+=x);
-    const rowTotal = r.total + (r.bonusAmt||0);
+    // r.total already includes bonusAmt (see buildRows()'s "Approved bonuses" block) —
+    // do not add it again here.
+    const rowTotal = r.total;
     gt+=rowTotal;
     const details = simple?[]:(r.details||[]).filter(Boolean);
     const detailHtml = details.length ? `<div style="font-size:.65rem;color:#888;margin-top:3px;line-height:1.6">${details.map(d=>`• ${d}`).join('<br>')}</div>` : '';
-    const bonusLine = (!simple&&r.bonusAmt) ? `<div style="font-size:.65rem;color:#888;margin-top:3px">• ${r.bonusNote}: ${fp(r.bonusAmt)} (Call Center — all depts)</div>` : '';
+    const bonusLine = (!simple&&r.bonusAmt) ? `<div style="font-size:.65rem;color:#888;margin-top:3px">• ${r.bonusNote}: ${fp(r.bonusAmt)}${r.bonusDept?` (${r.bonusDept})`:''}</div>` : '';
     return `<tr><td>${r.name}${detailHtml}${bonusLine}</td>${r.vals.map(x=>`<td>${x>0?fp(x):'<span class="zero">—</span>'}</td>`).join('')}<td style="font-weight:600">${fp(rowTotal)}</td></tr>`;
   }).join('');
   v.innerHTML=`

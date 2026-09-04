@@ -16,7 +16,30 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  test:
+    # Gates the actual processing job below — if the test suite fails, `process` never runs, so a
+    # broken pipeline can't touch live payroll data unattended. Added 2026-09-04 alongside the
+    # test suite itself (tests/); needs no ServiceTitan credentials at all, since every test mocks
+    # both external dependencies (the Sheet backend and ServiceTitan's reports).
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Python tests
+        run: pytest -v
+      - name: JS replay tests
+        run: node --test tests/js/replay.test.mjs
+
   process:
+    needs: test
     runs-on: ubuntu-latest
     # Without this, the default is 6 HOURS — found 2026-09-04 after an ad hoc ServiceTitan report
     # query with a missing filter parameter looped for 20+ minutes with no cap before being killed

@@ -82,6 +82,17 @@ def test_manual_carry_forward_keeps_its_own_reason(mock_pipeline):
 
 
 # ── Blank-ref suffix instability — 2026-09-04 finding E ─────────────────────────────────────
+#
+# IMPORTANT CONTEXT for all of the tests below (finding F, same day): a carry-forward item's
+# resolution status must NEVER be used to exclude it from result["carryForward"] (the display
+# baked into output_<month>.json / index.html) — only from what gets seeded into res_carry_forward
+# for NEXT month. Reason: index.html's client-side replay (loadSheets()) is what actually applies
+# a same-month-resolved item's payout to the live Accounting Output — it does this by finding the
+# item by id in the baked array and flipping it to resolved. Excluding it server-side (which an
+# earlier version of this fix did) leaves the client with nothing to find, and a live, real $900
+# underpayment in production was the direct result. So: `result["carryForward"]` must ALWAYS
+# contain a same-month-resolved item; only the res_carry_forward seed write (asserted here via
+# mock_pipeline.get("res_carry_forward")) may exclude it.
 def test_carry_forward_natural_key_fallback_handles_blank_ref_suffix_collision(mock_pipeline):
     """BUG FOUND 2026-09-04: when an employee has multiple pending items with no job number
     recorded, they all hash to the same content-hash base id, so make_id_factory appends a
@@ -105,12 +116,18 @@ def test_carry_forward_natural_key_fallback_handles_blank_ref_suffix_collision(m
          "Lead Stage 2 — Customer, Beta", "75", "paid", "", "2026-08-01T00:00:00.000Z"],
     ]
     result = run_month("Aug 2026")
-    assert not any(c["emp"] == "Test Tech One" and "Beta" in c["type"] for c in result["carryForward"]), (
-        "a resolution recorded against a suffixed id (unstable across runs for blank-ref "
-        "siblings) was ignored — natural-key fallback should have caught it"
+    assert any(c["emp"] == "Test Tech One" and "Beta" in c["type"] for c in result["carryForward"]), (
+        "resolved items must stay in the display list so the client-side replay can still find "
+        "them and apply the payout"
     )
-    # The sibling ("Alpha") was never resolved and must still correctly carry forward.
-    assert any(c["emp"] == "Test Tech One" and "Alpha" in c["type"] for c in result["carryForward"])
+    seed_rows = [r for r in mock_pipeline.get("res_carry_forward") if pm.norm_month(r[0]) == "Aug 2026"]
+    assert not any(r[3] == "Test Tech One" and "Beta" in r[5] for r in seed_rows), (
+        "a resolution recorded against a suffixed id (unstable across runs for blank-ref "
+        "siblings) was ignored when building next month's seed — natural-key fallback should "
+        "have caught it"
+    )
+    # The sibling ("Alpha") was never resolved and must still correctly seed into next month.
+    assert any(r[3] == "Test Tech One" and "Alpha" in r[5] for r in seed_rows)
 
 
 def test_carry_forward_natural_key_fallback_does_not_cross_contaminate_different_job(mock_pipeline, fixture_reports):
@@ -128,11 +145,12 @@ def test_carry_forward_natural_key_fallback_does_not_cross_contaminate_different
         ["Aug 2026", "steven", "cf_old_id", "Test Tech One", "Job 111",
          "Lead Stage 2 — Customer, Alpha", "75", "paid", "", "2026-08-01T00:00:00.000Z"],
     ]
-    # A brand-new Stage 1 this month, same customer, a different job — must stay pending.
-    # Uses compute() directly (not run_month()) since this scenario deliberately creates the
-    # same (employee, type) collision the preflight orphan-audit correctly can't resolve on its
-    # own — that ambiguity is a separate, expected concern (see the Rodriguez/Karl Welch case
-    # this was modeled on), not something this test is checking.
+    # A brand-new Stage 1 this month, same customer, a different job — must stay pending in
+    # BOTH the display and next month's seed. Uses compute() directly (not run_month()) since
+    # this scenario deliberately creates the same (employee, type) collision the preflight
+    # orphan-audit correctly can't resolve on its own — that ambiguity is a separate, expected
+    # concern (see the Rodriguez/Karl Welch case this was modeled on), not something this test
+    # is checking.
     fixture_reports["masterPayFile"] = [
         {"EmployeeName": "Test Tech One", "Activity": "TGL Lead Set Res", "Date": "2026-08-05",
          "JobNumber": "222", "GrossPay": 25.0, "CustomerName": "Customer, Alpha",
@@ -142,8 +160,9 @@ def test_carry_forward_natural_key_fallback_does_not_cross_contaminate_different
     new_item = next((c for c in result["carryForward"]
                       if c["emp"] == "Test Tech One" and c["ref"] == "Job 222"), None)
     assert new_item is not None, (
-        "the natural-key fallback wrongly excluded a genuinely new, unresolved item just "
-        "because it shares a customer name with an unrelated, already-resolved one"
+        "the natural-key fallback (or the 'already represented above' dedup check) wrongly "
+        "excluded a genuinely new, unresolved item just because it shares a customer name with "
+        "an unrelated, already-resolved one"
     )
 
 
@@ -169,9 +188,14 @@ def test_carry_forward_resolution_matches_despite_stale_baseline_id(mock_pipelin
          "2026-09-04T00:00:00.000Z"],
     ]
     result = run_month("Aug 2026")
-    assert not any(c["emp"] == "Test Tech One" and "Old" in c["type"] for c in result["carryForward"]), (
-        "resolution recorded against the current content-hash id was ignored because the "
-        "baseline row's own (stale) id was checked instead"
+    assert any(c["emp"] == "Test Tech One" and "Old" in c["type"] for c in result["carryForward"]), (
+        "resolved items must stay in the display list so the client-side replay can still "
+        "apply this month's payout"
+    )
+    seed_rows = [r for r in mock_pipeline.get("res_carry_forward") if pm.norm_month(r[0]) == "Aug 2026"]
+    assert not any(r[3] == "Test Tech One" and "Old" in r[5] for r in seed_rows), (
+        "resolution recorded against the current content-hash id was ignored when building "
+        "next month's seed because the baseline row's own (stale) id was checked instead"
     )
 
 
@@ -192,8 +216,14 @@ def test_same_month_carry_forward_respects_existing_resolution(mock_pipeline, fi
          "2026-09-04T00:00:00.000Z"],
     ]
     result = run_month("Aug 2026")
-    assert not any(c["emp"] == "Test Tech One" and "New" in c["type"] for c in result["carryForward"]), (
-        "a same-month Stage 1 carry-forward candidate ignored an existing 'paid' resolution"
+    assert any(c["emp"] == "Test Tech One" and "New" in c["type"] for c in result["carryForward"]), (
+        "resolved items must stay in the display list so the client-side replay can still "
+        "apply this month's payout"
+    )
+    seed_rows = [r for r in mock_pipeline.get("res_carry_forward") if pm.norm_month(r[0]) == "Aug 2026"]
+    assert not any(r[3] == "Test Tech One" and "New" in r[5] for r in seed_rows), (
+        "a same-month Stage 1 carry-forward candidate ignored an existing 'paid' resolution "
+        "when building next month's seed"
     )
 
 
@@ -295,21 +325,26 @@ def test_preflight_does_not_block_a_genuinely_fresh_deployment(mock_pipeline, fi
 
 
 def test_preflight_blocks_on_money_moving_orphan(mock_pipeline):
-    """The real risk case: an old-id resolution that doesn't match anything by id, but a
-    *different* id for the exact same (emp, type) is still genuinely pending this run — real
-    ambiguity about whether that resolution was ever actually honored, worth a human's attention.
+    """The real risk case: an old-id resolution that doesn't match anything by id, and whose own
+    recorded ref ("") doesn't agree with the one candidate's real ref ("some ref") either — real
+    ambiguity about whether that resolution was ever actually honored (could be for this exact
+    item recorded before its job number was known, or could be unrelated), worth a human's
+    attention rather than an automatic natural-key match.
 
-    (2026-09-04: a zero-candidate "obsolete" orphan — nothing pending at all for that key, under
-    any id — was found to carry none of this risk and was demoted to non-blocking; see
-    audit_carry_forward()'s verdict-based money_moving fix. This test now exercises the genuinely
-    risky "recoverable" case instead of the vacuous one it originally used.)"""
+    (2026-09-04: two narrower cases were found NOT to carry this risk, and are correctly no
+    longer blocking here: a zero-candidate "obsolete" orphan — nothing pending at all for that
+    key — see audit_carry_forward()'s verdict-based money_moving fix; and a resolution whose own
+    ref agrees exactly with the sole candidate's ref (both blank, or the identical job number) —
+    see the (employee, customer, ref) natural-key fallback in
+    fetch_carry_forward_disposition_by_customer(). This test exercises the genuinely risky case
+    that remains: a ref *mismatch* between the resolution and its only candidate.)"""
     mock_pipeline.tabs["res_carry_forward"] = [
         ["Jul 2026", "cf_2026-07_1", "Jul 2026", "Test Tech One", "some ref",
          "Lead Stage 2 — Nonexistent Customer", "75", "MB Install Residential",
          "Stage 1 paid Jul 2026. Pay $75 when sold, installed, paid."],
     ]
     mock_pipeline.tabs["carry_forward_resolutions"] = [
-        ["Aug 2026", "steven", "cf_stale_id_that_wont_match", "Test Tech One", "some ref",
+        ["Aug 2026", "steven", "cf_stale_id_that_wont_match", "Test Tech One", "",
          "Lead Stage 2 — Nonexistent Customer", "75", "paid", "", "2026-08-01T00:00:00.000Z"],
     ]
     computed = pm.compute("Aug 2026")
@@ -348,8 +383,10 @@ def test_preflight_blocked_run_raises_from_main_without_force(mock_pipeline):
         ["Jul 2026", "cf_2026-07_1", "Jul 2026", "Test Tech One", "ref", "Lead Stage 2 — X",
          "75", "MB Install Residential", "Stage 1 paid Jul 2026. Pay $75 when sold, installed, paid."],
     ]
+    # Ref mismatch ("" vs "ref") between the resolution and its one candidate — the genuinely
+    # ambiguous case (see test_preflight_blocks_on_money_moving_orphan above).
     mock_pipeline.tabs["carry_forward_resolutions"] = [
-        ["Aug 2026", "steven", "cf_stale", "Test Tech One", "ref", "Lead Stage 2 — X",
+        ["Aug 2026", "steven", "cf_stale", "Test Tech One", "", "Lead Stage 2 — X",
          "75", "paid", "", "2026-08-01T00:00:00.000Z"],
     ]
     with pytest.raises(pm.PreflightBlocked):
@@ -362,7 +399,7 @@ def test_preflight_force_override_proceeds_despite_block(mock_pipeline):
          "75", "MB Install Residential", "Stage 1 paid Jul 2026. Pay $75 when sold, installed, paid."],
     ]
     mock_pipeline.tabs["carry_forward_resolutions"] = [
-        ["Aug 2026", "steven", "cf_stale", "Test Tech One", "ref", "Lead Stage 2 — X",
+        ["Aug 2026", "steven", "cf_stale", "Test Tech One", "", "Lead Stage 2 — X",
          "75", "paid", "", "2026-08-01T00:00:00.000Z"],
     ]
     pm.main("Aug 2026", force_preflight=True)  # must not raise

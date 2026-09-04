@@ -142,6 +142,21 @@ def audit_carry_forward(output, month_label):
         if id_ == pm.stable_id("cf", r["emp"], r["ref"]):
             continue
         candidates = current_by_key.get((r["emp"], r["type"]), [])
+        # 2026-09-04, same day as the display/seed split (compute_prior_carry_forward() no
+        # longer excludes a resolved item from output["carryForward"] at all — only from what
+        # gets seeded into next month, in commit()'s seed-filtering step). That means EVERY
+        # resolved item now legitimately stays present here with its own (unaffected) displayed
+        # id — including cases like Karl Welch's "Rodriguez, Lupe", where TWO real, unrelated
+        # jobs for the same customer are both simultaneously present (one resolved, one not),
+        # making `candidates` have more than one entry even though the resolution's own ref
+        # clearly identifies exactly one of them. So: match by ref against EACH candidate
+        # individually (not just when there's a single candidate overall) — a resolution whose
+        # own recorded ref agrees with exactly one candidate's ref (both blank, or the identical
+        # job number) will already be correctly excluded from the seed regardless of any other,
+        # unrelated candidates sharing the same (employee, type) — not an orphan.
+        ref_matches = [c for c in candidates if current_by_id[c]["ref"] == r["ref"]]
+        if len(ref_matches) == 1:
+            continue
         # Already fixed by a separate corrective row under the new id (append-only logs never
         # remove the original orphaned row, so it would otherwise be reported as open forever,
         # even after being migrated by hand or by migrate_log_ids.py). Confirmed real 2026-09-04:

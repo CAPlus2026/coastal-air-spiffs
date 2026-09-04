@@ -183,6 +183,28 @@ def last_name_key(customer):
     return tokens[0].lower() if tokens else ""
 
 
+def full_customer_key(customer):
+    """Full normalized customer name (all tokens, not just the last name) — deliberately
+    stricter than last_name_key(). Found 2026-09-04: the cross-technician duplicate check used
+    last_name_key() for its no-job-number fallback and produced a false positive flagging Nick
+    Scarpa (customer "Harris, Heather") against Jenny Miller (customer "Harris, Loni") as if they
+    were the same person, purely because they share the surname "Harris". last_name_key()'s
+    looseness is correct and intentional everywhere else it's used (matching the same real person
+    across slightly-differently-formatted rows for Stage 1/2 and commercial-lead tracking) — but
+    a duplicate-PAYMENT check needs the opposite: minimizing false positives matters more than
+    catching every formatting variation, since a wrong flag on a common surname erodes trust in
+    every other flag. Use this (not last_name_key) for any check where two DIFFERENT people
+    matching is the failure mode to avoid."""
+    if not customer:
+        return ""
+    tokens = re.findall(r"[a-zA-Z]+", customer.strip())
+    # Sorted rather than left in original order — ServiceTitan customer names are consistently
+    # "Last, First" in every report seen so far, but sorting makes the key order-invariant for
+    # free in case that ever isn't true, without giving up any of the strictness that matters
+    # here (still requires every name token to match, not just one).
+    return " ".join(sorted(t.lower() for t in tokens))
+
+
 # ── Sheet read/write helpers (for self-service: auto-seeding + result delivery) ──
 _ISO_MONTH_RE = re.compile(r"^(\d{4})-(\d{2})-\d{2}T")
 
@@ -838,7 +860,10 @@ def main():
     prior_ledger = sheet_get("spiff_ledger", required=True)
     prior_job_keys = set()          # (employee, job) already paid in a prior month — same-tech repeat
     prior_owner_by_job = defaultdict(set)      # job -> {employees} paid in a prior month — cross-tech
-    prior_owner_by_custkey = defaultdict(set)  # last-name key -> {employees}, only for job-less entries
+    # Keyed by full_customer_key (NOT last_name_key — see that function's docstring; a surname-only
+    # key produced a real false positive on 2026-09-04, flagging Nick Scarpa/"Harris, Heather"
+    # against Jenny Miller/"Harris, Loni" as if they were the same person).
+    prior_owner_by_custkey = defaultdict(set)  # full customer key -> {employees}, only for job-less entries
     for row in prior_ledger:
         if len(row) < 5:
             continue
@@ -849,7 +874,7 @@ def main():
             prior_job_keys.add((prior_emp, str(prior_job)))
             prior_owner_by_job[str(prior_job)].add(prior_emp)
         elif prior_cust:
-            prior_owner_by_custkey[last_name_key(prior_cust)].add(prior_emp)
+            prior_owner_by_custkey[full_customer_key(prior_cust)].add(prior_emp)
 
     # This month's own entries, grouped the same way, to catch two different technicians both
     # getting credited for the same job/customer within the same run (not just across months) —
@@ -860,13 +885,13 @@ def main():
         if entry["job"]:
             this_month_owner_by_job[str(entry["job"])].add(entry["employee"])
         elif entry["customer"]:
-            this_month_owner_by_custkey[last_name_key(entry["customer"])].add(entry["employee"])
+            this_month_owner_by_custkey[full_customer_key(entry["customer"])].add(entry["employee"])
 
     flagged_dup_keys = set()  # avoid raising the same (employees, job/customer) combo twice
     for entry in ledger_entries:
         emp = entry["employee"]
         job = str(entry["job"]) if entry["job"] else ""
-        cust_key = last_name_key(entry["customer"]) if entry["customer"] else ""
+        cust_key = full_customer_key(entry["customer"]) if entry["customer"] else ""
         mgr_for_flag = entry["mgr"] or team_of(emp)
         if mgr_for_flag not in flags:
             continue

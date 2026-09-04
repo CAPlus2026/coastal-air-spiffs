@@ -1,0 +1,233 @@
+[
+  {
+    "tab": "carry_forward_resolutions",
+    "old_id": "cf_2026-08_1",
+    "emp": "Andrew Babyak",
+    "type": "Lead Stage 2 \u2014 Kirby, Terry",
+    "disposition": "paid",
+    "note": "",
+    "money_moving": true,
+    "candidates": [
+      "cf_ea5fd51255"
+    ],
+    "verdict": "recoverable"
+  },
+  {
+    "tab": "carry_forward_resolutions",
+    "old_id": "cf_2026-08_2",
+    "emp": "Andrew Babyak",
+    "type": "Lead Stage 2 \u2014 Griffis, Dave",
+    "disposition": "paid",
+    "note": "",
+    "money_moving": true,
+    "candidates": [
+      "cf_5b65bc4c23"
+    ],
+    "verdict": "recoverable"
+  },
+  {
+    "tab": "carry_forward_resolutions",
+    "old_id": "cf_2026-08_3",
+    "emp": "Andrew Babyak",
+    "type": "Lead Stage 2 \u2014 Akel, Robin",
+    "disposition": "paid",
+    "note": "",
+    "money_moving": true,
+    "candidates": [
+      "cf_151b6a1205"
+    ],
+    "verdict": "recoverable"
+  },
+  {
+    "tab": "carry_forward_resolutions",
+    "old_id": "cf_2026-08_6",
+    "emp": "Corey Ward",
+    "type": "Lead Stage 2 \u2014 Zocchi, David",
+    "disposition": "paid",
+    "note": "",
+    "money_moving": true,
+    "candidates": [
+      "cf_36c7aed9b1"
+    ],
+    "verdict": "recoverable"
+  },
+  {
+    "tab": "carry_forward_resolutions",
+    "old_id": "cf_2026-08_7",
+    "emp": "Corey Ward",
+    "type": "Lead Stage 2 \u2014 Ruppert, Harley & Nancy",
+    "disposition": "paid",
+    "note": "",
+    "money_moving": true,
+    "candidates": [
+      "cf_36d533d2d7"
+    ],
+    "verdict": "recoverable"
+  },
+  {
+    "tab": "carry_forward_resolutions",
+    "old_id": "cf_2026-08_8",
+    "emp": "Corey Ward",
+    "type": "Lead Stage 2 \u2014 Epstein, Dave & Madeline",
+    "disposition": "paid",
+    "note": "",
+    "money_moving": true,
+    "candidates": [
+      "cf_8ecc66d125"
+    ],
+    "verdict": "recoverable"
+  },
+  {
+    "tab": "carry_forward_resolutions",
+    "old_id": "cf_2026-08_9",
+    "emp": "Corey Ward",
+    "type": "Lead Stage 2 \u2014 Mora, Angelina",
+    "disposition": "dead",
+    "note": "customer cancelled installation",
+    "money_moving": false,
+    "candidates": [
+      "cf_1db23a80f8"
+    ],
+    "verdict": "recoverable"
+  },
+  {
+    "tab": "carry_forward_resolutions",
+    "old_id": "cf_2026-08_15",
+    "emp": "Karl Welch",
+    "type": "Lead Stage 2 \u2014 Rodriguez, Lupe",
+    "disposition": "paid",
+    "note": "",
+    "money_moving": true,
+    "candidates": [
+      "cf_a01b0a2095_7"
+    ],
+    "verdict": "recoverable"
+  },
+  {
+    "tab": "carry_forward_resolutions",
+    "old_id": "cf_2026-08_16",
+    "emp": "Karl Welch",
+    "type": "Lead Stage 2 \u2014 Newhouse, Ken & Tracy",
+    "disposition": "paid",
+    "note": "",
+    "money_moving": true,
+    "candidates": [
+      "cf_feb26a16c6"
+    ],
+    "verdict": "recoverable"
+  },
+  {
+    "tab": "carry_forward_resolutions",
+    "old_id": "cf_2026-08_17",
+    "emp": "Karl Welch",
+    "type": "Lead Stage 2 \u2014 Seppi, Walter",
+    "disposition": "paid",
+    "note": "",
+    "money_moving": true,
+    "candidates": [
+      "cf_80b4a9a434"
+    ],
+    "verdict": "recoverable"
+  },
+  {
+    "tab": "carry_forward_resolutions",
+    "old_id": "cf_2026-08_19",
+    "emp": "Karl Welch",
+    "type": "Lead Stage 2 \u2014 Rodgers, Scott",
+    "disposition": "paid",
+    "note": "",
+    "money_moving": true,
+    "candidates": [
+      "cf_e04105f6ac"
+    ],
+    "verdict": "recoverable"
+  },
+  {
+    "tab": "carry_forward_resolutions",
+    "old_id": "cf_2026-08_20",
+    "emp": "Karl Welch",
+    "type": "Lead Stage 2 \u2014 Massena, Stan",
+    "disposition": "paid",
+    "note": "",
+    "money_moving": true,
+    "candidates": [
+      "cf_c645cf56bd"
+    ],
+    "verdict": "recoverable"
+  },
+  {
+    "tab": "carry_forward_resolutions",
+    "old_id": "cf_2026-08_21",
+    "emp": "Karl Welch",
+    "type": "Lead Stage 2 \u2014 Tomovski, Alex ",
+    "disposition": "paid",
+    "note": "",
+    "money_moving": true,
+    "candidates": [
+      "cf_1cbbebf40f"
+    ],
+    "verdict": "recoverable"
+  },
+  {
+    "tab": "carry_forward_resolutions",
+    "old_id": "cf_2026-08_24",
+    "emp": "Karl Welch",
+    "type": "Lead Stage 2 \u2014 Epstein, Dave & Madeline",
+    "disposition": "dead",
+    "note": "This was Corey's lead job.",
+    "money_moving": false,
+    "candidates": [],
+    "verdict": "obsolete"
+  },
+  {
+    "tab": "commlead_updates",
+    "old_id": "cl_2026-08_1",
+    "tech": "Nick Scarpa",
+    "customer": "El Patio",
+    "status": "Dismissed",
+    "money_moving": true,
+    "candidates": [
+      "cl_4ef149ba4e"
+    ],
+    "verdict": "recoverable"
+  },
+  {
+    "tab": "commlead_updates",
+    "old_id": "cl_2026-08_8",
+    "tech": "Nick Scarpa",
+    "customer": "Coyle, Marianne",
+    "status": "Dismissed",
+    "money_moving": true,
+    "candidates": [
+      "cl_eed872ea71"
+    ],
+    "verdict": "recoverable"
+  },
+  {
+    "tab": "spiff_corrections",
+    "old_id": "steven|Karl Welch|29",
+    "emp": "Karl Welch",
+    "action": "flagged",
+    "money_moving": true,
+    "candidates": [],
+    "verdict": "unrecoverable_legacy_row"
+  },
+  {
+    "tab": "spiff_corrections",
+    "old_id": "steven|Karl Welch|30",
+    "emp": "Karl Welch",
+    "action": "flagged",
+    "money_moving": true,
+    "candidates": [],
+    "verdict": "unrecoverable_legacy_row"
+  },
+  {
+    "tab": "spiff_corrections",
+    "old_id": "steven|Karl Welch|31",
+    "emp": "Karl Welch",
+    "action": "flagged",
+    "money_moving": true,
+    "candidates": [],
+    "verdict": "unrecoverable_legacy_row"
+  }
+]

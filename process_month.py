@@ -461,7 +461,20 @@ def spiff_rate_for_code(code):
 
 
 # ── Main pipeline ─────────────────────────────────────────────────────
-def main():
+# Split 2026-09-04 (Phase 1 of the reliability plan) into compute() -> preflight() -> commit(),
+# from what used to be one ~550-line main() that fetched, computed, AND wrote in one pass. Two
+# reasons: (1) a test can now call compute() and assert on its output without ever touching the
+# live Sheet; (2) it creates the seam Phase 2's real pre-flight checks need — something has to run
+# after everything is known but before any write happens, and "in the middle of one giant
+# function" isn't a place other code can hook into.
+def compute(month_label):
+    """Pure computation — fetches ServiceTitan data and roster, computes every spiff/flag/carry-
+    forward/comm-lead, and returns a dict with everything commit() needs. Makes ZERO writes to
+    the Sheet and touches no local files (other than reading spiff_rates.json/report_ids.json at
+    import time, as before)."""
+    configure_month(month_label)
+    load_roster_globals()
+
     print("Fetching UMAP (technicians + employees)...")
     umap = build_umap()
 
@@ -936,32 +949,6 @@ def main():
             if other in emps:
                 emps[other]["dups"].append(dup_key[-1])
 
-    if os.environ.get("ORACLE_DRY_RUN"):
-        print(f"  [ORACLE_DRY_RUN] Skipping spiff_ledger write ({len(ledger_entries)} entries would have been sent)")
-    else:
-        # replaceMonth (not append) so re-running an already-processed month overwrites its own
-        # ledger rows instead of duplicating them — found 2026-09 when a real self-service re-run
-        # of August wrote a second copy of every ledger-eligible line (Rich Smith's commissions,
-        # Chris Port, Jenny Miller) because this used to append unconditionally on every run.
-        ledger_rows = [[e["month"], e["mgr"], e["employee"], e["job"], e["customer"],
-                         e["type"], e["item"], e["amount"], e["source"]] for e in ledger_entries]
-        sheet_write_table("spiff_ledger", ["month", "mgr", "employee", "job", "customer", "type", "item", "amount", "source"],
-                           ledger_rows, mode="replaceMonth", month=MONTH_LABEL)
-        print(f"  Wrote {len(ledger_rows)} entries to spiff_ledger (replacing any prior {MONTH_LABEL} entries)")
-
-    # Write this month's carry-forward/comm-lead output back to the Sheet — becomes next
-    # month's auto-computed seed via compute_prior_carry_forward()/compute_carried_leads().
-    # This is what makes the seed step self-service instead of a manual hand-refresh.
-    cf_rows = [[MONTH_LABEL, c["id"], c["fromMonth"], c["emp"], c["ref"], c["type"], c["amount"],
-                c["dept"], c["reason"]] for c in carry_forward_out]
-    sheet_write_table("res_carry_forward", ["month", "id", "fromMonth", "emp", "ref", "type", "amount", "dept", "reason"],
-                       cf_rows, mode="replaceMonth", month=MONTH_LABEL)
-    cl_rows = [[MONTH_LABEL, l["id"], l["month"], l["tech"], l["job"], l["customer"], l["status"],
-                l["spiff"], l["payMonth"], l["paid"], l.get("location", "")] for l in comm_leads_out]
-    sheet_write_table("res_comm_leads", ["month", "id", "leadMonth", "tech", "job", "customer", "status", "spiff", "payMonth", "paid", "location"],
-                       cl_rows, mode="replaceMonth", month=MONTH_LABEL)
-    print(f"  Wrote {len(cf_rows)} carry-forward rows and {len(cl_rows)} comm-lead rows to the Sheet for next month's seed")
-
     # ── Output ──────────────────────────────────────────────────────
     steven_emps = [emps[n] for n in STEVEN_ROSTER if n in emps]
     caleb_emps = [emps[n] for n in CALEB_ROSTER if n in emps]
@@ -996,29 +983,100 @@ def main():
         "unresolvedCompleters": list(unresolved_completers),
     }
 
-    with open(f"output_{FROM_DATE[:7]}.json", "w") as f:
-        json.dump(result, f, indent=2)
-
     unclassified_names = [n for n in emps if n not in known_names]
-    print("\n=== SUMMARY ===")
-    print(f"Steven's team: {len(steven_emps)} employees with spiffs")
-    print(f"Caleb's team: {len(caleb_emps)} employees with spiffs")
     if unclassified_names:
-        print(f"UNCLASSIFIED (flagged, paid under Steven by default): {unclassified_names}")
+        print(f"  UNCLASSIFIED (flagged, paid under Steven by default): {unclassified_names}")
+
+    # ledger_entries isn't part of `result` (it's not written to output_<month>.json — it only
+    # ever existed to become spiff_ledger rows) but commit() needs it, so it travels alongside
+    # result in the dict compute() returns rather than being silently dropped or, worse, smuggled
+    # into the JSON output where render_full_S.py/index.html would never look for it anyway.
+    return {"result": result, "ledger_entries": ledger_entries}
+
+
+def preflight(computed):
+    """Placeholder for Phase 2 of the reliability plan — this is the seam a real pre-flight gate
+    hooks into (comparing what computed["result"] is about to overwrite against what the
+    resolution logs still reference), sitting between compute() and commit() so nothing gets
+    written until it passes. Not yet implemented; always passes for now. Returns
+    {"blocked": bool, "warnings": [str, ...], "message": str}."""
+    return {"blocked": False, "warnings": [], "message": ""}
+
+
+def commit(computed):
+    """The only function in this module that writes anything — to the Sheet or to disk. Takes
+    exactly what compute() returned; never re-derives it, so commit() can't drift from what was
+    actually computed and (once Phase 2 lands) already passed pre-flight."""
+    result = computed["result"]
+    ledger_entries = computed["ledger_entries"]
+    month_label = result["month"]
+
+    if os.environ.get("ORACLE_DRY_RUN"):
+        print(f"  [ORACLE_DRY_RUN] Skipping spiff_ledger write ({len(ledger_entries)} entries would have been sent)")
+    else:
+        # replaceMonth (not append) so re-running an already-processed month overwrites its own
+        # ledger rows instead of duplicating them — found 2026-09 when a real self-service re-run
+        # of August wrote a second copy of every ledger-eligible line (Rich Smith's commissions,
+        # Chris Port, Jenny Miller) because this used to append unconditionally on every run.
+        ledger_rows = [[e["month"], e["mgr"], e["employee"], e["job"], e["customer"],
+                         e["type"], e["item"], e["amount"], e["source"]] for e in ledger_entries]
+        sheet_write_table("spiff_ledger", ["month", "mgr", "employee", "job", "customer", "type", "item", "amount", "source"],
+                           ledger_rows, mode="replaceMonth", month=month_label)
+        print(f"  Wrote {len(ledger_rows)} entries to spiff_ledger (replacing any prior {month_label} entries)")
+
+    # Write this month's carry-forward/comm-lead output back to the Sheet — becomes next
+    # month's auto-computed seed via compute_prior_carry_forward()/compute_carried_leads().
+    # This is what makes the seed step self-service instead of a manual hand-refresh.
+    carry_forward_out = result["carryForward"]
+    comm_leads_out = result["commLeads"]
+    cf_rows = [[month_label, c["id"], c["fromMonth"], c["emp"], c["ref"], c["type"], c["amount"],
+                c["dept"], c["reason"]] for c in carry_forward_out]
+    sheet_write_table("res_carry_forward", ["month", "id", "fromMonth", "emp", "ref", "type", "amount", "dept", "reason"],
+                       cf_rows, mode="replaceMonth", month=month_label)
+    cl_rows = [[month_label, l["id"], l["month"], l["tech"], l["job"], l["customer"], l["status"],
+                l["spiff"], l["payMonth"], l["paid"], l.get("location", "")] for l in comm_leads_out]
+    sheet_write_table("res_comm_leads", ["month", "id", "leadMonth", "tech", "job", "customer", "status", "spiff", "payMonth", "paid", "location"],
+                       cl_rows, mode="replaceMonth", month=month_label)
+    print(f"  Wrote {len(cf_rows)} carry-forward rows and {len(cl_rows)} comm-lead rows to the Sheet for next month's seed")
+
+    mon_str, year_str = month_label.split()
+    output_path = f"output_{year_str}-{_MONTH_NAMES.index(mon_str) + 1:02d}.json"
+    with open(output_path, "w") as f:
+        json.dump(result, f, indent=2)
+    return output_path
+
+
+def print_summary(result):
+    flags = result["flags"]
+    comm_leads_out = result["commLeads"]
+    rich = result["bonuses"][0]
+    print("\n=== SUMMARY ===")
+    print(f"Steven's team: {len(result['emps']['steven'])} employees with spiffs")
+    print(f"Caleb's team: {len(result['emps']['caleb'])} employees with spiffs")
     print(f"Flags — Steven: {len(flags['steven'])}, Caleb: {len(flags['caleb'])}, Jenny: {len(flags['jenny'])}")
-    print(f"Rich Smith commission: ${rich_commission} (base ${rich_total_base:.2f})")
+    print(f"Rich Smith commission: ${rich['amount']}")
     print(f"Commercial leads log: {len(comm_leads_out)} entries "
           f"({sum(1 for l in comm_leads_out if l['paid'])} paid this month, "
           f"{sum(1 for l in comm_leads_out if l['status'] == 'Pending')} new/pending)")
-    if unresolved_completers:
-        print(f"Unresolved lead-request usernames: {unresolved_completers}")
-    print(f"\nFull output written to output_{FROM_DATE[:7]}.json")
+    if result["unresolvedCompleters"]:
+        print(f"Unresolved lead-request usernames: {result['unresolvedCompleters']}")
+    print(f"\nFull output written to output_{result['month'].split()[1]}-"
+          f"{_MONTH_NAMES.index(result['month'].split()[0]) + 1:02d}.json")
+
+
+def main(month_label):
+    computed = compute(month_label)
+    pf = preflight(computed)
+    if pf["blocked"]:
+        raise RuntimeError(f"Preflight blocked this run: {pf['message']}")
+    for w in pf["warnings"]:
+        print(f"  [preflight warning] {w}")
+    commit(computed)
+    print_summary(computed["result"])
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print('Usage: python process_month.py "Sep 2026"')
         sys.exit(1)
-    configure_month(sys.argv[1])
-    load_roster_globals()
-    main()
+    main(sys.argv[1])

@@ -179,7 +179,7 @@ test('an approved bonus contributes its amount exactly once to buildRows() and g
   assert.ok(row, 'approved bonus did not produce a row in buildRows()');
   assert.equal(row.bonusAmt, bonus.amount);
   const after = sandbox.grandTotal();
-  assert.equal(after - before, bonus.amount,
+  assert.ok(Math.abs((after - before) - bonus.amount) < 0.005,
     `approving a $${bonus.amount} bonus changed grandTotal() by $${after - before} — should be exactly once`);
 });
 

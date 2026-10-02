@@ -251,3 +251,30 @@ test('refreshRunStatus() updates the run status without touching payout totals',
   assert.equal(S.runStatus.status, 'running');
   assert.equal(sandbox.grandTotal(), before);
 });
+
+// ── Lead Stage 2 evidence (carry_forward_evidence.py -> cf_evidence tab) ─────────────────────
+test('cf_evidence rows load by item id, show in the Overview card, and never change totals', async () => {
+  const { sandbox, S } = loadApp();
+  const cf = S.carryForward.find(c => !c.resolved);
+  assert.ok(cf, 'fixture has no pending carry-forward item');
+  const before = sandbox.grandTotal();
+  const tabs = { cf_evidence: [['month', 'id', 'emp', 'verdict', 'summary', 'jobs', 'checkedAt'],
+    [sandbox.MONTH, cf.id, cf.emp, 'install_completed', 'Completed install found: job 777 (Install) on 2026-09-12.', '[]', 'x']] };
+  sandbox.fetch = async (url) => ({ json: async () => (String(url).includes('action=getMulti') ? { tabs } : { values: [] }) });
+  await sandbox.loadSheets();
+  await sandbox.loadSheets(); // idempotent, same as every other replay
+  assert.equal(S.cfEvidence[cf.id].verdict, 'install_completed');
+  assert.match(sandbox.evidenceBadge(cf), /Install completed/);
+  const card = sandbox.rEvidenceCard();
+  assert.match(card, /verify and pay/);
+  assert.ok(card.includes(cf.emp));
+  assert.equal(sandbox.grandTotal(), before, 'evidence must never move money');
+});
+
+test('no cf_evidence rows means no Overview card and no badge', async () => {
+  const { sandbox, S } = loadApp();
+  sandbox.fetch = async () => ({ json: async () => ({ tabs: {}, values: [] }) });
+  await sandbox.loadSheets();
+  assert.equal(sandbox.rEvidenceCard(), '');
+  assert.equal(sandbox.evidenceBadge(S.carryForward[0]), '');
+});

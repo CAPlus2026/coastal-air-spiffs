@@ -153,6 +153,14 @@ def main():
         validate(new_html)
         with open("index.html", "w", encoding="utf-8") as f:
             f.write(new_html)
+        # Evidence for the pending Lead Stage 2 items (did the lead become a completed install?).
+        # Strictly best-effort and AFTER everything payroll depends on is written — a ServiceTitan
+        # hiccup here must never turn a good run into a failed one. See carry_forward_evidence.py.
+        try:
+            import carry_forward_evidence
+            carry_forward_evidence.run(month)
+        except Exception as e:  # noqa: BLE001
+            print(f"  [evidence] skipped — {e}")
         append_run_status(month, "complete", "Processed and spliced successfully")
         print(f"{month} processed and spliced successfully.")
     except SystemExit:

@@ -679,13 +679,14 @@ function loadSheets(){
 async function loadSheetsOnce(){
   const tabs=await sGetMulti(['submissions','revenue_actuals','flags','manual_adds','spiff_corrections',
     'carry_forward_resolutions','jay_jobs','commlead_updates','month_status','manager_notes','run_requests','roster',
-    'manual_carry_forward']);
+    'manual_carry_forward','cf_evidence']);
   // getMulti returns the full sheet including its header row; sGet's old A2:... ranges never did — drop row 0 to match.
   const strip=name=>(tabs[name]||[]).slice(1);
   const subs=strip('submissions'),rev=strip('revenue_actuals'),flags=strip('flags'),mans=strip('manual_adds'),
     corrections=strip('spiff_corrections'),cfRes=strip('carry_forward_resolutions'),jayJobLog=strip('jay_jobs'),
     commLeadLog=strip('commlead_updates'),monthStatusLog=strip('month_status'),notesLog=strip('manager_notes'),
-    runReqLog=strip('run_requests'),rosterLog=strip('roster'),mcfLog=strip('manual_carry_forward');
+    runReqLog=strip('run_requests'),rosterLog=strip('roster'),mcfLog=strip('manual_carry_forward'),
+    evidenceLog=strip('cf_evidence');
   resetToBaseline();
   if(rosterLog) ROSTER=loadRosterFrom(rosterLog);
   if(subs)subs.forEach(r=>{
@@ -894,7 +895,55 @@ async function loadSheetsOnce(){
   // queued→running→complete|failed rows as it works. Track only the single most recent row
   // overall, so the Overview card always reflects whatever's currently in flight (or the last
   // thing that happened), regardless of which month it was for.
+  // Evidence about pending Lead Stage 2 items (see carry_forward_evidence.py) — display only, never
+  // changes a payout or a resolution. One row per item for the processed month; last row wins.
+  S.cfEvidence={};
+  (evidenceLog||[]).forEach(r=>{
+    const [month,id,emp,verdict,summary,jobs,checkedAt]=r;
+    if(id)S.cfEvidence[id]={emp,verdict,summary:summary||'',checkedAt:checkedAt||''};
+  });
   applyRunStatus(runReqLog);
+}
+const EVIDENCE_LABEL={
+  paid_on_mpf:{t:'✓ Paid on Master Pay File',c:'bok'},
+  install_completed:{t:'Install completed — verify & pay',c:'bwarn'},
+  credited_elsewhere:{t:'Credited to someone else',c:'bdanger'},
+  no_install_found:{t:'No install yet',c:'bgray'},
+  unknown:{t:"Couldn't check",c:'bgray'}
+};
+function evidenceBadge(c){
+  const e=S.cfEvidence&&S.cfEvidence[c.id];
+  if(!e||c.resolved)return '';
+  const L=EVIDENCE_LABEL[e.verdict]||EVIDENCE_LABEL.unknown;
+  return `<span class="badge ${L.c}" style="margin-left:4px">${L.t}</span>`;
+}
+function evidenceNote(c){
+  const e=S.cfEvidence&&S.cfEvidence[c.id];
+  if(!e||c.resolved||!e.summary)return '';
+  return `<span class="risub" style="color:#555">${e.summary}</span>`;
+}
+// Overview card for Billy: the pending items worth acting on, grouped, so nobody has to open
+// each manager's page and check them one at a time.
+function rEvidenceCard(){
+  const groups={install_completed:[],paid_on_mpf:[],credited_elsewhere:[]};
+  S.carryForward.filter(c=>!c.resolved).forEach(c=>{
+    const e=S.cfEvidence&&S.cfEvidence[c.id];
+    if(e&&groups[e.verdict])groups[e.verdict].push({c,e});
+  });
+  const total=Object.values(groups).reduce((a,g)=>a+g.length,0);
+  const checked=S.cfEvidence?Object.keys(S.cfEvidence).length:0;
+  if(!checked)return '';
+  const section=(title,color,rows)=>rows.length?`
+    <div style="font-size:.75rem;font-weight:600;margin:.6rem 0 .2rem;color:${color}">${title} (${rows.length})</div>
+    ${rows.map(({c,e})=>`<div class="ri"><div class="ril"><span style="font-size:.82rem;font-weight:500">${c.emp} — ${c.type}</span><span class="risub">${c.ref||'no job #'} · ${e.summary}</span></div><span style="font-weight:600;font-family:'DM Mono',monospace">${fp(c.amount)}</span></div>`).join('')}`:'';
+  return `<div class="card" style="border-left:3px solid #f59e0b">
+    <div class="ctitle">Lead Stage 2 — what the data shows</div>
+    <div style="font-size:.75rem;color:#999">Checked ${checked} pending item${checked!==1?'s':''} against ServiceTitan and the Master Pay File. This is evidence only — nothing is paid or dismissed until a manager resolves it.</div>
+    ${total?'':'<div style="font-size:.82rem;margin-top:.5rem">Nothing actionable: none of the pending leads has a completed install, a Stage 2 payout, or credit to someone else yet.</div>'}
+    ${section('Completed install, no Stage 2 credited yet — verify and pay','#92400e',groups.install_completed)}
+    ${section('Already paid on the Master Pay File — safe to mark paid','#065f46',groups.paid_on_mpf)}
+    ${section('Stage 2 went to someone else — likely dead','#991b1b',groups.credited_elsewhere)}
+  </div>`;
 }
 function applyRunStatus(runReqLog){
   if(runReqLog&&runReqLog.length){
@@ -992,6 +1041,7 @@ function rOverview(){
       </div>
     `}
   </div>
+  ${rEvidenceCard()}
   <div class="card" style="border-left:3px solid ${isClosed()?'#065f46':'#f59e0b'}">
     <div class="ctitle">Month status</div>
     ${isClosed()?`
@@ -2099,8 +2149,10 @@ function rFlags(mgr){
         ${c.manual?`<span class="badge bgray" style="margin-left:4px">Manually added</span>`:''}
         ${stale?`<span class="badge bdanger" style="margin-left:4px">⚠ ${age} months old — review for dismissal</span>`:''}
         ${(!c.resolved&&c.reviewedThisMonth)?`<span class="badge bok" style="margin-left:4px">✓ Reviewed for ${MONTH}</span>`:''}
+        ${evidenceBadge(c)}
         <span style="font-size:.82rem;margin-top:3px;font-weight:500">${c.emp} — ${c.type}</span>
         <span class="risub">${c.ref} · ${c.reason}</span>
+        ${evidenceNote(c)}
         ${c.resolved?`<span class="risub" style="color:${c.disposition==='paid'?'#065f46':'#991b1b'}">${c.disposition==='paid'?'✓ Paid this month':'✕ Marked dead — '+c.note}</span>`:''}
       </div>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">

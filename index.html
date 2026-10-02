@@ -668,7 +668,30 @@ function toggleDetailRow(cell){
 }
 
 // ── Load from Sheets ──────────────────────────────────────
-async function loadSheets(){
+// loadSheets() REPLAYS the Sheet logs (manual adds, commercial-lead payouts, carry-forward
+// payouts, flag/unflag corrections...) on top of whatever S holds — it was written assuming S is
+// the pristine baked-in baseline, which is only true on the first call after page load. But it
+// gets called again by the 30s run-status poll and by every roster edit, and each extra call
+// stacked every manual add and commercial-lead payout on top of the last (found 2026-10-02:
+// "Est. total spiffs" climbed $12k -> $30k in minutes while a September run sat queued, with
+// Jenny's $770 CCS Bonus added once per poll). Fix: snapshot the baseline on the first call and
+// restore it before every replay, and run calls one at a time so two can't interleave their
+// replays across the ccs_tracker await below.
+// role/runStatus are live session state, not baseline — never reset those.
+let S_BASELINE=null, loadSheetsChain=Promise.resolve();
+function resetToBaseline(){
+  if(!S_BASELINE)return;
+  const base=JSON.parse(S_BASELINE);
+  Object.keys(S).forEach(k=>{if(k!=='role'&&k!=='runStatus'&&!(k in base))delete S[k];});
+  Object.keys(base).forEach(k=>{if(k!=='role'&&k!=='runStatus')S[k]=base[k];});
+}
+function loadSheets(){
+  if(!S_BASELINE)S_BASELINE=JSON.stringify(S);
+  const run=loadSheetsChain.then(loadSheetsOnce);
+  loadSheetsChain=run.catch(()=>{});
+  return run;
+}
+async function loadSheetsOnce(){
   const tabs=await sGetMulti(['submissions','revenue_actuals','flags','manual_adds','spiff_corrections',
     'carry_forward_resolutions','jay_jobs','commlead_updates','month_status','manager_notes','run_requests','roster',
     'manual_carry_forward']);
@@ -678,6 +701,7 @@ async function loadSheets(){
     corrections=strip('spiff_corrections'),cfRes=strip('carry_forward_resolutions'),jayJobLog=strip('jay_jobs'),
     commLeadLog=strip('commlead_updates'),monthStatusLog=strip('month_status'),notesLog=strip('manager_notes'),
     runReqLog=strip('run_requests'),rosterLog=strip('roster'),mcfLog=strip('manual_carry_forward');
+  resetToBaseline();
   if(rosterLog) ROSTER=loadRosterFrom(rosterLog);
   if(subs)subs.forEach(r=>{
     if(normMonth(r[0])===MONTH&&r[1]){const m=r[1].toLowerCase();if(m in S.submissions){S.submissions[m]=r[2]||'not_started';S.pushback[m]=(r[4]==='pushed_back'&&r[5])?r[5]:null;}}
@@ -885,11 +909,20 @@ async function loadSheets(){
   // queued→running→complete|failed rows as it works. Track only the single most recent row
   // overall, so the Overview card always reflects whatever's currently in flight (or the last
   // thing that happened), regardless of which month it was for.
+  applyRunStatus(runReqLog);
+}
+function applyRunStatus(runReqLog){
   if(runReqLog&&runReqLog.length){
     const last=runReqLog[runReqLog.length-1];
     const [month,status,requestedBy,at,message]=last;
     if(month){S.runStatus={month:normMonth(month),status:status||null,message:message||'',at:at||null};}
   }
+}
+// The 30s poll only needs the run status — not a full reload of every tab (13 sheets, 5-7s of
+// Apps Script time, and a replay of everything on top of S) just to watch one row change.
+async function refreshRunStatus(){
+  const tabs=await sGetMulti(['run_requests']);
+  applyRunStatus((tabs.run_requests||[]).slice(1));
 }
 
 // ── Nav ──────────────────────────────────────────────────
@@ -2357,7 +2390,7 @@ let runStatusPollTimer=null;
 function startRunStatusPolling(){
   if(runStatusPollTimer)return;
   runStatusPollTimer=setInterval(async()=>{
-    await loadSheets();
+    await refreshRunStatus();
     if(S.runStatus.status==='complete'||S.runStatus.status==='failed'){
       clearInterval(runStatusPollTimer);runStatusPollTimer=null;
     }

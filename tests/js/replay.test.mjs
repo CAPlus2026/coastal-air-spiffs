@@ -189,3 +189,64 @@ test('an approved bonus contributes its amount exactly once to buildRows() and g
 // acceptance test to flip from failing to passing, rather than the gap silently staying
 // undocumented in test form.
 test.todo('an orphaned commlead_updates row with a terminal status does not fabricate a paid lead — needs Phase 2 phantom-lead check');
+
+// ── Incident: totals climbed on their own while a run was queued (found 2026-10-02) ──────────
+// startRunStatusPolling() calls loadSheets() every 30s, and the roster edit buttons call it
+// again too — but loadSheets() REPLAYS the Sheet logs on top of whatever S already holds (it
+// was only ever designed to run once, on a pristine page load). Every extra call re-pushed every
+// manual add (e.g. Jenny's $770 CCS Bonus) and re-applied every Sold & Completed commercial lead
+// payout, so "Est. total spiffs" ratcheted upward every 30 seconds ($12k -> $30k in a few
+// minutes) while no data had changed anywhere.
+test('calling loadSheets() repeatedly does not inflate totals', async () => {
+  const { sandbox, S } = loadApp();
+  const month = sandbox.MONTH;
+  const lead = S.commLeads[0];
+  assert.ok(lead, 'fixture has no commercial leads to test against');
+  const tabs = {
+    manual_adds: [['month', 'mgr', 'employee', 'reason', 'amount', 'dept', 'by', 'at', 'status', 'id'],
+      [month, 'jenny', 'Jenny Miller', 'CCS Bonus', 770, 'MB Residential Service', 'billy', '2026-09-04T00:00:00Z', 'added', 'ma_test_jenny'],
+      [month, 'steven', S.emps.steven[0].name, 'Lead Stage 2', 75, 'MB Install Residential', 'steven', '2026-09-04T00:00:00Z', 'added', 'ma_test_steven']],
+    commlead_updates: [['month', 'id', 'tech', 'customer', 'job', 'status', 'spiff', 'payMonth', 'ts'],
+      [month, lead.id, lead.tech, lead.customer, lead.job, 'Sold & Completed', 100, month, '2026-09-04T00:00:00Z', '', '', '']],
+  };
+  sandbox.fetch = async (url) => {
+    const u = String(url);
+    return { json: async () => (u.includes('action=getMulti') ? { tabs } : { values: [] }) };
+  };
+  await sandbox.loadSheets();
+  const once = sandbox.grandTotal();
+  const manualsOnce = JSON.stringify(S.manuals);
+  await sandbox.loadSheets();
+  await sandbox.loadSheets();
+  assert.equal(sandbox.grandTotal(), once, 'grandTotal() changed on a repeat loadSheets() with identical Sheet data');
+  assert.equal(JSON.stringify(S.manuals), manualsOnce, 'S.manuals gained duplicate entries on a repeat loadSheets()');
+  assert.ok(once > 0);
+});
+
+test('concurrent loadSheets() calls do not interleave their replays', async () => {
+  const { sandbox, S } = loadApp();
+  const month = sandbox.MONTH;
+  const tabs = {
+    manual_adds: [['h'], [month, 'jenny', 'Jenny Miller', 'CCS Bonus', 770, 'MB Residential Service', 'billy', 'x', 'added', 'ma_conc']],
+  };
+  sandbox.fetch = async (url) => {
+    const u = String(url);
+    return { json: async () => (u.includes('action=getMulti') ? { tabs } : { values: [] }) };
+  };
+  await sandbox.loadSheets();
+  const once = JSON.stringify(S.manuals);
+  await Promise.all([sandbox.loadSheets(), sandbox.loadSheets(), sandbox.loadSheets()]);
+  assert.equal(JSON.stringify(S.manuals), once);
+});
+
+test('refreshRunStatus() updates the run status without touching payout totals', async () => {
+  const { sandbox, S } = loadApp();
+  const before = sandbox.grandTotal();
+  sandbox.fetch = async () => ({ json: async () => ({ tabs: { run_requests: [
+    ['month', 'status', 'by', 'at', 'msg'],
+    ['2026-09-01T04:00:00.000Z', 'running', 'system', '2026-10-02T18:00:00Z', 'Started by GitHub Actions'] ] } }) });
+  await sandbox.refreshRunStatus();
+  assert.equal(S.runStatus.month, 'Sep 2026');
+  assert.equal(S.runStatus.status, 'running');
+  assert.equal(sandbox.grandTotal(), before);
+});

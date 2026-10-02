@@ -280,3 +280,26 @@ def test_install_completed_on_the_last_day_of_the_month_still_counts():
     by_emp, by_cust = cfe.build_mpf_indexes([])
     types, units, _ = cfe.load_lookups(c)
     assert cfe.evaluate(item(), by_emp, by_cust, [], c, types, units, month_end="2026-09-30")[0] == "install_completed"
+
+
+def test_lead_whose_stage2_is_already_in_the_ledger_is_cleared_not_paid_again():
+    c = client_with_project(pj(300, 2, "Completed", "2026-09-12T00:00:00Z"))
+    by_emp, by_cust = cfe.build_mpf_indexes([])
+    types, units, _ = cfe.load_lookups(c)
+    v, s, _ = cfe.evaluate(item(), by_emp, by_cust, [], c, types, units, prior_paid={("Test Tech One", "100001")})
+    assert v == "paid_earlier" and "already paid" in s
+    assert cfe.desired_disposition(v) == "dead"
+    assert not any(path.endswith("/jobs") for path, _ in c.calls), "no need to query ServiceTitan"
+
+
+def test_run_mirrors_auto_payouts_into_the_ledger_and_refuses_ones_already_there(mock_pipeline, monkeypatch, tmp_path):
+    _run_env(mock_pipeline, monkeypatch, tmp_path, _items())
+    cfe.run("Sep 2026", client=_client(), mpf_rows=[])
+    led = [r for r in mock_pipeline.get("spiff_ledger") if r[8] == pm.CF_SOURCE]
+    assert [(r[2], str(r[3]), float(r[7])) for r in led] == [("Test Tech One", "100001", 75.0)]
+    # next month the same lead shows up again with the Stage 2 already on file from Sep -> cleared, never paid
+    out = {"carryForward": [{**item(), "id": "cf_again"}]}
+    (tmp_path / pm._output_path_for("Oct 2026")).write_text(json.dumps(out))
+    cfe.run("Oct 2026", client=_client(), mpf_rows=[])
+    last = mock_pipeline.get("carry_forward_resolutions")[-1]
+    assert (last[2], last[7]) == ("cf_again", "dead") and "already paid" in last[8]

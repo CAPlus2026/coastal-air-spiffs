@@ -11,6 +11,8 @@ first, and the manager still makes the call:
 
   departed            The employee is marked departed on the roster — don't pay; mark dead unless
                       you decide otherwise. (Checked first.)
+  paid_earlier        The payout ledger already has a Stage 2 payout for this exact lead from a
+                      prior month — cleared, never paid twice.
   paid_on_mpf         Master Pay File itself shows TGL Lead Sold Res for this employee + customer
                       (it was already paid in payroll — clear it, never pay it again).
   credited_elsewhere  Master Pay File / the payout ledger shows the Stage 2 went to someone ELSE
@@ -210,11 +212,16 @@ def departed_names():
             if str(r[3]).strip().upper() == "TRUE" and str(r[4]).strip().upper() == "FALSE"}
 
 
-def evaluate(item, by_emp, by_customer, ledger_rows, client, types, units, departed=frozenset(), month_end=""):
+def evaluate(item, by_emp, by_customer, ledger_rows, client, types, units, departed=frozenset(), month_end="",
+             prior_paid=frozenset()):
     """Returns (verdict, summary, jobs). Never raises — a failed lookup becomes 'unknown'."""
     if item["emp"] in departed:
         return ("departed",
                 f"{item['emp']} is no longer employed — don't pay. Mark it dead unless you decide otherwise.", [])
+    num = _job_number(item.get("ref"))
+    if num and (item["emp"], num) in prior_paid:
+        return ("paid_earlier",
+                f"Stage 2 for lead job {num} was already paid in a prior month (payout ledger) — don't pay it again.", [])
     customer = _customer_of(item)
     lnk = pm.last_name_key(customer)
 
@@ -280,6 +287,8 @@ def run(month_label, client=None, mpf_rows=None, write=True):
     by_emp, by_customer = build_mpf_indexes(mpf_rows)
     ledger_rows = pm.sheet_get("spiff_ledger")
     departed = departed_names()
+    prior_paid = {(r[2], str(r[3])) for r in ledger_rows
+                  if len(r) > 8 and r[8] == pm.CF_SOURCE and pm.norm_month(r[0]) != month_label and r[3]}
     types, units, lookup_errors = load_lookups(client)
     for e in lookup_errors:
         print(f"  [evidence] lookup warning — {e}")
@@ -288,7 +297,7 @@ def run(month_label, client=None, mpf_rows=None, write=True):
     results = []
     for item in pending:
         verdict, summary, jobs = evaluate(item, by_emp, by_customer, ledger_rows, client, types, units, departed,
-                                          month_end=pm.TO_DATE)
+                                          month_end=pm.TO_DATE, prior_paid=prior_paid)
         results.append([month_label, item["id"], item["emp"], verdict, summary, json.dumps(jobs), now])
     counts = defaultdict(int)
     for r in results:
@@ -298,6 +307,11 @@ def run(month_label, client=None, mpf_rows=None, write=True):
         pm.sheet_write_table("cf_evidence", HEADERS, results, mode="replaceMonth", month=month_label)
         applied = apply_resolutions(month_label, results, pending)
         print(f"  [evidence] auto-applied {applied} resolution row(s).")
+    if write:
+        # Mirror every Stage 2 payout (automatic or a manager's own click) into the payout ledger so
+        # the duplicate check and Lookup can see it. No-op when the ledger already agrees.
+        synced = pm.sync_carry_forward_ledger(month_label)
+        print(f"  [evidence] ledger synced ({synced} Stage 2 row(s) written)." if synced else "  [evidence] ledger already in sync.")
     return results
 
 
@@ -312,7 +326,7 @@ def desired_disposition(verdict):
     else (still waiting on a sale or install, couldn't check) is left pending for the manager."""
     if verdict == "install_completed":
         return "paid"
-    if verdict in ("departed", "credited_elsewhere", "paid_on_mpf"):
+    if verdict in ("departed", "credited_elsewhere", "paid_on_mpf", "paid_earlier"):
         return "dead"
     return None
 

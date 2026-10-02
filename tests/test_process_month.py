@@ -571,3 +571,78 @@ def test_already_paid_last_month_flag_is_born_resolved(mock_pipeline, fixture_re
     result = run_month("Sep 2026")
     flags = [f for m in result["flags"].values() for f in m if "not paid again" in f["title"]]
     assert len(flags) == 1 and flags[0]["resolved"] is True and flags[0]["disp"] == "Not paid"
+
+
+# ── Stage 2 payouts are recorded in the ledger (2026-10-02) ──────────────────────────────────
+def _stage1_ledger(job="999700", month="Aug 2026", emp="Test Tech One"):
+    return [month, "steven", emp, job, "Test Customer, Gamma", "TGL Lead Set Res", "Test Customer, Gamma", "25", "MPF"]
+
+
+def _paid_res(month="Sep 2026", job="999700", emp="Test Tech One", disp="paid", id_="cf_s2", note=""):
+    return [month, "steven", id_, emp, f"Job {job}", "Lead Stage 2 — Test Customer, Gamma", "75", disp, note,
+            "2026-09-20T00:00:00.000Z"]
+
+
+def test_paid_stage2_lands_in_the_ledger_with_its_lead_job(mock_pipeline):
+    mock_pipeline.tabs["res_carry_forward"] = [
+        ["Aug 2026", "cf_s2", "Aug 2026", "Test Tech One", "Job 999700", "Lead Stage 2 — Test Customer, Gamma", "75",
+         "MB Install Residential", "Stage 1 paid Aug 2026."]]
+    mock_pipeline.tabs["carry_forward_resolutions"] = [_paid_res()]
+    run_month("Sep 2026")
+    rows = [r for r in mock_pipeline.get("spiff_ledger") if r[8] == pm.CF_SOURCE]
+    assert len(rows) == 1
+    assert (rows[0][2], str(rows[0][3]), rows[0][5], float(rows[0][7])) == ("Test Tech One", "999700", "Lead Stage 2", 75.0)
+
+
+def test_stage2_payout_is_not_a_false_duplicate_of_its_own_stage1(mock_pipeline):
+    """Stage 1 and Stage 2 of one lead share a job number — that must not read as paying the job twice."""
+    mock_pipeline.tabs["spiff_ledger"] = [_stage1_ledger()]
+    mock_pipeline.tabs["res_carry_forward"] = [
+        ["Aug 2026", "cf_s2", "Aug 2026", "Test Tech One", "Job 999700", "Lead Stage 2 — Test Customer, Gamma", "75",
+         "MB Install Residential", "x"]]
+    mock_pipeline.tabs["carry_forward_resolutions"] = [_paid_res()]
+    result = run_month("Sep 2026")
+    assert not any("duplicate" in f["title"].lower() for m in result["flags"].values() for f in m)
+
+
+def test_a_second_stage2_payout_for_the_same_lead_is_flagged(mock_pipeline):
+    prior = [_stage1_ledger()[:5] + ["Lead Stage 2", "Stage 2 — lead sold & installed", "75", pm.CF_SOURCE]]
+    prior[0][0] = "Aug 2026"
+    mock_pipeline.tabs["spiff_ledger"] = prior
+    mock_pipeline.tabs["res_carry_forward"] = [
+        ["Aug 2026", "cf_new", "Aug 2026", "Test Tech One", "Job 999700", "Lead Stage 2 — Test Customer, Gamma", "75",
+         "MB Install Residential", "x"]]
+    mock_pipeline.tabs["carry_forward_resolutions"] = [_paid_res(id_="cf_new")]
+    result = run_month("Sep 2026")
+    assert any("Stage 2" in f["title"] and "already paid" in f["title"] for m in result["flags"].values() for f in m)
+
+
+def test_prior_stage2_ledger_row_does_not_flag_an_ordinary_spiff_on_the_same_job(mock_pipeline, fixture_reports):
+    mock_pipeline.tabs["spiff_ledger"] = [["Aug 2026", "steven", "Test Tech One", "999800", "Test Customer, Gamma",
+                                           "Lead Stage 2", "Stage 2", "75", pm.CF_SOURCE]]
+    fixture_reports["masterPayFile"] = [{"EmployeeName": "Test Tech One", "Activity": "Sales Spiff", "Date": "2026-09-05",
+        "JobNumber": "999800", "GrossPay": 50.0, "CustomerName": "Test Customer, Gamma", "LocationName": "", "LaborTypeCode": ""}]
+    result = run_month("Sep 2026")
+    assert not any("duplicate" in f["title"].lower() for m in result["flags"].values() for f in m)
+
+
+def test_sync_adds_payouts_drops_undone_ones_and_is_idempotent(mock_pipeline):
+    pm.configure_month("Sep 2026")
+    mock_pipeline.tabs["spiff_ledger"] = [_stage1_ledger(month="Sep 2026")]
+    mock_pipeline.tabs["carry_forward_resolutions"] = [_paid_res(), _paid_res(job="999701", id_="cf_b")]
+    assert pm.sync_carry_forward_ledger("Sep 2026") == 2
+    assert pm.sync_carry_forward_ledger("Sep 2026") == 0, "second sync must write nothing"
+    cf = [r for r in mock_pipeline.get("spiff_ledger") if r[8] == pm.CF_SOURCE]
+    assert sorted(str(r[3]) for r in cf) == ["999700", "999701"]
+    assert any(r[8] == "MPF" for r in mock_pipeline.get("spiff_ledger")), "other ledger rows must survive the sync"
+    mock_pipeline.seed_append("carry_forward_resolutions", _paid_res(job="999701", id_="cf_b", disp=""))  # manager undoes one
+    assert pm.sync_carry_forward_ledger("Sep 2026") == 1
+    assert [str(r[3]) for r in mock_pipeline.get("spiff_ledger") if r[8] == pm.CF_SOURCE] == ["999700"]
+
+
+def test_sync_ignores_other_months_and_reviewed_bookmarks(mock_pipeline):
+    pm.configure_month("Sep 2026")
+    mock_pipeline.tabs["carry_forward_resolutions"] = [
+        _paid_res(month="Aug 2026", id_="cf_aug"), _paid_res(disp="reviewed", id_="cf_rev")]
+    assert pm.sync_carry_forward_ledger("Sep 2026") == 0
+    assert not [r for r in mock_pipeline.get("spiff_ledger") if r[8] == pm.CF_SOURCE]

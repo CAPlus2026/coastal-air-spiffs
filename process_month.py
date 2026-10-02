@@ -331,6 +331,59 @@ def fetch_carry_forward_disposition_by_customer(required=True):
     return resolved
 
 
+# ── Stage 2 payouts in the payout ledger ───────────────────────────────────────────────────
+# A Lead Stage 2 paid through carry-forward (a manager's "Pay this month", or the automatic
+# ServiceTitan-project check) used to exist ONLY as a carry_forward_resolutions row — never in
+# spiff_ledger, which is what the cross-month duplicate check and the Lookup screen read. So a
+# later double-pay of the same lead was invisible to both (found 2026-10-02). These helpers turn
+# the month's "paid" resolutions into ledger rows (source CF_SOURCE).
+CF_SOURCE = "carry-forward-paid"
+CF_LEDGER_TYPE = "Lead Stage 2"
+LEDGER_HEADERS = ["month", "mgr", "employee", "job", "customer", "type", "item", "amount", "source"]
+
+
+def lead_job_number(ref):
+    m = re.search(r"(\d{6,})", str(ref or ""))
+    return m.group(1) if m else ""
+
+
+def carry_forward_ledger_rows(month_label):
+    """Ledger rows for every carry-forward item whose latest resolution in `month_label` is
+    'paid'. Last effective row per id wins (an undo, '' or any non-paid disposition, drops it); a
+    'reviewed' bookmark changes nothing — same rules as the client-side replay."""
+    state = {}
+    for row in sheet_get("carry_forward_resolutions", required=True):
+        if len(row) < 8 or norm_month(row[0]) != month_label or row[7] == "reviewed":
+            continue
+        _m, mgr, id_, emp, ref, type_, amount, disp = row[:8]
+        if disp == "paid":
+            customer = str(type_).split(" — ", 1)[-1].strip() if " — " in str(type_) else ""
+            try:
+                amt = float(amount)
+            except (TypeError, ValueError):
+                amt = 0.0
+            state[id_] = [month_label, mgr, emp, lead_job_number(ref), customer, CF_LEDGER_TYPE,
+                          "Stage 2 — lead sold & installed", amt, CF_SOURCE]
+        else:
+            state.pop(id_, None)
+    return list(state.values())
+
+
+def sync_carry_forward_ledger(month_label):
+    """Brings the ledger's CF_SOURCE rows for `month_label` in line with the current resolutions
+    (adds new payouts, drops undone ones). Safe to call any time and any number of times: it writes
+    nothing when they already agree, and otherwise replaces the month exactly like commit() does."""
+    ledger = [r for r in sheet_get("spiff_ledger", required=True) if r and norm_month(r[0]) == month_label]
+    keep = [[month_label, *r[1:]] for r in ledger if not (len(r) > 8 and r[8] == CF_SOURCE)]
+    have = sorted((str(r[2]), str(r[3]), round(float(r[7] or 0), 2)) for r in ledger if len(r) > 8 and r[8] == CF_SOURCE)
+    new = carry_forward_ledger_rows(month_label)
+    want = sorted((r[2], str(r[3]), round(r[7], 2)) for r in new)
+    if have == want:
+        return 0
+    sheet_write_table("spiff_ledger", LEDGER_HEADERS, keep + new, mode="replaceMonth", month=month_label)
+    return len(new)
+
+
 def month_index(label):
     """'Aug 2026' -> a sortable integer, or None if unparseable."""
     try:
@@ -1026,6 +1079,11 @@ def compute(month_label):
                     "type": "Commercial Lead", "item": f"Commercial lead — {lead['customer']}",
                     "amount": lead.get("spiff", 0), "source": "commercial-lead",
                 })
+        for r in carry_forward_ledger_rows(MONTH_LABEL):
+            entries.append({
+                "month": r[0], "mgr": r[1], "employee": r[2], "job": r[3], "customer": r[4],
+                "type": r[5], "item": r[6], "amount": r[7], "source": r[8],
+            })
         for d in rich_details:
             entries.append({
                 "month": MONTH_LABEL, "mgr": "", "employee": "Rich Smith",
@@ -1054,6 +1112,7 @@ def compute(month_label):
     ledger_entries = build_ledger_entries()
     prior_ledger = sheet_get("spiff_ledger", required=True)
     prior_job_keys = set()          # (employee, job) already paid in a prior month — same-tech repeat
+    prior_stage2_keys = set()       # (employee, lead job) whose Lead Stage 2 was already paid in a prior month
     prior_owner_by_job = defaultdict(set)      # job -> {employees} paid in a prior month — cross-tech
     # Keyed by full_customer_key (NOT last_name_key — see that function's docstring; a surname-only
     # key produced a real false positive on 2026-09-04, flagging Nick Scarpa/"Harris, Heather"
@@ -1064,6 +1123,13 @@ def compute(month_label):
             continue
         prior_month, _mgr, prior_emp, prior_job, prior_cust = row[0], row[1], row[2], row[3], row[4]
         if norm_month(prior_month) == MONTH_LABEL:
+            continue
+        if len(row) > 8 and row[8] == CF_SOURCE:
+            # A Stage 2 payout shares its job number with that lead's Stage 1 ($25) line, so it must
+            # NOT feed the general "same job paid before" check (false positive on every lead); it
+            # is only compared against other Stage 2 payouts, below.
+            if prior_job:
+                prior_stage2_keys.add((prior_emp, str(prior_job)))
             continue
         if prior_job:
             prior_job_keys.add((prior_emp, str(prior_job)))
@@ -1077,6 +1143,8 @@ def compute(month_label):
     this_month_owner_by_job = defaultdict(set)
     this_month_owner_by_custkey = defaultdict(set)
     for entry in ledger_entries:
+        if entry["source"] == CF_SOURCE:
+            continue
         if entry["job"]:
             this_month_owner_by_job[str(entry["job"])].add(entry["employee"])
         elif entry["customer"]:
@@ -1090,6 +1158,15 @@ def compute(month_label):
         mgr_for_flag = entry["mgr"] or team_of(emp)
         if mgr_for_flag not in flags:
             continue
+
+        if entry["source"] == CF_SOURCE:
+            if job and (emp, job) in prior_stage2_keys:
+                add_flag(mgr_for_flag, emp, f"Job #{job}",
+                          f"Possible duplicate payment — Stage 2 for job #{job} already paid in a prior month",
+                          f"{emp} is being paid {fmt_amt(entry['amount'])} Lead Stage 2 for lead job #{job}, but "
+                          f"the ledger shows a Stage 2 payout for this same lead in a previous month. Verify "
+                          f"this isn't a duplicate before approving.", sev="red")
+            continue  # never run the general job/customer checks on a Stage 2 row (see above)
 
         if job and (emp, job) in prior_job_keys:
             add_flag(mgr_for_flag, emp, f"Job #{job}",

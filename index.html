@@ -908,6 +908,7 @@ async function loadSheetsOnce(){
 const EVIDENCE_LABEL={
   paid_on_mpf:{t:'Already paid on Master Pay File — clear it',c:'bgray'},
   departed:{t:"No longer employed — don't pay",c:'bdanger'},
+  paid_earlier:{t:'Already paid in a prior month — clear it',c:'bgray'},
   install_completed:{t:'PAY Stage 2 — install completed',c:'bok'},
   install_in_progress:{t:"Don't pay yet — install not done",c:'binfo'},
   estimate_only:{t:"Don't pay yet — quoted, not sold",c:'bgray'},
@@ -964,7 +965,7 @@ function cfBuckets(items){
     const e=S.cfEvidence&&S.cfEvidence[c.id];if(!e)return;
     if(e.verdict==='install_completed')b.pay.push(c);
     // 'paid_on_mpf' is cleared, never paid: the Master Pay File already paid it in an earlier month.
-    else if(e.verdict==='departed'||e.verdict==='credited_elsewhere'||e.verdict==='paid_on_mpf')b.clear.push(c);
+    else if(e.verdict==='departed'||e.verdict==='credited_elsewhere'||e.verdict==='paid_on_mpf'||e.verdict==='paid_earlier')b.clear.push(c);
     else if(!c.reviewedThisMonth)b.hold.push(c);
   });
   return b;
@@ -1034,7 +1035,7 @@ function cfSections(cf,cfItem){
 function cfActionPanel(mgr){
   const b=cfBuckets(cfTeamItems(mgr));
   if(!b.pay.length&&!b.clear.length)return '';
-  const why=c=>{const v=S.cfEvidence[c.id].verdict;return v==='departed'?'no longer employed':v==='paid_on_mpf'?'already paid':'credited to someone else';};
+  const why=c=>{const v=S.cfEvidence[c.id].verdict;return v==='departed'?'no longer employed':(v==='paid_on_mpf'||v==='paid_earlier')?'already paid':'credited to someone else';};
   const row=(color,title,sub,btn)=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:.5rem 0;border-top:1px solid #f0efe9">
       <div><div style="font-size:.85rem;font-weight:600;color:${color}">${title}</div><div class="risub">${sub}</div></div>${btn}</div>`;
   return `<div class="card" style="border-left:3px solid #065f46;margin-bottom:1rem">

@@ -820,7 +820,7 @@ async function loadSheetsOnce(){
       if(!cf)return;
       if(c.disposition==='paid'||c.disposition==='dead'){
         if(cf.resolved)return; // already applied via a different id for this same real item
-        cf.resolved=true;cf.disposition=c.disposition;cf.note=c.note;
+        cf.resolved=true;cf.disposition=c.disposition;cf.note=c.note;cf.auto=/^Auto-/.test(c.note||'');
         if(c.disposition==='paid') payOutCarryForward(c.mgr,cf);
       }else if(c.disposition==='reviewed'){
         // Not a real resolution — just this month's "already looked at it" marker. See
@@ -929,27 +929,14 @@ function evidenceNote(c){
 // Overview card for Billy: the pending items worth acting on, grouped, so nobody has to open
 // each manager's page and check them one at a time.
 function rEvidenceCard(){
-  const groups={install_completed:[],install_in_progress:[],paid_on_mpf:[],credited_elsewhere:[],departed:[]};
-  S.carryForward.filter(c=>!c.resolved).forEach(c=>{
-    const e=S.cfEvidence&&S.cfEvidence[c.id];
-    if(e&&groups[e.verdict])groups[e.verdict].push({c,e});
-  });
-  const total=Object.values(groups).reduce((a,g)=>a+g.length,0);
   const checked=S.cfEvidence?Object.keys(S.cfEvidence).length:0;
   if(!checked)return '';
-  const section=(title,color,rows)=>rows.length?`
-    <div style="font-size:.75rem;font-weight:600;margin:.6rem 0 .2rem;color:${color}">${title} (${rows.length})</div>
-    ${rows.map(({c,e})=>`<div class="ri"><div class="ril"><span style="font-size:.82rem;font-weight:500">${c.emp} — ${c.type}</span><span class="risub">${c.ref||'no job #'} · ${e.summary}</span></div><span style="font-weight:600;font-family:'DM Mono',monospace">${fp(c.amount)}</span></div>`).join('')}`:'';
-  return `<div class="card" style="border-left:3px solid #f59e0b">
-    <div class="ctitle">Lead Stage 2 — what the data shows</div>
-    <div style="font-size:.75rem;color:#999">Checked ${checked} pending item${checked!==1?'s':''}: each lead job's ServiceTitan project (estimate, then installation job) and the Master Pay File. Nothing is paid or dismissed automatically — a manager still clicks Resolve.</div>
-    ${total?'':'<div style="font-size:.82rem;margin-top:.5rem">Nothing to pay: none of the pending leads has a completed install yet.</div>'}
-    ${section('PAY Stage 2 now — install completed','#065f46',groups.install_completed)}
-    ${section("Sold, but installation not completed — don't pay until it is",'#1e40af',groups.install_in_progress)}
-    ${section('Already paid on the Master Pay File — clear it, do NOT pay again','#6b7280',groups.paid_on_mpf)}
-    ${section('Stage 2 went to someone else — likely dead','#991b1b',groups.credited_elsewhere)}
-    ${section("No longer employed — don't pay",'#991b1b',groups.departed)}
-    ${(groups.departed.length+groups.credited_elsewhere.length+groups.paid_on_mpf.length)?`<button class="btn bsm" style="margin-top:.6rem" onclick="bulkClearCarryForward(null)">Clear these ${groups.departed.length+groups.credited_elsewhere.length+groups.paid_on_mpf.length} (mark dead — won't pay or carry forward)</button>`:''}
+  const g=cfGroups(S.carryForward.filter(c=>c.emp));
+  const cleared=g.resolved.filter(c=>c.disposition==='dead'&&c.auto).length;
+  return `<div class="card" style="border-left:3px solid #065f46">
+    <div class="ctitle">Lead Stage 2</div>
+    <div style="font-size:.85rem">${cfSummaryLine(g)}${cleared?` · ${cleared} cleared (no longer employed / already paid)`:''}</div>
+    <div style="font-size:.75rem;color:#999;margin-top:.3rem">Verified automatically from each lead's ServiceTitan project. Each manager reviews their own team's list and submits to you — nothing for you to click here.</div>
   </div>`;
 }
 function applyRunStatus(runReqLog){
@@ -1020,28 +1007,50 @@ async function bulkReviewCarryForward(mgr){
   toast(`${list.length} lead${list.length!==1?'s':''} marked reviewed for ${MONTH} — still pending.`);
   rerenderCurrentView();
 }
-// The panel a manager sees first: what to do with their team's pending leads, as three buttons.
+// The system verifies Lead Stage 2 leads itself (carry_forward_evidence.py writes the conclusive ones as
+// 'Auto-' resolutions that flow into the pay numbers). A manager's carry-forward list is therefore split
+// into what still needs THEIR judgement vs what is already handled or just waiting.
+const CF_WAITING=['no_install_found','estimate_only','install_in_progress'];
+function cfGroups(cf){
+  const ev=c=>S.cfEvidence&&S.cfEvidence[c.id];
+  const resolved=cf.filter(c=>c.resolved);
+  const waiting=cf.filter(c=>!c.resolved&&ev(c)&&CF_WAITING.includes(ev(c).verdict));
+  const decide=cf.filter(c=>!c.resolved&&!waiting.includes(c));
+  const paid=resolved.filter(c=>c.disposition==='paid');
+  return {resolved,waiting,decide,paid,paidTotal:paid.reduce((a,c)=>a+c.amount,0)};
+}
+function cfSummaryLine(g){
+  return `<strong>${g.paid.length} verified &amp; included in pay (${fp(g.paidTotal)})</strong> · ${g.waiting.length} waiting on a sale or install · ${g.decide.length} need${g.decide.length===1?'s':''} your decision`;
+}
+function cfSections(cf,cfItem){
+  const g=cfGroups(cf);
+  const det=(open,title,list,sub)=>list.length?`<details ${open?'open':''} style="margin:.4rem 0"><summary style="cursor:pointer;font-size:.82rem;font-weight:600;padding:.3rem 0">${title}</summary>${sub?`<div class="risub" style="margin:.1rem 0 .4rem">${sub}</div>`:''}${list.map(cfItem).join('')}</details>`:'';
+  return `<div style="font-size:.85rem;margin:.2rem 0 .5rem">${cfSummaryLine(g)}</div>
+    ${det(true,`Needs your decision (${g.decide.length})`,g.decide,'')}
+    ${det(false,`Verified &amp; handled (${g.resolved.length}) — already reflected in the pay numbers`,g.resolved,"Pulled from each lead's ServiceTitan project. Click Undo on any that's wrong.")}
+    ${det(false,`Waiting on a sale or install (${g.waiting.length}) — nothing to do`,g.waiting,'They stay on the list and carry forward automatically until they sell and install.')}`;
+}
+// Only shows when something conclusive is still unapplied (e.g. the automatic step hadn't run yet).
 function cfActionPanel(mgr){
   const b=cfBuckets(cfTeamItems(mgr));
-  if(!b.pay.length&&!b.clear.length&&!b.hold.length)return '';
+  if(!b.pay.length&&!b.clear.length)return '';
   const why=c=>{const v=S.cfEvidence[c.id].verdict;return v==='departed'?'no longer employed':v==='paid_on_mpf'?'already paid':'credited to someone else';};
   const row=(color,title,sub,btn)=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:.5rem 0;border-top:1px solid #f0efe9">
       <div><div style="font-size:.85rem;font-weight:600;color:${color}">${title}</div><div class="risub">${sub}</div></div>${btn}</div>`;
   return `<div class="card" style="border-left:3px solid #065f46;margin-bottom:1rem">
-    <div class="ctitle">Lead Stage 2 — what to do</div>
-    <div style="font-size:.75rem;color:#999">Checked against each lead's ServiceTitan project (estimate, then installation job). One click per group — every item stays individually undoable.</div>
+    <div class="ctitle">Lead Stage 2 — ready to apply</div>
     ${b.pay.length?row('#065f46',`PAY Stage 2 — ${b.pay.length} installed (${fp(b.pay.reduce((a,c)=>a+c.amount,0))})`,b.pay.map(c=>`${c.emp.split(' ')[0]} · ${cfCustomer(c.type)}`).join(' · '),`<button class="btn btnp bsm" onclick="bulkPayCarryForward('${mgr}')">Pay all ${b.pay.length}</button>`):''}
     ${b.clear.length?row('#991b1b',`Clear without paying — ${b.clear.length}`,b.clear.map(c=>`${c.emp.split(' ')[0]} · ${cfCustomer(c.type)} (${why(c)})`).join(' · '),`<button class="btn bsm" onclick="bulkClearCarryForward('${mgr}')">Clear ${b.clear.length}</button>`):''}
-    ${b.hold.length?row('#6b7280',`Not ready — ${b.hold.length} still waiting on a sale or install`,'Nothing to pay yet. Mark them reviewed so they stop showing as new.',`<button class="btn bsm" onclick="bulkReviewCarryForward('${mgr}')">Mark ${b.hold.length} reviewed</button>`):''}
   </div>`;
 }
-// One-line pointer on the manager's main page so the action panel isn't buried in Flags to Resolve.
+// Pointer on the manager's main page: what the system already did, and where to look.
 function cfTeamBanner(mgr){
-  const b=cfBuckets(cfTeamItems(mgr));
-  if(!b.pay.length&&!b.clear.length)return '';
+  const cf=cfTeamItems(mgr).filter(c=>c.emp);
+  if(!cf.length||!(S.cfEvidence&&Object.keys(S.cfEvidence).length))return '';
+  const g=cfGroups(cf);
   return `<div class="card" style="border-left:3px solid #065f46;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-    <div style="font-size:.85rem"><strong>${b.pay.length?`${b.pay.length} lead${b.pay.length!==1?'s':''} ready to pay Stage 2 (${fp(b.pay.reduce((a,c)=>a+c.amount,0))})`:''}</strong>${b.pay.length&&b.clear.length?' · ':''}${b.clear.length?`${b.clear.length} to clear`:''}</div>
-    <button class="btn btnp bsm" onclick="show('flags')">Review &amp; approve</button></div>`;
+    <div style="font-size:.85rem"><div class="ctitle" style="margin-bottom:2px">Lead Stage 2</div>${cfSummaryLine(g)}</div>
+    <button class="btn btnp bsm" onclick="show('flags')">Review</button></div>`;
 }
 
 // ── Nav ──────────────────────────────────────────────────
@@ -2215,19 +2224,7 @@ function rFlags(mgr){
   const open=flags.filter(f=>!f.resolved).length;
   const cf=S.carryForward.filter(c=>c.emp&&(S.emps[mgr]||[]).find(e=>e.name===c.emp));
   const cfPending=cf.filter(c=>!c.resolved).length;
-  v.innerHTML=`
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-    <div style="font-size:1rem;font-weight:600">Flags to resolve</div>
-    <span style="display:flex;gap:6px">
-      <span class="badge bwarn">${open} flag${open!==1?'s':''} open</span>
-      ${cf.length?`<span class="badge binfo">${cfPending} carry-forward pending</span>`:''}
-    </span>
-  </div>
-  ${cfActionPanel(mgr)}
-  ${cf.length?`<div class="card" style="border-left:3px solid #3b82f6;margin-bottom:1rem">
-    <div class="ctitle">Carried forward from ${PREV_M}</div>
-    <div style="font-size:.75rem;color:#999;margin-bottom:.5rem">Every pending item here still needs a look each month — it doesn't stop showing up just because nothing changed. Use "Mark reviewed" once you've checked one and decided it's still genuinely pending, so you (or the next manager) can tell at a glance which ones were already looked at this month vs. brand new.</div>
-    ${cf.map(c=>{
+  const cfItem=c=>{
       const age=monthsAgo(c.fromMonth);
       const stale=!c.resolved&&age!==null&&age>=4;
       return `<div class="ri" style="${c.resolved?'opacity:.5':''};align-items:flex-start">
@@ -2240,7 +2237,7 @@ function rFlags(mgr){
         <span style="font-size:.82rem;margin-top:3px;font-weight:500">${c.emp} — ${c.type}</span>
         <span class="risub">${c.ref} · ${c.reason}</span>
         ${evidenceNote(c)}
-        ${c.resolved?`<span class="risub" style="color:${c.disposition==='paid'?'#065f46':'#991b1b'}">${c.disposition==='paid'?'✓ Paid this month':'✕ Marked dead — '+c.note}</span>`:''}
+        ${c.resolved?`<span class="risub" style="color:${c.disposition==='paid'?'#065f46':'#991b1b'}">${c.disposition==='paid'?'✓ Paid this month'+(c.note?' — '+c.note:''):'✕ '+(c.auto?'':'Marked dead — ')+c.note}</span>`:''}
       </div>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
         <span style="font-weight:600;font-family:'DM Mono',monospace">${fp(c.amount)}</span>
@@ -2256,8 +2253,21 @@ function rFlags(mgr){
             <button class="btn bsm" onclick="resolveCarryForward('${mgr}','${c.id}')">Resolve</button>`}
       </div>
     </div>`;
-    }).join('')}
-    <div style="font-size:.7rem;color:#999;margin-top:.5rem">⚠ These are cross-checked against each month's Master Pay File automatically. Mark one "paid" or "dead" only if you've confirmed it outside that automatic check (e.g. a manual payroll adjustment, or the lead is confirmed dead and should stop carrying forward).</div>
+  };
+  v.innerHTML=`
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+    <div style="font-size:1rem;font-weight:600">Flags to resolve</div>
+    <span style="display:flex;gap:6px">
+      <span class="badge bwarn">${open} flag${open!==1?'s':''} open</span>
+      ${cf.length?`<span class="badge binfo">${cfPending} carry-forward pending</span>`:''}
+    </span>
+  </div>
+  ${cfActionPanel(mgr)}
+  ${cf.length?`<div class="card" style="border-left:3px solid #3b82f6;margin-bottom:1rem">
+    <div class="ctitle">Carried forward from ${PREV_M}</div>
+    <div style="font-size:.75rem;color:#999;margin-bottom:.5rem">Every pending item here still needs a look each month — it doesn't stop showing up just because nothing changed. Use "Mark reviewed" once you've checked one and decided it's still genuinely pending, so you (or the next manager) can tell at a glance which ones were already looked at this month vs. brand new.</div>
+    ${cfSections(cf,cfItem)}
+    <div style="font-size:.7rem;color:#999;margin-top:.5rem">Leads are checked automatically against each lead's ServiceTitan project and the Master Pay File. Anything verified is already in the pay numbers — Undo any that's wrong. Resolve one by hand only when you know something the system can't (a manual adjustment, or a lead that's confirmed dead).</div>
   </div>`:''}
   ${flags.map(f=>`<div class="fb ${f.sev} ${f.resolved?'done':''}">
     <div class="fmeta">${f.emp} · ${f.ref}</div>

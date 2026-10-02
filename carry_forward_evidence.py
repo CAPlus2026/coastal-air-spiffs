@@ -143,13 +143,23 @@ def find_via_customer(client, item):
     return projects
 
 
-def verdict_from_jobs(emp, jobs, via_name=False):
+def verdict_from_jobs(emp, jobs, via_name=False, month_end=""):
     """Plain instructions, not 'please verify': the lead job's project is the link, so a completed
     installation job in it means Stage 2 is due. Only a customer-name match (blank-ref items, no
     job number to start from) carries a caveat."""
     installs = [j for j in jobs if j["role"] == "install"]
     caveat = " Matched by customer name (no job number on file) — double-check this one." if via_name else ""
     done = [j for j in installs if j["status"].lower() == "completed"]
+    # An install completed AFTER the month being processed belongs to next month's payroll — paying
+    # it now would pay it early (Roth, William: completed Oct 1, processing Sep 2026).
+    if done and month_end:
+        due = [j for j in done if j["completedOn"] and j["completedOn"] <= month_end]
+        if not due:
+            j = sorted(done, key=lambda d: d["completedOn"])[0]
+            return ("install_in_progress",
+                    f"Don't pay yet — installation job {j['job']} ({j['type'] or 'install'}) completed "
+                    f"{j['completedOn']}, after this month's payroll period. It pays next month.{caveat}", done[:5])
+        done = due
     if done:
         j = sorted(done, key=lambda d: d["completedOn"])[0]
         return ("install_completed",
@@ -200,7 +210,7 @@ def departed_names():
             if str(r[3]).strip().upper() == "TRUE" and str(r[4]).strip().upper() == "FALSE"}
 
 
-def evaluate(item, by_emp, by_customer, ledger_rows, client, types, units, departed=frozenset()):
+def evaluate(item, by_emp, by_customer, ledger_rows, client, types, units, departed=frozenset(), month_end=""):
     """Returns (verdict, summary, jobs). Never raises — a failed lookup becomes 'unknown'."""
     if item["emp"] in departed:
         return ("departed",
@@ -233,7 +243,7 @@ def evaluate(item, by_emp, by_customer, ledger_rows, client, types, units, depar
             if not pid:
                 return "no_install_found", "The lead job isn't attached to a project, so no estimate or install is linked to it.", []
             jobs = project_jobs(client, pid, lead.get("jobNumber"), types, units)
-            return verdict_from_jobs(item["emp"], jobs)
+            return verdict_from_jobs(item["emp"], jobs, month_end=month_end)
         if _job_number(item.get("ref")):
             return "unknown", f"Couldn't find job {_job_number(item['ref'])} in ServiceTitan.", []
         pids = find_via_customer(client, item)
@@ -242,7 +252,7 @@ def evaluate(item, by_emp, by_customer, ledger_rows, client, types, units, depar
         jobs = []
         for pid in pids:
             jobs += project_jobs(client, pid, None, types, units)
-        return verdict_from_jobs(item["emp"], jobs, via_name=True)
+        return verdict_from_jobs(item["emp"], jobs, via_name=True, month_end=month_end)
     except Exception as e:  # noqa: BLE001 — see docstring
         return "unknown", f"ServiceTitan lookup failed: {str(e)[:120]}", []
 
@@ -251,6 +261,7 @@ def run(month_label, client=None, mpf_rows=None, write=True):
     """Evaluates every pending carry-forward item in output_<month>.json and writes the results.
     `client`/`mpf_rows` are injectable for tests."""
     pm.configure_month(month_label)
+    pm.load_roster_globals()  # team_of() needs the roster
     with open(pm._output_path_for(month_label)) as f:
         output = json.load(f)
     pending = [c for c in output["carryForward"] if not c.get("resolved")]
@@ -276,7 +287,8 @@ def run(month_label, client=None, mpf_rows=None, write=True):
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     results = []
     for item in pending:
-        verdict, summary, jobs = evaluate(item, by_emp, by_customer, ledger_rows, client, types, units, departed)
+        verdict, summary, jobs = evaluate(item, by_emp, by_customer, ledger_rows, client, types, units, departed,
+                                          month_end=pm.TO_DATE)
         results.append([month_label, item["id"], item["emp"], verdict, summary, json.dumps(jobs), now])
     counts = defaultdict(int)
     for r in results:
@@ -284,7 +296,78 @@ def run(month_label, client=None, mpf_rows=None, write=True):
     print(f"  [evidence] {len(results)} item(s): " + ", ".join(f"{k}={v}" for k, v in sorted(counts.items())))
     if write:
         pm.sheet_write_table("cf_evidence", HEADERS, results, mode="replaceMonth", month=month_label)
+        applied = apply_resolutions(month_label, results, pending)
+        print(f"  [evidence] auto-applied {applied} resolution row(s).")
     return results
+
+
+AUTO_NOTE = "Auto-"
+RES_HEADERS = ["month", "mgr", "id", "emp", "ref", "type", "amount", "disposition", "note", "timestamp"]
+
+
+def desired_disposition(verdict):
+    """What the evidence is conclusive enough to do on its own. A completed installation job in
+    the lead's own project = Stage 2 earned -> paid. Anything that means 'must not be paid'
+    (departed, credited to someone else, already paid on the Master Pay File) -> dead. Everything
+    else (still waiting on a sale or install, couldn't check) is left pending for the manager."""
+    if verdict == "install_completed":
+        return "paid"
+    if verdict in ("departed", "credited_elsewhere", "paid_on_mpf"):
+        return "dead"
+    return None
+
+
+def _team_by_name():
+    latest = {}
+    for r in pm.sheet_get("roster"):
+        if len(r) >= 6 and r[0] and str(r[3]).strip().upper() in ("TRUE", "FALSE"):
+            latest[r[0]] = r[1]
+    return latest
+
+
+def apply_resolutions(month_label, results, pending):
+    """Writes the conclusive verdicts as carry_forward_resolutions rows so they flow into the pay
+    numbers exactly like a manager's own 'Pay this month' / 'Mark dead' click (index.html replays
+    them on load) — the manager reviews exceptions and submits instead of clicking each lead.
+
+    A human's decision always wins: if anyone has already acted on an item THIS month (paid, dead,
+    undo, revert — anything but a 'reviewed' bookmark), it is left alone, so an Undo is never
+    re-applied by the next run. Rows this function wrote itself are marked by a note starting
+    'Auto-' and are corrected if the evidence changes (e.g. a job type is reclassified)."""
+    existing = pm.sheet_get("carry_forward_resolutions", required=True)
+    state = {}  # id -> (is_auto, disposition) of the last non-bookmark row this month
+    for row in existing:
+        if len(row) < 8 or pm.norm_month(row[0]) != month_label or row[7] == "reviewed":
+            continue
+        note = row[8] if len(row) > 8 else ""
+        state[row[2]] = (str(note).startswith(AUTO_NOTE), row[7])
+    by_id = {c["id"]: c for c in pending}
+    teams = _team_by_name()
+    now = time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime())
+    rows = []
+    for _m, id_, emp, verdict, summary, _jobs, _t in results:
+        want = desired_disposition(verdict)
+        c = by_id.get(id_)
+        if c is None:
+            continue
+        team = teams.get(emp) or pm.team_of(emp) or "steven"
+        cur = state.get(id_)
+        if cur is not None and not cur[0]:
+            continue  # a person already decided this month — theirs stands
+        cur_disp = cur[1] if cur else ""
+        if want == cur_disp or (want is None and cur_disp == ""):
+            continue
+        if cur_disp in ("paid", "dead"):  # our earlier call no longer holds -> take it back first
+            rows.append([month_label, team, id_, emp, c["ref"], c["type"], c["amount"], "",
+                         f"{AUTO_NOTE}reopened: evidence changed", now])
+        if want:
+            clean = summary.replace("PAY Stage 2 — ", "install ", 1)
+            rows.append([month_label, team, id_, emp, c["ref"], c["type"], c["amount"], want,
+                         f"{AUTO_NOTE}verified from ServiceTitan project — {clean}"
+                         if want == "paid" else f"{AUTO_NOTE}cleared — {summary}", now])
+    if rows:
+        pm.sheet_write_table("carry_forward_resolutions", RES_HEADERS, rows, mode="append")
+    return len(rows)
 
 
 if __name__ == "__main__":

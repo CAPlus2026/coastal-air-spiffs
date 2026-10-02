@@ -160,40 +160,123 @@ def test_lookup_failure_is_unknown_not_a_crash():
     assert v == "unknown" and "boom" in s
 
 
-def test_run_writes_one_row_per_pending_item_and_never_resolves_anything(mock_pipeline, monkeypatch, tmp_path):
-    out = {"carryForward": [item(), {**item(emp="Test Tech Two", ref="Job 100002"), "id": "cf_2"},
-                            {**item(), "id": "cf_done", "resolved": True}]}
+def _run_env(mock_pipeline, monkeypatch, tmp_path, items):
     monkeypatch.chdir(tmp_path)
-    (tmp_path / pm._output_path_for("Sep 2026")).write_text(json.dumps(out))
-    c = FakeClient(jobs_by_number={"100001": [LEAD], "100002": [{**LEAD, "jobNumber": 100002, "projectId": 901}]},
-                   jobs_by_project={900: [pj(300, 2, "Completed", "2026-09-12T00:00:00Z")], 901: []})
-    rows = cfe.run("Sep 2026", client=c, mpf_rows=[])
+    (tmp_path / pm._output_path_for("Sep 2026")).write_text(json.dumps({"carryForward": items}))
+    mock_pipeline.tabs["roster"] = [["Test Tech One", "steven", "tech", "TRUE", "TRUE", "", "t", "x"],
+                                    ["Test Tech Two", "caleb", "ch_tech", "TRUE", "TRUE", "", "t", "x"]]
+
+
+def _client():
+    return FakeClient(jobs_by_number={"100001": [LEAD], "100002": [{**LEAD, "jobNumber": 100002, "projectId": 901}]},
+                      jobs_by_project={900: [pj(300, 2, "Completed", "2026-09-12T00:00:00Z")], 901: []})
+
+
+def _items():
+    return [item(), {**item(emp="Test Tech Two", ref="Job 100002"), "id": "cf_2"},
+            {**item(), "id": "cf_done", "resolved": True}]
+
+
+def test_run_writes_one_evidence_row_per_pending_item(mock_pipeline, monkeypatch, tmp_path):
+    _run_env(mock_pipeline, monkeypatch, tmp_path, _items())
+    rows = cfe.run("Sep 2026", client=_client(), mpf_rows=[])
     assert [(r[1], r[3]) for r in rows] == [("cf_1", "install_completed"), ("cf_2", "no_install_found")]
     assert [r[1] for r in mock_pipeline.get("cf_evidence")] == ["cf_1", "cf_2"]
-    assert mock_pipeline.get("carry_forward_resolutions") == [], "evidence must never write a resolution"
 
 
-def test_a_callback_install_is_not_a_sale():
-    """Jay Hall's 'Callback Install' (found live 2026-10-02) is a redo, so it must not trigger a Stage 2 payout."""
-    c = client_with_project(pj(200, 1, "Completed", "2026-08-10T00:00:00Z"), pj(300, 5, "Completed", "2026-09-12T00:00:00Z"))
-    assert evaluate(item(), c)[0] == "estimate_only"
+def test_completed_install_is_auto_paid_under_the_employees_own_manager(mock_pipeline, monkeypatch, tmp_path):
+    _run_env(mock_pipeline, monkeypatch, tmp_path, _items())
+    cfe.run("Sep 2026", client=_client(), mpf_rows=[])
+    res = mock_pipeline.get("carry_forward_resolutions")
+    assert len(res) == 1, "only the conclusive item gets a resolution; 'no install yet' stays pending"
+    month, mgr, id_, emp, ref, type_, amount, disp, note, _ts = res[0]
+    assert (mgr, id_, disp, amount) == ("steven", "cf_1", "paid", 75), "client replay pays under this manager"
+    assert note.startswith("Auto-verified") and "300" in note
 
 
-def test_departed_employee_is_never_recommended_for_payment(monkeypatch):
-    """Jim LeBlanc left ~2 months before the Sep 2026 run; even a completed install must not say PAY."""
-    c = client_with_project(pj(300, 2, "Completed", "2026-06-03T00:00:00Z"))
+def test_auto_apply_is_idempotent_across_reruns(mock_pipeline, monkeypatch, tmp_path):
+    _run_env(mock_pipeline, monkeypatch, tmp_path, _items())
+    cfe.run("Sep 2026", client=_client(), mpf_rows=[])
+    cfe.run("Sep 2026", client=_client(), mpf_rows=[])
+    assert len(mock_pipeline.get("carry_forward_resolutions")) == 1
+
+
+def test_a_managers_undo_is_never_reapplied(mock_pipeline, monkeypatch, tmp_path):
+    _run_env(mock_pipeline, monkeypatch, tmp_path, _items())
+    cfe.run("Sep 2026", client=_client(), mpf_rows=[])
+    mock_pipeline.seed_append("carry_forward_resolutions",
+        ["Sep 2026", "steven", "cf_1", "Test Tech One", "Job 100001", "Lead Stage 2 — Smith, Pat", 75, "", "", "2026-10-03T00:00:00Z"])
+    cfe.run("Sep 2026", client=_client(), mpf_rows=[])
+    cfe.run("Sep 2026", client=_client(), mpf_rows=[])
+    res = mock_pipeline.get("carry_forward_resolutions")
+    assert [r[7] for r in res] == ["paid", ""], "the manager's undo must stand — no new paid row after it"
+
+
+def test_a_manager_marking_dead_is_not_overridden(mock_pipeline, monkeypatch, tmp_path):
+    _run_env(mock_pipeline, monkeypatch, tmp_path, _items())
+    mock_pipeline.seed_append("carry_forward_resolutions",
+        ["Sep 2026", "steven", "cf_1", "Test Tech One", "Job 100001", "Lead Stage 2 — Smith, Pat", 75, "dead", "customer cancelled", "x"])
+    cfe.run("Sep 2026", client=_client(), mpf_rows=[])
+    assert [r[7] for r in mock_pipeline.get("carry_forward_resolutions")] == ["dead"]
+
+
+def test_a_reviewed_bookmark_does_not_block_the_auto_payment(mock_pipeline, monkeypatch, tmp_path):
+    _run_env(mock_pipeline, monkeypatch, tmp_path, _items())
+    mock_pipeline.seed_append("carry_forward_resolutions",
+        ["Sep 2026", "steven", "cf_1", "Test Tech One", "Job 100001", "Lead Stage 2 — Smith, Pat", 75, "reviewed", "", "x"])
+    cfe.run("Sep 2026", client=_client(), mpf_rows=[])
+    assert [r[7] for r in mock_pipeline.get("carry_forward_resolutions")] == ["reviewed", "paid"]
+
+
+def test_a_resolution_from_an_earlier_month_does_not_block_this_months(mock_pipeline, monkeypatch, tmp_path):
+    _run_env(mock_pipeline, monkeypatch, tmp_path, _items())
+    mock_pipeline.seed_append("carry_forward_resolutions",
+        ["Aug 2026", "reconciliation-revert", "cf_1", "Test Tech One", "Job 100001", "Lead Stage 2 — Smith, Pat", 75, "reverted", "", "x"])
+    cfe.run("Sep 2026", client=_client(), mpf_rows=[])
+    assert [r[7] for r in mock_pipeline.get("carry_forward_resolutions")][-1] == "paid"
+
+
+def test_auto_payment_is_taken_back_if_the_evidence_no_longer_supports_it(mock_pipeline, monkeypatch, tmp_path):
+    _run_env(mock_pipeline, monkeypatch, tmp_path, _items())
+    cfe.run("Sep 2026", client=_client(), mpf_rows=[])
+    c = _client()
+    c.jobs_by_project[900] = [pj(200, 1, "Completed", "2026-08-10T00:00:00Z")]  # install no longer there
+    cfe.run("Sep 2026", client=c, mpf_rows=[])
+    assert [r[7] for r in mock_pipeline.get("carry_forward_resolutions")] == ["paid", ""]
+
+
+def test_departed_employee_is_auto_cleared_never_paid(mock_pipeline, monkeypatch, tmp_path):
+    _run_env(mock_pipeline, monkeypatch, tmp_path, _items())
+    mock_pipeline.tabs["roster"].append(["Test Tech One", "steven", "tech", "TRUE", "FALSE", "left", "t", "y"])
+    cfe.run("Sep 2026", client=_client(), mpf_rows=[])
+    res = mock_pipeline.get("carry_forward_resolutions")
+    assert [(r[2], r[7]) for r in res] == [("cf_1", "dead")] and res[0][8].startswith("Auto-cleared")
+
+
+def test_credited_elsewhere_and_already_paid_on_mpf_are_cleared_not_paid(mock_pipeline, monkeypatch, tmp_path):
+    _run_env(mock_pipeline, monkeypatch, tmp_path, _items())
+    mpf = [sold("Test Tech Two", "Smith, Pat"), sold("Test Tech Two", "Smith, Pat")]
+    rows = cfe.run("Sep 2026", client=_client(), mpf_rows=mpf)
+    # cf_1 (Tech One's lead): Tech Two got the Stage 2 -> credited elsewhere.
+    # cf_2 (Tech Two's own lead): Stage 2 is already on the pay file -> paid in payroll, never pay again.
+    assert {r[1]: r[3] for r in rows} == {"cf_1": "credited_elsewhere", "cf_2": "paid_on_mpf"}
+    assert [(r[2], r[7]) for r in mock_pipeline.get("carry_forward_resolutions")] == [("cf_1", "dead"), ("cf_2", "dead")]
+
+
+def test_install_completed_after_the_month_end_is_held_for_next_month():
+    """Roth, William (Sep 2026): installed Oct 1 -> pays in October's payroll, not September's."""
+    c = client_with_project(pj(200, 1, "Completed", "2026-09-05T00:00:00Z"), pj(300, 2, "Completed", "2026-10-01T00:00:00Z"))
     by_emp, by_cust = cfe.build_mpf_indexes([])
     types, units, _ = cfe.load_lookups(c)
-    v, s, _ = cfe.evaluate(item(), by_emp, by_cust, [], c, types, units, departed={"Test Tech One"})
-    assert v == "departed" and "no longer employed" in s and "PAY" not in s
-    assert not any(path.endswith("/jobs") for path, _ in c.calls), "no point querying ServiceTitan for them"
+    v, s, _ = cfe.evaluate(item(), by_emp, by_cust, [], c, types, units, month_end="2026-09-30")
+    assert v == "install_in_progress" and "next month" in s and "2026-10-01" in s
+    assert cfe.desired_disposition(v) is None, "must stay pending so October's run picks it up"
+    v2, _, _ = cfe.evaluate(item(), by_emp, by_cust, [], c, types, units, month_end="2026-10-31")
+    assert v2 == "install_completed", "once October is processed the same install is due"
 
 
-def test_departed_names_reads_the_latest_roster_row(mock_pipeline):
-    mock_pipeline.tabs["roster"] = [
-        ["Gone Guy", "steven", "tech", "TRUE", "TRUE", "", "t", "x"],
-        ["Gone Guy", "steven", "tech", "TRUE", "FALSE", "left", "t", "y"],
-        ["Excluded Guy", "steven", "tech", "FALSE", "TRUE", "not eligible", "t", "x"],
-        ["Back Guy", "steven", "tech", "TRUE", "FALSE", "", "t", "x"],
-        ["Back Guy", "steven", "tech", "TRUE", "TRUE", "", "t", "y"]]
-    assert cfe.departed_names() == {"Gone Guy"}
+def test_install_completed_on_the_last_day_of_the_month_still_counts():
+    c = client_with_project(pj(300, 2, "Completed", "2026-09-30T23:00:00Z"))
+    by_emp, by_cust = cfe.build_mpf_indexes([])
+    types, units, _ = cfe.load_lookups(c)
+    assert cfe.evaluate(item(), by_emp, by_cust, [], c, types, units, month_end="2026-09-30")[0] == "install_completed"

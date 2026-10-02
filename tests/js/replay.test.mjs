@@ -253,22 +253,21 @@ test('refreshRunStatus() updates the run status without touching payout totals',
 });
 
 // ── Lead Stage 2 evidence (carry_forward_evidence.py -> cf_evidence tab) ─────────────────────
-test('cf_evidence rows load by item id, show in the Overview card, and never change totals', async () => {
+test('cf_evidence rows load by item id, drive the badge, and never change totals', async () => {
   const { sandbox, S } = loadApp();
   const cf = S.carryForward.find(c => !c.resolved);
   assert.ok(cf, 'fixture has no pending carry-forward item');
   const before = sandbox.grandTotal();
   const tabs = { cf_evidence: [['month', 'id', 'emp', 'verdict', 'summary', 'jobs', 'checkedAt'],
-    [sandbox.MONTH, cf.id, cf.emp, 'install_completed', 'Completed install found: job 777 (Install) on 2026-09-12.', '[]', 'x']] };
+    [sandbox.MONTH, cf.id, cf.emp, 'install_completed', 'PAY Stage 2 — installation job 777 (Installation) completed 2026-09-12.', '[]', 'x']] };
   sandbox.fetch = async (url) => ({ json: async () => (String(url).includes('action=getMulti') ? { tabs } : { values: [] }) });
   await sandbox.loadSheets();
   await sandbox.loadSheets(); // idempotent, same as every other replay
   assert.equal(S.cfEvidence[cf.id].verdict, 'install_completed');
   assert.match(sandbox.evidenceBadge(cf), /PAY Stage 2/);
-  const card = sandbox.rEvidenceCard();
-  assert.match(card, /PAY Stage 2 now/);
-  assert.ok(card.includes(cf.emp));
-  assert.equal(sandbox.grandTotal(), before, 'evidence must never move money');
+  assert.match(sandbox.rEvidenceCard(), /Lead Stage 2/);
+  assert.ok(!sandbox.rEvidenceCard().includes(cf.emp), 'the Overview is counts only — the work is on the managers pages');
+  assert.equal(sandbox.grandTotal(), before, 'evidence alone must never move money');
 });
 
 test('no cf_evidence rows means no Overview card and no badge', async () => {
@@ -353,13 +352,74 @@ test('a cancelled confirm changes nothing', async () => {
   assert.equal(writes.length, 0); assert.ok(!a.resolved); assert.equal(sandbox.grandTotal(), before);
 });
 
-test('the manager panel and team banner show the counts and the buttons', async () => {
+test('the ready-to-apply panel only appears for conclusive leads nobody has applied yet', async () => {
   const { sandbox } = await bulkSetup();
   const panel = sandbox.cfActionPanel('steven');
   assert.match(panel, /PAY Stage 2 — 2 installed/);
   assert.match(panel, /bulkPayCarryForward\('steven'\)/);
   assert.match(panel, /Clear without paying — 2/);
-  assert.match(panel, /Mark 1 reviewed/);
-  assert.match(sandbox.cfTeamBanner('steven'), /2 leads ready to pay Stage 2/);
-  assert.equal(sandbox.cfActionPanel('caleb'), '', 'another manager sees nothing for steven\'s team');
+  assert.equal(sandbox.cfActionPanel('caleb'), '', "another manager sees nothing for steven's team");
+  assert.match(sandbox.cfTeamBanner('steven'), /need/);
+});
+
+// ── Auto-verified payouts (carry_forward_evidence.apply_resolutions) flow into the pay numbers ──
+async function autoSetup() {
+  const { sandbox, S, elements } = loadApp();
+  await sandbox.loadSheets();
+  const mine = S.carryForward.filter(c => !c.resolved && S.emps.steven.some(e => e.name === c.emp));
+  const [a, b, wait] = mine;
+  const res = (c, disp, note) => [sandbox.MONTH, 'steven', c.id, c.emp, c.ref, c.type, c.amount, disp, note, 'ts'];
+  const tabs = {
+    carry_forward_resolutions: [['month', 'mgr', 'id', 'emp', 'ref', 'type', 'amount', 'disposition', 'note', 'ts'],
+      res(a, 'paid', 'Auto-verified from ServiceTitan project — install 1 completed 2026-09-01.')],
+    cf_evidence: [['month', 'id', 'emp', 'verdict', 'summary', 'jobs', 'checkedAt'],
+      [sandbox.MONTH, a.id, a.emp, 'install_completed', 'PAY Stage 2 — x', '[]', 't'],
+      [sandbox.MONTH, wait.id, wait.emp, 'no_install_found', "Don't pay Stage 2 yet — nothing yet.", '[]', 't']],
+  };
+  sandbox.fetch = async (url) => ({ json: async () => (String(url).includes('action=getMulti') ? { tabs } : { values: [] }) });
+  return { sandbox, S, elements, a, b, wait };
+}
+
+test('an auto-verified payout is counted in the pay numbers exactly once, however many times it reloads', async () => {
+  const { sandbox, S, a } = await autoSetup();
+  const base = sandbox.grandTotal();
+  await sandbox.loadSheets();
+  const once = sandbox.grandTotal();
+  await sandbox.loadSheets(); await sandbox.loadSheets();
+  assert.ok(Math.abs(once - base - 75) < 0.005, `expected +$75, got ${once - base}`);
+  assert.equal(sandbox.grandTotal(), once);
+  const live = S.carryForward.find(c => c.id === a.id);
+  assert.ok(live.resolved && live.disposition === 'paid' && live.auto === true);
+});
+
+test("a manager's Undo of an auto-verified payout removes it from the pay numbers", async () => {
+  const { sandbox, S, a } = await autoSetup();
+  await sandbox.loadSheets();
+  const paid = sandbox.grandTotal();
+  const live = S.carryForward.find(c => c.id === a.id);
+  await sandbox.undoCarryForward('steven', live.id);
+  assert.ok(Math.abs(paid - sandbox.grandTotal() - 75) < 0.005);
+});
+
+test('the manager page groups leads: needs decision / verified & handled / waiting', async () => {
+  const { sandbox, S, elements, a, wait } = await autoSetup();
+  await sandbox.loadSheets();
+  sandbox.rFlags('steven');
+  const html = elements['__view__'].innerHTML;
+  assert.match(html, /1 verified &amp; included in pay \(\$75\.00\)/);
+  assert.match(html, /Verified &amp; handled \(1\)/);
+  assert.match(html, /Waiting on a sale or install \(1\) — nothing to do/);
+  assert.match(html, /Needs your decision \(\d+\)/);
+  const g = sandbox.cfGroups(S.carryForward.filter(c => S.emps.steven.some(e => e.name === c.emp)));
+  assert.equal(g.paid.length, 1);
+  assert.ok(g.waiting.some(c => c.id === wait.id) && !g.decide.some(c => c.id === wait.id));
+  assert.ok(!g.decide.some(c => c.id === a.id));
+});
+
+test("departed-employee clearances show on Billy's Overview as cleared, not as work", async () => {
+  const { sandbox, S, a } = await autoSetup();
+  await sandbox.loadSheets();
+  const live = S.carryForward.find(c => c.id === a.id);
+  live.disposition = 'dead'; live.note = 'Auto-cleared — x is no longer employed'; live.auto = true;
+  assert.match(sandbox.rEvidenceCard(), /1 cleared/);
 });

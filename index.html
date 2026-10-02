@@ -1014,9 +1014,9 @@ function rOverview(){
     <div style="font-size:.75rem;color:#999;margin-bottom:.5rem">Always runs last month's payroll (currently ${targetMonth}) — pulls fresh data from ServiceTitan. <strong>Payroll approvals need to be unlocked prior to running.</strong> Safe to click more than once (e.g. if you clicked before approvals were actually unlocked) — running it again just pulls fresh data again.</div>
     ${rsActive?`
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-        <div><span class="badge binfo">${rs.status==='queued'?'Queued':'Running'}</span> <span style="font-size:.82rem;margin-left:6px">Processing ${rs.month} — usually done within a few minutes.</span></div>
+        <div><span class="badge binfo">${rs.status==='queued'?'Queued':'Running'}</span> <span style="font-size:.82rem;margin-left:6px">Processing ${rs.month} — usually done within a couple of minutes.</span></div>
       </div>
-      <div style="font-size:.75rem;color:#999;margin-top:.5rem">Picked up automatically by a check that runs every 5 minutes. This page checks back on its own — no need to keep reloading.</div>
+      <div style="font-size:.75rem;color:#999;margin-top:.5rem">Picked up automatically within about a minute. This page checks back on its own — no need to keep reloading.</div>
     `:rsComplete?`
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
         <div><span class="badge bok">✓ Complete</span> <span style="font-size:.82rem;margin-left:6px">${rs.month} was processed successfully.</span></div>
@@ -2443,7 +2443,7 @@ async function unlockPayroll(){
   const alreadyDone=rs.month===month&&rs.status==='complete';
   const msg=alreadyDone
     ? `${month} was already processed. Run it again? This pulls fresh data from ServiceTitan and re-splices the numbers — only do this if you're sure, since any corrections a manager already made for ${month} may not carry over cleanly.`
-    : `Run payroll for ${month}? Make sure payroll approvals are unlocked first. This pulls fresh data from ServiceTitan, picked up automatically within a few minutes.`;
+    : `Run payroll for ${month}? Make sure payroll approvals are unlocked first. This pulls fresh data from ServiceTitan, picked up automatically within a minute or two.`;
   if(!confirm(msg))return;
   const at=new Date().toISOString();
   S.runStatus={month,status:'queued',message:'Requested from the app',at};

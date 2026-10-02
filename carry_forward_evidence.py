@@ -13,10 +13,13 @@ first, and the manager still makes the call:
                       (the one authoritative signal — safe to pay).
   credited_elsewhere  Master Pay File / the payout ledger shows the Stage 2 went to someone ELSE
                       for this customer — this employee's lead is dead.
-  install_completed   ServiceTitan shows a completed install-type job at this customer after the
-                      lead was created, but nobody has been credited with Stage 2 — most likely
-                      candidates to pay, but verify the lead really was this employee's.
-  no_install_found    No completed install-type job found since the lead — still genuinely open.
+  install_completed   The lead job's PROJECT in ServiceTitan contains an installation job that is
+                      Completed (lead job -> estimate job with the replacement quotes -> install
+                      job). No Stage 2 credited yet — verify, then pay.
+  install_in_progress The project has an installation job that isn't completed yet — sold, pay
+                      when the install finishes.
+  estimate_only       The project has an estimate job but no installation job — quoted, not sold.
+  no_install_found    The lead job has no estimate/install work in its project — still open.
   unknown             Couldn't check (lookup failed) — the reason is in the summary.
 
 Written to the `cf_evidence` Sheet tab (one row per item, replaced per month) and shown on each
@@ -31,7 +34,6 @@ from collections import defaultdict
 import process_month as pm
 
 HEADERS = ["month", "id", "emp", "verdict", "summary", "jobs", "checkedAt"]
-INSTALL_RE = re.compile(r"install|replac|change.?out|changeout", re.I)
 
 
 def _customer_of(item):
@@ -73,44 +75,88 @@ def load_lookups(client):
     return types, units, errors
 
 
-def find_customer_id(client, item):
-    """Prefer the lead's own job (the item's `ref`, 'Job 169257990') — an exact id, no name
-    guessing. Falls back to a customer-name search for items with a blank ref."""
+def find_lead_job(client, item):
+    """The lead's own job, by the item's `ref` ('Job 169257990'). Returns the ServiceTitan job
+    dict or None. Items with a blank ref are handled by find_via_customer() instead."""
     num = _job_number(item.get("ref"))
-    if num:
-        jobs = _paged(client, "jpm/v2/tenant/{t}/jobs", {"number": num})
-        if jobs:
-            j = jobs[0]
-            return j.get("customerId"), num, (j.get("createdOn") or j.get("completedOn") or "")[:10]
-    name = _customer_of(item)
-    if name:
-        key = pm.full_customer_key(name)
-        for c in _paged(client, "crm/v2/tenant/{t}/customers", {"name": name}):
-            if pm.full_customer_key(c.get("name", "")) == key:
-                return c.get("id"), None, ""
-    return None, num, ""
+    if not num:
+        return None
+    jobs = _paged(client, "jpm/v2/tenant/{t}/jobs", {"number": num})
+    return jobs[0] if jobs else None
 
 
-def completed_installs(client, customer_id, since, lead_job_number, types, units):
-    """Completed jobs at this customer on/after `since`, minus the lead's own job, classified as
-    install-type when the job type or business unit name says so. If neither lookup table loaded
-    there's nothing to classify with, so every completed job counts (marked type unknown)."""
-    params = {"customerId": customer_id, "jobStatus": "Completed"}
-    if since:
-        params["completedOnOrAfter"] = since
+def classify_job(job, types, units):
+    """'estimate' | 'install' | 'lead' | 'other' from the job TYPE name (the business unit is only
+    a fallback when the type is unknown — an Install business unit holds the estimate jobs too)."""
+    tname = types.get(job.get("jobTypeId"), "") or ""
+    name = tname or units.get(job.get("businessUnitId"), "") or ""
+    if re.search(r"estimate|quote|proposal", name, re.I):
+        return "estimate", tname
+    if re.search(r"install|replac|change.?out", name, re.I):
+        return "install", tname
+    if re.search(r"lead", name, re.I):
+        return "lead", tname
+    return "other", tname
+
+
+def project_jobs(client, project_id, lead_job_number, types, units):
+    """Every job in the lead job's project (all statuses), minus the lead job itself, each tagged
+    with its role. Projects are what link lead -> estimate -> installation in ServiceTitan."""
     out = []
-    for j in _paged(client, "jpm/v2/tenant/{t}/jobs", params):
+    for j in _paged(client, "jpm/v2/tenant/{t}/jobs", {"projectId": project_id}):
         if lead_job_number and str(j.get("jobNumber")) == str(lead_job_number):
             continue
-        tname = types.get(j.get("jobTypeId"), "")
-        bname = units.get(j.get("businessUnitId"), "")
-        if types or units:
-            if not (INSTALL_RE.search(tname) or INSTALL_RE.search(bname)):
-                continue
-        out.append({"job": j.get("jobNumber"), "type": tname, "unit": bname,
-                    "completedOn": (j.get("completedOn") or "")[:10]})
-    out.sort(key=lambda d: d["completedOn"])
+        role, tname = classify_job(j, types, units)
+        out.append({"job": j.get("jobNumber"), "role": role, "type": tname,
+                    "status": j.get("jobStatus") or "", "completedOn": (j.get("completedOn") or "")[:10]})
     return out
+
+
+def find_via_customer(client, item):
+    """Blank-ref items have no lead job number to start from. Falls back to an exact customer-name
+    match, then the project(s) of that customer's jobs created since the lead. Lower confidence —
+    the summary says so."""
+    name = _customer_of(item)
+    if not name:
+        return []
+    key = pm.full_customer_key(name)
+    since = _month_start(item.get("fromMonth", ""))
+    projects, seen = [], set()
+    for c in _paged(client, "crm/v2/tenant/{t}/customers", {"name": name}):
+        if pm.full_customer_key(c.get("name", "")) != key:
+            continue
+        params = {"customerId": c.get("id")}
+        if since:
+            params["createdOnOrAfter"] = since
+        for j in _paged(client, "jpm/v2/tenant/{t}/jobs", params):
+            pid = j.get("projectId")
+            if pid and pid not in seen:
+                seen.add(pid)
+                projects.append(pid)
+    return projects
+
+
+def verdict_from_jobs(emp, jobs, via_name=False):
+    installs = [j for j in jobs if j["role"] == "install"]
+    caveat = " (matched by customer name — no job number on file, so double-check)" if via_name else ""
+    done = [j for j in installs if j["status"].lower() == "completed"]
+    if done:
+        j = sorted(done, key=lambda d: d["completedOn"])[0]
+        return ("install_completed",
+                f"Project has a completed installation: job {j['job']} ({j['type'] or 'install'}) on "
+                f"{j['completedOn']}. No Stage 2 credited yet — verify this lead was {emp}'s.{caveat}", done[:5])
+    if installs:
+        j = installs[0]
+        return ("install_in_progress",
+                f"Sold — installation job {j['job']} ({j['type'] or 'install'}) is {j['status'] or 'not completed'}. "
+                f"Pay when it completes.{caveat}", installs[:5])
+    estimates = [j for j in jobs if j["role"] == "estimate"]
+    if estimates:
+        j = estimates[0]
+        return ("estimate_only",
+                f"Estimate job {j['job']} ({j['type'] or 'estimate'}, {j['status'] or 'status unknown'}) but no "
+                f"installation job in the project yet — quoted, not sold.{caveat}", estimates[:3])
+    return "no_install_found", f"No estimate or installation job in the lead's project yet.{caveat}", []
 
 
 def build_mpf_indexes(mpf_rows):
@@ -155,22 +201,24 @@ def evaluate(item, by_emp, by_customer, ledger_rows, client, types, units):
                 return "credited_elsewhere", f"Payout ledger shows this customer's Stage 2 paid to {row[2]}.", []
 
     try:
-        customer_id, lead_num, since = find_customer_id(client, item)
-        if not customer_id:
-            return "unknown", "Couldn't find this customer in ServiceTitan to check.", []
-        jobs = completed_installs(client, customer_id, since or _month_start(item.get("fromMonth", "")),
-                                  lead_num, types, units)
+        lead = find_lead_job(client, item)
+        if lead is not None:
+            pid = lead.get("projectId")
+            if not pid:
+                return "no_install_found", "The lead job isn't attached to a project, so no estimate or install is linked to it.", []
+            jobs = project_jobs(client, pid, lead.get("jobNumber"), types, units)
+            return verdict_from_jobs(item["emp"], jobs)
+        if _job_number(item.get("ref")):
+            return "unknown", f"Couldn't find job {_job_number(item['ref'])} in ServiceTitan.", []
+        pids = find_via_customer(client, item)
+        if not pids:
+            return "unknown", "No job number on file and couldn't match this customer in ServiceTitan.", []
+        jobs = []
+        for pid in pids:
+            jobs += project_jobs(client, pid, None, types, units)
+        return verdict_from_jobs(item["emp"], jobs, via_name=True)
     except Exception as e:  # noqa: BLE001 — see docstring
         return "unknown", f"ServiceTitan lookup failed: {str(e)[:120]}", []
-
-    if jobs:
-        j = jobs[0]
-        more = f" (+{len(jobs) - 1} more)" if len(jobs) > 1 else ""
-        label = j["type"] or j["unit"] or "job"
-        return ("install_completed",
-                f"Completed install found: job {j['job']} ({label}) on {j['completedOn']}{more}. "
-                f"No Stage 2 credited to anyone yet — verify this lead was {item['emp']}'s.", jobs[:5])
-    return "no_install_found", "No completed install found at this customer since the lead.", []
 
 
 def run(month_label, client=None, mpf_rows=None, write=True):

@@ -907,6 +907,8 @@ async function loadSheetsOnce(){
 const EVIDENCE_LABEL={
   paid_on_mpf:{t:'✓ Paid on Master Pay File',c:'bok'},
   install_completed:{t:'Install completed — verify & pay',c:'bwarn'},
+  install_in_progress:{t:'Sold — install not done yet',c:'binfo'},
+  estimate_only:{t:'Quoted — not sold yet',c:'bgray'},
   credited_elsewhere:{t:'Credited to someone else',c:'bdanger'},
   no_install_found:{t:'No install yet',c:'bgray'},
   unknown:{t:"Couldn't check",c:'bgray'}
@@ -925,7 +927,7 @@ function evidenceNote(c){
 // Overview card for Billy: the pending items worth acting on, grouped, so nobody has to open
 // each manager's page and check them one at a time.
 function rEvidenceCard(){
-  const groups={install_completed:[],paid_on_mpf:[],credited_elsewhere:[]};
+  const groups={install_completed:[],install_in_progress:[],paid_on_mpf:[],credited_elsewhere:[]};
   S.carryForward.filter(c=>!c.resolved).forEach(c=>{
     const e=S.cfEvidence&&S.cfEvidence[c.id];
     if(e&&groups[e.verdict])groups[e.verdict].push({c,e});
@@ -938,9 +940,10 @@ function rEvidenceCard(){
     ${rows.map(({c,e})=>`<div class="ri"><div class="ril"><span style="font-size:.82rem;font-weight:500">${c.emp} — ${c.type}</span><span class="risub">${c.ref||'no job #'} · ${e.summary}</span></div><span style="font-weight:600;font-family:'DM Mono',monospace">${fp(c.amount)}</span></div>`).join('')}`:'';
   return `<div class="card" style="border-left:3px solid #f59e0b">
     <div class="ctitle">Lead Stage 2 — what the data shows</div>
-    <div style="font-size:.75rem;color:#999">Checked ${checked} pending item${checked!==1?'s':''} against ServiceTitan and the Master Pay File. This is evidence only — nothing is paid or dismissed until a manager resolves it.</div>
-    ${total?'':'<div style="font-size:.82rem;margin-top:.5rem">Nothing actionable: none of the pending leads has a completed install, a Stage 2 payout, or credit to someone else yet.</div>'}
+    <div style="font-size:.75rem;color:#999">Checked ${checked} pending item${checked!==1?'s':''}: each lead job's ServiceTitan project (estimate, then installation job) and the Master Pay File. This is evidence only — nothing is paid or dismissed until a manager resolves it.</div>
+    ${total?'':'<div style="font-size:.82rem;margin-top:.5rem">Nothing actionable: none of the pending leads has a sold install, a Stage 2 payout, or credit to someone else yet.</div>'}
     ${section('Completed install, no Stage 2 credited yet — verify and pay','#92400e',groups.install_completed)}
+    ${section('Sold — installation not completed yet (pay when it finishes)','#1e40af',groups.install_in_progress)}
     ${section('Already paid on the Master Pay File — safe to mark paid','#065f46',groups.paid_on_mpf)}
     ${section('Stage 2 went to someone else — likely dead','#991b1b',groups.credited_elsewhere)}
   </div>`;

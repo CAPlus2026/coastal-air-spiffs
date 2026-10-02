@@ -278,3 +278,14 @@ test('no cf_evidence rows means no Overview card and no badge', async () => {
   assert.equal(sandbox.rEvidenceCard(), '');
   assert.equal(sandbox.evidenceBadge(S.carryForward[0]), '');
 });
+
+test('cf_evidence loads every data row even when the tab has no header row', async () => {
+  const { sandbox, S } = loadApp();
+  const [a, b] = S.carryForward.filter(c => !c.resolved);
+  const row = (c) => [sandbox.MONTH, c.id, c.emp, 'no_install_found', 'x', '[]', 'y'];
+  sandbox.fetch = async (url) => ({ json: async () => (String(url).includes('action=getMulti')
+    ? { tabs: { cf_evidence: [row(a), row(b)] } } : { values: [] }) });
+  await sandbox.loadSheets();
+  assert.ok(S.cfEvidence[a.id], 'first row was dropped as if it were a header');
+  assert.ok(S.cfEvidence[b.id]);
+});

@@ -684,7 +684,10 @@ async function loadSheetsOnce(){
     corrections=strip('spiff_corrections'),cfRes=strip('carry_forward_resolutions'),jayJobLog=strip('jay_jobs'),
     commLeadLog=strip('commlead_updates'),monthStatusLog=strip('month_status'),notesLog=strip('manager_notes'),
     runReqLog=strip('run_requests'),rosterLog=strip('roster'),mcfLog=strip('manual_carry_forward'),
-    evidenceLog=strip('cf_evidence');
+    // Not strip()'d: this tab was once created header-less (an app load auto-creates a missing tab
+    // before the first run writes to it), and strip() would silently drop its first data row.
+    // Filtering on the month column ignores a header row whether or not there is one.
+    evidenceLog=(tabs.cf_evidence||[]).filter(r=>r&&r[1]&&normMonth(r[0])===MONTH);
   resetToBaseline();
   if(rosterLog) ROSTER=loadRosterFrom(rosterLog);
   if(subs)subs.forEach(r=>{

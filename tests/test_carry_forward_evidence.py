@@ -8,7 +8,7 @@ import json
 import carry_forward_evidence as cfe
 import process_month as pm
 
-TYPES = [{"id": 1, "name": "Estimate Install"}, {"id": 2, "name": "Install - Residential"},
+TYPES = [{"id": 5, "name": "Callback Install"}, {"id": 1, "name": "Estimate Install"}, {"id": 2, "name": "Install - Residential"},
          {"id": 3, "name": "Service Call"}, {"id": 4, "name": "TGL Lead"}]
 UNITS = [{"id": 10, "name": "MB - Install Residential"}]
 
@@ -171,3 +171,9 @@ def test_run_writes_one_row_per_pending_item_and_never_resolves_anything(mock_pi
     assert [(r[1], r[3]) for r in rows] == [("cf_1", "install_completed"), ("cf_2", "no_install_found")]
     assert [r[1] for r in mock_pipeline.get("cf_evidence")] == ["cf_1", "cf_2"]
     assert mock_pipeline.get("carry_forward_resolutions") == [], "evidence must never write a resolution"
+
+
+def test_a_callback_install_is_not_a_sale():
+    """Jay Hall's 'Callback Install' (found live 2026-10-02) is a redo, so it must not trigger a Stage 2 payout."""
+    c = client_with_project(pj(200, 1, "Completed", "2026-08-10T00:00:00Z"), pj(300, 5, "Completed", "2026-09-12T00:00:00Z"))
+    assert evaluate(item(), c)[0] == "estimate_only"

@@ -93,6 +93,8 @@ def classify_job(job, types, units):
     the estimate jobs too."""
     tname = types.get(job.get("jobTypeId"), "") or ""
     name = tname or units.get(job.get("businessUnitId"), "") or ""
+    if re.search(r"callback|call.?back|warranty|recall|re-?do", name, re.I):
+        return "other", tname  # a redo of earlier work (e.g. "Callback Install"), not a new sale
     if re.search(r"estimate|quote|proposal", name, re.I):
         return "estimate", tname
     if re.search(r"install|replac|change.?out", name, re.I):

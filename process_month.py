@@ -980,6 +980,11 @@ def compute(month_label):
                   f"File). This month's Master Pay File lists the same job for the same total, so it was left "
                   f"out rather than paid a second time. If it should be paid again, add it manually.",
                   sev="yellow")
+        # Informational only — nothing is left for a manager to decide, so it's born resolved. An
+        # open flag here would have to be clicked through by hand AND blocks "Submit to Billy".
+        flags[team_of(emp_name)][-1].update(
+            resolved=True, disp="Not paid",
+            note="Auto-resolved: already paid in a prior month, left out of this month.")
     # An employee whose ONLY activity was the dropped catch-up shouldn't linger as an all-zero row.
     for emp_name in {n for n, _ in caught_up}:
         if not spiff_detail.get(emp_name) and not any(

@@ -561,3 +561,13 @@ def test_carry_forward_reviewed_marker_does_not_revive_a_prior_month_resolution(
         _resolution("Aug 2026", "paid"), _resolution("Sep 2026", "reviewed")]
     result = run_month("Sep 2026")
     assert not any(c["emp"] == "Test Tech One" for c in result["carryForward"])
+
+
+def test_already_paid_last_month_flag_is_born_resolved(mock_pipeline, fixture_reports):
+    """It's informational — an open one would have to be clicked through by hand and would block
+    the manager's 'Submit to Billy' (found 2026-10-02)."""
+    mock_pipeline.tabs["spiff_ledger"] = [_prior_auto_added("999600", 50)]
+    fixture_reports["masterPayFile"] = [_mpf_line("999600", 50.0)]
+    result = run_month("Sep 2026")
+    flags = [f for m in result["flags"].values() for f in m if "not paid again" in f["title"]]
+    assert len(flags) == 1 and flags[0]["resolved"] is True and flags[0]["disp"] == "Not paid"

@@ -906,7 +906,8 @@ async function loadSheetsOnce(){
   applyRunStatus(runReqLog);
 }
 const EVIDENCE_LABEL={
-  paid_on_mpf:{t:'Mark paid — already on Master Pay File',c:'bok'},
+  paid_on_mpf:{t:'Already paid on Master Pay File — clear it',c:'bgray'},
+  departed:{t:"No longer employed — don't pay",c:'bdanger'},
   install_completed:{t:'PAY Stage 2 — install completed',c:'bok'},
   install_in_progress:{t:"Don't pay yet — install not done",c:'binfo'},
   estimate_only:{t:"Don't pay yet — quoted, not sold",c:'bgray'},
@@ -928,7 +929,7 @@ function evidenceNote(c){
 // Overview card for Billy: the pending items worth acting on, grouped, so nobody has to open
 // each manager's page and check them one at a time.
 function rEvidenceCard(){
-  const groups={install_completed:[],install_in_progress:[],paid_on_mpf:[],credited_elsewhere:[]};
+  const groups={install_completed:[],install_in_progress:[],paid_on_mpf:[],credited_elsewhere:[],departed:[]};
   S.carryForward.filter(c=>!c.resolved).forEach(c=>{
     const e=S.cfEvidence&&S.cfEvidence[c.id];
     if(e&&groups[e.verdict])groups[e.verdict].push({c,e});
@@ -945,8 +946,10 @@ function rEvidenceCard(){
     ${total?'':'<div style="font-size:.82rem;margin-top:.5rem">Nothing to pay: none of the pending leads has a completed install yet.</div>'}
     ${section('PAY Stage 2 now — install completed','#065f46',groups.install_completed)}
     ${section("Sold, but installation not completed — don't pay until it is",'#1e40af',groups.install_in_progress)}
-    ${section('Already paid on the Master Pay File — mark paid in the app','#065f46',groups.paid_on_mpf)}
+    ${section('Already paid on the Master Pay File — clear it, do NOT pay again','#6b7280',groups.paid_on_mpf)}
     ${section('Stage 2 went to someone else — likely dead','#991b1b',groups.credited_elsewhere)}
+    ${section("No longer employed — don't pay",'#991b1b',groups.departed)}
+    ${(groups.departed.length+groups.credited_elsewhere.length+groups.paid_on_mpf.length)?`<button class="btn bsm" style="margin-top:.6rem" onclick="bulkClearCarryForward(null)">Clear these ${groups.departed.length+groups.credited_elsewhere.length+groups.paid_on_mpf.length} (mark dead — won't pay or carry forward)</button>`:''}
   </div>`;
 }
 function applyRunStatus(runReqLog){
@@ -961,6 +964,84 @@ function applyRunStatus(runReqLog){
 async function refreshRunStatus(){
   const tabs=await sGetMulti(['run_requests']);
   applyRunStatus((tabs.run_requests||[]).slice(1));
+}
+
+// ── Bulk actions on the evidence (one confirm instead of clicking every lead) ─────────────────
+// Same writes as resolveCarryForward()/reviewCarryForward() per item — same log rows, same replay
+// on reload, each still individually undoable — just driven by the evidence verdicts.
+// mgr=null means "every manager" (Billy's Overview); each row is then logged under the employee's own manager.
+function cfTeamItems(mgr){return mgr?S.carryForward.filter(c=>c.emp&&(S.emps[mgr]||[]).find(e=>e.name===c.emp)):S.carryForward;}
+function cfBuckets(items){
+  const b={pay:[],clear:[],hold:[]};
+  items.filter(c=>!c.resolved).forEach(c=>{
+    const e=S.cfEvidence&&S.cfEvidence[c.id];if(!e)return;
+    if(e.verdict==='install_completed')b.pay.push(c);
+    // 'paid_on_mpf' is cleared, never paid: the Master Pay File already paid it in an earlier month.
+    else if(e.verdict==='departed'||e.verdict==='credited_elsewhere'||e.verdict==='paid_on_mpf')b.clear.push(c);
+    else if(!c.reviewedThisMonth)b.hold.push(c);
+  });
+  return b;
+}
+const cfWho=c=>`• ${c.emp} — ${cfCustomer(c.type)} (${fp(c.amount)})`;
+async function bulkPayCarryForward(mgr){
+  if(guardClosed())return;
+  const list=cfBuckets(cfTeamItems(mgr)).pay;if(!list.length)return;
+  const total=list.reduce((a,c)=>a+c.amount,0);
+  if(!confirm(`Pay Stage 2 for ${list.length} lead${list.length!==1?'s':''} — ${fp(total)} total?\n\n${list.map(cfWho).join('\n')}\n\nEach has a completed installation job in its ServiceTitan project. You can undo any one afterwards.`))return;
+  for(const c of list){
+    const note=(S.cfEvidence[c.id].summary||'').replace(/^PAY Stage 2 — /,'Install completed — ');
+    c.resolved=true;c.disposition='paid';c.note=note;
+    payOutCarryForward(mgr,c);
+    await sAppend('carry_forward_resolutions',[[MONTH,mgr,c.id,c.emp,c.ref,c.type,c.amount,'paid',note,new Date().toISOString()]]);
+  }
+  toast(`${list.length} lead${list.length!==1?'s':''} paid — ${fp(total)} added to ${MONTH}.`);
+  rerenderCurrentView();
+}
+async function bulkClearCarryForward(mgr){
+  if(guardClosed())return;
+  const list=cfBuckets(cfTeamItems(mgr)).clear;if(!list.length)return;
+  if(!confirm(`Clear ${list.length} lead${list.length!==1?'s':''} without paying — marked dead, won't carry forward again?\n\n${list.map(c=>cfWho(c)+' — '+S.cfEvidence[c.id].summary).join('\n')}\n\nYou can undo any one afterwards.`))return;
+  for(const c of list){
+    const note=S.cfEvidence[c.id].summary;
+    const m=mgr||mgrForEmployee(c.emp)||'steven';
+    c.resolved=true;c.disposition='dead';c.note=note;
+    await sAppend('carry_forward_resolutions',[[MONTH,m,c.id,c.emp,c.ref,c.type,c.amount,'dead',note,new Date().toISOString()]]);
+  }
+  toast(`${list.length} lead${list.length!==1?'s':''} cleared.`);
+  rerenderCurrentView();
+}
+async function bulkReviewCarryForward(mgr){
+  if(guardClosed())return;
+  const list=cfBuckets(cfTeamItems(mgr)).hold;if(!list.length)return;
+  for(const c of list){
+    c.reviewedThisMonth=true;
+    await sAppend('carry_forward_resolutions',[[MONTH,mgr,c.id,c.emp,c.ref,c.type,c.amount,'reviewed','',new Date().toISOString()]]);
+  }
+  toast(`${list.length} lead${list.length!==1?'s':''} marked reviewed for ${MONTH} — still pending.`);
+  rerenderCurrentView();
+}
+// The panel a manager sees first: what to do with their team's pending leads, as three buttons.
+function cfActionPanel(mgr){
+  const b=cfBuckets(cfTeamItems(mgr));
+  if(!b.pay.length&&!b.clear.length&&!b.hold.length)return '';
+  const why=c=>{const v=S.cfEvidence[c.id].verdict;return v==='departed'?'no longer employed':v==='paid_on_mpf'?'already paid':'credited to someone else';};
+  const row=(color,title,sub,btn)=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:.5rem 0;border-top:1px solid #f0efe9">
+      <div><div style="font-size:.85rem;font-weight:600;color:${color}">${title}</div><div class="risub">${sub}</div></div>${btn}</div>`;
+  return `<div class="card" style="border-left:3px solid #065f46;margin-bottom:1rem">
+    <div class="ctitle">Lead Stage 2 — what to do</div>
+    <div style="font-size:.75rem;color:#999">Checked against each lead's ServiceTitan project (estimate, then installation job). One click per group — every item stays individually undoable.</div>
+    ${b.pay.length?row('#065f46',`PAY Stage 2 — ${b.pay.length} installed (${fp(b.pay.reduce((a,c)=>a+c.amount,0))})`,b.pay.map(c=>`${c.emp.split(' ')[0]} · ${cfCustomer(c.type)}`).join(' · '),`<button class="btn btnp bsm" onclick="bulkPayCarryForward('${mgr}')">Pay all ${b.pay.length}</button>`):''}
+    ${b.clear.length?row('#991b1b',`Clear without paying — ${b.clear.length}`,b.clear.map(c=>`${c.emp.split(' ')[0]} · ${cfCustomer(c.type)} (${why(c)})`).join(' · '),`<button class="btn bsm" onclick="bulkClearCarryForward('${mgr}')">Clear ${b.clear.length}</button>`):''}
+    ${b.hold.length?row('#6b7280',`Not ready — ${b.hold.length} still waiting on a sale or install`,'Nothing to pay yet. Mark them reviewed so they stop showing as new.',`<button class="btn bsm" onclick="bulkReviewCarryForward('${mgr}')">Mark ${b.hold.length} reviewed</button>`):''}
+  </div>`;
+}
+// One-line pointer on the manager's main page so the action panel isn't buried in Flags to Resolve.
+function cfTeamBanner(mgr){
+  const b=cfBuckets(cfTeamItems(mgr));
+  if(!b.pay.length&&!b.clear.length)return '';
+  return `<div class="card" style="border-left:3px solid #065f46;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+    <div style="font-size:.85rem"><strong>${b.pay.length?`${b.pay.length} lead${b.pay.length!==1?'s':''} ready to pay Stage 2 (${fp(b.pay.reduce((a,c)=>a+c.amount,0))})`:''}</strong>${b.pay.length&&b.clear.length?' · ':''}${b.clear.length?`${b.clear.length} to clear`:''}</div>
+    <button class="btn btnp bsm" onclick="show('flags')">Review &amp; approve</button></div>`;
 }
 
 // ── Nav ──────────────────────────────────────────────────
@@ -1701,6 +1782,7 @@ function rTeam(mgr){
   const btnT=openF>0?`${openF} flag${openF!==1?'s':''} need resolution`:sub==='approved'?'✓ Approved by Billy':sub==='submitted'?'Resubmit to Billy':'Submit to Billy';
   v.innerHTML=`
   ${pb?`<div class="pb-box"><div class="pb-label">Revision requested by Billy</div><div style="margin-top:4px">${pb}</div></div>`:''}
+  ${cfTeamBanner(mgr)}
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
     <div>
       <div style="font-size:1rem;font-weight:600">${mgr==='steven'?'Myrtle Beach — Service Manager (MB)':'Charleston — Location Manager (CH)'} team — ${MONTH}</div>
@@ -2141,6 +2223,7 @@ function rFlags(mgr){
       ${cf.length?`<span class="badge binfo">${cfPending} carry-forward pending</span>`:''}
     </span>
   </div>
+  ${cfActionPanel(mgr)}
   ${cf.length?`<div class="card" style="border-left:3px solid #3b82f6;margin-bottom:1rem">
     <div class="ctitle">Carried forward from ${PREV_M}</div>
     <div style="font-size:.75rem;color:#999;margin-bottom:.5rem">Every pending item here still needs a look each month — it doesn't stop showing up just because nothing changed. Use "Mark reviewed" once you've checked one and decided it's still genuinely pending, so you (or the next manager) can tell at a glance which ones were already looked at this month vs. brand new.</div>

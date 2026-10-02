@@ -177,3 +177,23 @@ def test_a_callback_install_is_not_a_sale():
     """Jay Hall's 'Callback Install' (found live 2026-10-02) is a redo, so it must not trigger a Stage 2 payout."""
     c = client_with_project(pj(200, 1, "Completed", "2026-08-10T00:00:00Z"), pj(300, 5, "Completed", "2026-09-12T00:00:00Z"))
     assert evaluate(item(), c)[0] == "estimate_only"
+
+
+def test_departed_employee_is_never_recommended_for_payment(monkeypatch):
+    """Jim LeBlanc left ~2 months before the Sep 2026 run; even a completed install must not say PAY."""
+    c = client_with_project(pj(300, 2, "Completed", "2026-06-03T00:00:00Z"))
+    by_emp, by_cust = cfe.build_mpf_indexes([])
+    types, units, _ = cfe.load_lookups(c)
+    v, s, _ = cfe.evaluate(item(), by_emp, by_cust, [], c, types, units, departed={"Test Tech One"})
+    assert v == "departed" and "no longer employed" in s and "PAY" not in s
+    assert not any(path.endswith("/jobs") for path, _ in c.calls), "no point querying ServiceTitan for them"
+
+
+def test_departed_names_reads_the_latest_roster_row(mock_pipeline):
+    mock_pipeline.tabs["roster"] = [
+        ["Gone Guy", "steven", "tech", "TRUE", "TRUE", "", "t", "x"],
+        ["Gone Guy", "steven", "tech", "TRUE", "FALSE", "left", "t", "y"],
+        ["Excluded Guy", "steven", "tech", "FALSE", "TRUE", "not eligible", "t", "x"],
+        ["Back Guy", "steven", "tech", "TRUE", "FALSE", "", "t", "x"],
+        ["Back Guy", "steven", "tech", "TRUE", "TRUE", "", "t", "y"]]
+    assert cfe.departed_names() == {"Gone Guy"}

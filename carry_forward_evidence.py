@@ -9,8 +9,10 @@ proof this employee's lead was credited: ServiceTitan links an eventual sold est
 one lead, so a different tech's lead can get the credit. So each item gets one verdict, strongest
 first, and the manager still makes the call:
 
+  departed            The employee is marked departed on the roster — don't pay; mark dead unless
+                      you decide otherwise. (Checked first.)
   paid_on_mpf         Master Pay File itself shows TGL Lead Sold Res for this employee + customer
-                      (the one authoritative signal — mark it paid).
+                      (it was already paid in payroll — clear it, never pay it again).
   credited_elsewhere  Master Pay File / the payout ledger shows the Stage 2 went to someone ELSE
                       for this customer — this employee's lead is dead.
   install_completed   The lead job's PROJECT in ServiceTitan contains an installation job that is
@@ -187,8 +189,22 @@ def build_mpf_indexes(mpf_rows):
     return by_emp, by_customer
 
 
-def evaluate(item, by_emp, by_customer, ledger_rows, client, types, units):
+def departed_names():
+    """Employees whose latest roster row is eligible but NOT active (marked departed in the app's
+    Roster screen). Same last-row-wins read as process_month.load_roster()."""
+    latest = {}
+    for r in pm.sheet_get("roster"):
+        if len(r) >= 6 and r[0] and str(r[3]).strip().upper() in ("TRUE", "FALSE"):
+            latest[r[0]] = r
+    return {n for n, r in latest.items()
+            if str(r[3]).strip().upper() == "TRUE" and str(r[4]).strip().upper() == "FALSE"}
+
+
+def evaluate(item, by_emp, by_customer, ledger_rows, client, types, units, departed=frozenset()):
     """Returns (verdict, summary, jobs). Never raises — a failed lookup becomes 'unknown'."""
+    if item["emp"] in departed:
+        return ("departed",
+                f"{item['emp']} is no longer employed — don't pay. Mark it dead unless you decide otherwise.", [])
     customer = _customer_of(item)
     lnk = pm.last_name_key(customer)
 
@@ -252,6 +268,7 @@ def run(month_label, client=None, mpf_rows=None, write=True):
         mpf_rows = rcf.fetch_mpf_range(f"{year}-{pm._MONTH_NAMES.index(mon) + 1:02d}-01", rcf.TODAY)
     by_emp, by_customer = build_mpf_indexes(mpf_rows)
     ledger_rows = pm.sheet_get("spiff_ledger")
+    departed = departed_names()
     types, units, lookup_errors = load_lookups(client)
     for e in lookup_errors:
         print(f"  [evidence] lookup warning — {e}")
@@ -259,7 +276,7 @@ def run(month_label, client=None, mpf_rows=None, write=True):
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     results = []
     for item in pending:
-        verdict, summary, jobs = evaluate(item, by_emp, by_customer, ledger_rows, client, types, units)
+        verdict, summary, jobs = evaluate(item, by_emp, by_customer, ledger_rows, client, types, units, departed)
         results.append([month_label, item["id"], item["emp"], verdict, summary, json.dumps(jobs), now])
     counts = defaultdict(int)
     for r in results:

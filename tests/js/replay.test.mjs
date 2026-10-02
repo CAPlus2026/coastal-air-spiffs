@@ -289,3 +289,77 @@ test('cf_evidence loads every data row even when the tab has no header row', asy
   assert.ok(S.cfEvidence[a.id], 'first row was dropped as if it were a header');
   assert.ok(S.cfEvidence[b.id]);
 });
+
+// ── Bulk actions on the Lead Stage 2 evidence ────────────────────────────────────────────────
+async function bulkSetup() {
+  const { sandbox, S } = loadApp();
+  // loadApp() leaves the app's own boot-time loadSheets() in flight; it finishes by resetting S to
+  // the baseline, which would wipe what a test sets up. Let it (and a second, serialized one) settle first.
+  await sandbox.loadSheets();
+  const mine = S.carryForward.filter(c => !c.resolved && S.emps.steven.some(e => e.name === c.emp));
+  assert.ok(mine.length >= 5, `fixture needs >=5 pending steven items, has ${mine.length}`);
+  const [a, b, dep, mpf, wait] = mine;
+  const ev = (verdict, summary = 'x') => ({ emp: '', verdict, summary, checkedAt: '' });
+  S.cfEvidence = {
+    [a.id]: ev('install_completed', 'PAY Stage 2 — installation job 1 (Installation) completed 2026-09-01.'),
+    [b.id]: ev('install_completed', 'PAY Stage 2 — installation job 2 (Installation) completed 2026-09-02.'),
+    [dep.id]: ev('departed', 'Gone is no longer employed — don\'t pay.'),
+    [mpf.id]: ev('paid_on_mpf', 'Master Pay File shows Stage 2 already.'),
+    [wait.id]: ev('no_install_found', 'No estimate or installation job yet.'),
+  };
+  const writes = [];
+  sandbox.fetch = async (url) => {
+    const u = new URL(String(url), 'http://x');
+    if (u.searchParams.get('action') === 'append') writes.push([u.searchParams.get('sheet'), JSON.parse(u.searchParams.get('values'))]);
+    return { json: async () => ({ values: [], tabs: {} }) };
+  };
+  return { sandbox, S, a, b, dep, mpf, wait, writes };
+}
+
+test('bulk pay adds exactly the recommended leads once and logs one paid row each', async () => {
+  const { sandbox, S, a, b, dep, mpf, wait, writes } = await bulkSetup();
+  const before = sandbox.grandTotal();
+  await sandbox.bulkPayCarryForward('steven');
+  assert.ok(Math.abs(sandbox.grandTotal() - before - (a.amount + b.amount)) < 0.005);
+  assert.deepEqual(writes.map(w => [w[0], w[1][2], w[1][7]]),
+    [['carry_forward_resolutions', a.id, 'paid'], ['carry_forward_resolutions', b.id, 'paid']]);
+  assert.ok(a.resolved && b.resolved && !dep.resolved && !mpf.resolved && !wait.resolved);
+  assert.match(a.note, /^Install completed — installation job 1/);
+  await sandbox.bulkPayCarryForward('steven'); // nothing left to pay -> no-op, no double payment
+  assert.equal(writes.length, 2);
+});
+
+test('bulk clear marks departed / already-paid leads dead and never pays them', async () => {
+  const { sandbox, dep, mpf, wait, writes } = await bulkSetup();
+  const before = sandbox.grandTotal();
+  await sandbox.bulkClearCarryForward('steven');
+  assert.equal(sandbox.grandTotal(), before, 'clearing must not move money');
+  assert.deepEqual(writes.map(w => [w[1][2], w[1][7]]), [[dep.id, 'dead'], [mpf.id, 'dead']]);
+  assert.ok(dep.resolved && mpf.resolved && !wait.resolved);
+});
+
+test('bulk review only touches leads that are not ready, and never resolves them', async () => {
+  const { sandbox, wait, a, writes } = await bulkSetup();
+  await sandbox.bulkReviewCarryForward('steven');
+  assert.deepEqual(writes.map(w => [w[1][2], w[1][7]]), [[wait.id, 'reviewed']]);
+  assert.ok(wait.reviewedThisMonth && !wait.resolved && !a.resolved);
+});
+
+test('a cancelled confirm changes nothing', async () => {
+  const { sandbox, a, writes } = await bulkSetup();
+  sandbox.confirm = () => false;
+  const before = sandbox.grandTotal();
+  await sandbox.bulkPayCarryForward('steven');
+  assert.equal(writes.length, 0); assert.ok(!a.resolved); assert.equal(sandbox.grandTotal(), before);
+});
+
+test('the manager panel and team banner show the counts and the buttons', async () => {
+  const { sandbox } = await bulkSetup();
+  const panel = sandbox.cfActionPanel('steven');
+  assert.match(panel, /PAY Stage 2 — 2 installed/);
+  assert.match(panel, /bulkPayCarryForward\('steven'\)/);
+  assert.match(panel, /Clear without paying — 2/);
+  assert.match(panel, /Mark 1 reviewed/);
+  assert.match(sandbox.cfTeamBanner('steven'), /2 leads ready to pay Stage 2/);
+  assert.equal(sandbox.cfActionPanel('caleb'), '', 'another manager sees nothing for steven\'s team');
+});

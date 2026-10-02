@@ -110,17 +110,6 @@
         "detail": "Herbie Windley sold WHA-100 x1.0 to Grube. Inc.  (Job #170712755), not on Master Pay File, and 'WHA-100' isn't in the spiff rate table. Confirm the spiff amount and add manually."
       },
       {
-        "id": "flag_d1bd61018f",
-        "sev": "red",
-        "emp": "Monica Bernard",
-        "ref": "Membership #170765466",
-        "resolved": false,
-        "disp": "",
-        "note": "",
-        "title": "Unrecognized membership seller \u2014 Monica Bernard",
-        "detail": "Membership sold by 'Monica Bernard' (not on Master Pay File, Standard Membership - 1 System, Delegge, Becky). Not a recognized tech, office staff, or manager. Verify and add manually."
-      },
-      {
         "id": "flag_00aec877dc",
         "sev": "red",
         "emp": "Billy Webb",
@@ -911,6 +900,19 @@
           "type": "Standard Membership - 1 System",
           "activation": "New Sale",
           "soldOn": "2026-09-17",
+          "amount": 20.0
+        }
+      ]
+    },
+    {
+      "name": "Monica Bernard",
+      "total": 20.0,
+      "details": [
+        {
+          "customer": "Delegge, Becky",
+          "type": "Standard Membership - 1 System",
+          "activation": "New Sale",
+          "soldOn": "2026-09-22",
           "amount": 20.0
         }
       ]

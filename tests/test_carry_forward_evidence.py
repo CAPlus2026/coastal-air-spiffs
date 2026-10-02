@@ -8,7 +8,7 @@ import json
 import carry_forward_evidence as cfe
 import process_month as pm
 
-TYPES = [{"id": 1, "name": "Estimate - Install Replacement"}, {"id": 2, "name": "Install - Residential"},
+TYPES = [{"id": 1, "name": "Estimate Install"}, {"id": 2, "name": "Install - Residential"},
          {"id": 3, "name": "Service Call"}, {"id": 4, "name": "TGL Lead"}]
 UNITS = [{"id": 10, "name": "MB - Install Residential"}]
 
@@ -91,7 +91,9 @@ def test_project_with_estimate_then_completed_install_is_install_completed():
                             pj(300, 2, "Completed", "2026-09-12T00:00:00Z"))
     v, s, jobs = evaluate(item(), c)
     assert v == "install_completed"
-    assert [j["job"] for j in jobs] == [300] and "2026-09-12" in s and "verify" in s.lower()
+    assert [j["job"] for j in jobs] == [300] and "2026-09-12" in s
+    assert s.startswith("PAY Stage 2"), "a completed install must be an instruction, not a 'please verify'"
+    assert "verify" not in s.lower()
     # looked the lead job up by number, then listed the PROJECT's jobs — never a customer-wide search
     assert [p for path, p in c.calls if path.endswith("/jobs")][1] == {"projectId": 900}
     assert not any(path.endswith("/customers") for path, _ in c.calls)

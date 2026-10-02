@@ -10,12 +10,12 @@ one lead, so a different tech's lead can get the credit. So each item gets one v
 first, and the manager still makes the call:
 
   paid_on_mpf         Master Pay File itself shows TGL Lead Sold Res for this employee + customer
-                      (the one authoritative signal — safe to pay).
+                      (the one authoritative signal — mark it paid).
   credited_elsewhere  Master Pay File / the payout ledger shows the Stage 2 went to someone ELSE
                       for this customer — this employee's lead is dead.
   install_completed   The lead job's PROJECT in ServiceTitan contains an installation job that is
-                      Completed (lead job -> estimate job with the replacement quotes -> install
-                      job). No Stage 2 credited yet — verify, then pay.
+                      Completed (lead job -> "Estimate Install" job with the replacement quotes ->
+                      install job). No Stage 2 credited yet — the card says PAY Stage 2.
   install_in_progress The project has an installation job that isn't completed yet — sold, pay
                       when the install finishes.
   estimate_only       The project has an estimate job but no installation job — quoted, not sold.
@@ -86,8 +86,11 @@ def find_lead_job(client, item):
 
 
 def classify_job(job, types, units):
-    """'estimate' | 'install' | 'lead' | 'other' from the job TYPE name (the business unit is only
-    a fallback when the type is unknown — an Install business unit holds the estimate jobs too)."""
+    """'estimate' | 'install' | 'lead' | 'other' from the job TYPE name. The estimate job is the
+    "Estimate Install" type (it carries the replacement quotes); the installation job is any other
+    install-type job. Estimate is tested first because "Estimate Install" contains "install". The
+    business unit is only a fallback when the type is unknown — the Install business unit holds
+    the estimate jobs too."""
     tname = types.get(job.get("jobTypeId"), "") or ""
     name = tname or units.get(job.get("businessUnitId"), "") or ""
     if re.search(r"estimate|quote|proposal", name, re.I):
@@ -137,26 +140,31 @@ def find_via_customer(client, item):
 
 
 def verdict_from_jobs(emp, jobs, via_name=False):
+    """Plain instructions, not 'please verify': the lead job's project is the link, so a completed
+    installation job in it means Stage 2 is due. Only a customer-name match (blank-ref items, no
+    job number to start from) carries a caveat."""
     installs = [j for j in jobs if j["role"] == "install"]
-    caveat = " (matched by customer name — no job number on file, so double-check)" if via_name else ""
+    caveat = " Matched by customer name (no job number on file) — double-check this one." if via_name else ""
     done = [j for j in installs if j["status"].lower() == "completed"]
     if done:
         j = sorted(done, key=lambda d: d["completedOn"])[0]
         return ("install_completed",
-                f"Project has a completed installation: job {j['job']} ({j['type'] or 'install'}) on "
-                f"{j['completedOn']}. No Stage 2 credited yet — verify this lead was {emp}'s.{caveat}", done[:5])
+                f"PAY Stage 2 — installation job {j['job']} ({j['type'] or 'install'}) completed {j['completedOn']}.{caveat}",
+                done[:5])
     if installs:
         j = installs[0]
         return ("install_in_progress",
-                f"Sold — installation job {j['job']} ({j['type'] or 'install'}) is {j['status'] or 'not completed'}. "
-                f"Pay when it completes.{caveat}", installs[:5])
+                f"Don't pay yet — it sold, but installation job {j['job']} ({j['type'] or 'install'}) is "
+                f"{j['status'] or 'not completed'}. Pay Stage 2 once it completes.{caveat}", installs[:5])
     estimates = [j for j in jobs if j["role"] == "estimate"]
     if estimates:
         j = estimates[0]
         return ("estimate_only",
-                f"Estimate job {j['job']} ({j['type'] or 'estimate'}, {j['status'] or 'status unknown'}) but no "
-                f"installation job in the project yet — quoted, not sold.{caveat}", estimates[:3])
-    return "no_install_found", f"No estimate or installation job in the lead's project yet.{caveat}", []
+                f"Don't pay Stage 2 yet — estimate job {j['job']} ({j['type'] or 'estimate'}, "
+                f"{j['status'] or 'status unknown'}) is quoted but there's no installation job, so it hasn't sold. "
+                f"Stage 1 is the payout at this point.{caveat}", estimates[:3])
+    return ("no_install_found",
+            f"Don't pay Stage 2 yet — no estimate or installation job in the lead's project.{caveat}", [])
 
 
 def build_mpf_indexes(mpf_rows):

@@ -264,9 +264,9 @@ test('cf_evidence rows load by item id, show in the Overview card, and never cha
   await sandbox.loadSheets();
   await sandbox.loadSheets(); // idempotent, same as every other replay
   assert.equal(S.cfEvidence[cf.id].verdict, 'install_completed');
-  assert.match(sandbox.evidenceBadge(cf), /Install completed/);
+  assert.match(sandbox.evidenceBadge(cf), /PAY Stage 2/);
   const card = sandbox.rEvidenceCard();
-  assert.match(card, /verify and pay/);
+  assert.match(card, /PAY Stage 2 now/);
   assert.ok(card.includes(cf.emp));
   assert.equal(sandbox.grandTotal(), before, 'evidence must never move money');
 });

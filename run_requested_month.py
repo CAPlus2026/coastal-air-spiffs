@@ -127,7 +127,17 @@ def main():
         # remedy is different ("run migrate_log_ids.py / investigate", not "something crashed").
         # check=False here so we can inspect the real exit code before deciding how to react;
         # anything other than 0 or 3 falls through to check_returncode()'s normal exception path.
-        result = subprocess.run([sys.executable, "process_month.py", month], check=False)
+        # stderr is teed (captured, then re-printed) so its last lines can go into the run_requests
+        # status row on failure — the bare "returned non-zero exit status 1" that check_returncode()
+        # produces hides the real traceback inside GitHub's log, which can't be read without a
+        # login (found 2026-10-02 debugging a failed Sep re-run).
+        result = subprocess.run([sys.executable, "process_month.py", month], check=False,
+                                 stderr=subprocess.PIPE, text=True)
+        if result.stderr:
+            print(result.stderr, file=sys.stderr)
+        if result.returncode not in (0, 3):
+            tail = " | ".join((result.stderr or "").strip().splitlines()[-4:])
+            raise RuntimeError(f"process_month.py exited {result.returncode}: {tail}"[:500])
         if result.returncode == 3:
             append_run_status(month, "blocked",
                                "Pre-flight check blocked this run — a manager resolution may not "

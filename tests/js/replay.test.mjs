@@ -73,7 +73,8 @@ test('a manual add contributes its dollar amount to buildRows()', () => {
   S.manuals.steven.push({ id: 'ma_test', name: existing.name, reason: 'test', ref: '',
                           amount: 123, dept: 'MB Residential Service' });
   const after = sandbox.buildRows().find(r => r.name === existing.name)?.total || 0;
-  assert.equal(after - before, 123, 'manual add did not contribute its dollar amount to the total');
+  // Tolerance, not equality: sums of cents-valued floats drift by ~1e-14 depending on the month's data.
+  assert.ok(Math.abs((after - before) - 123) < 0.005, `manual add changed the total by ${after - before}, expected 123`);
 });
 
 // ── Incident: flagSpiffLine never persisted (fixed 2026-07-13) ───────────────────────────────

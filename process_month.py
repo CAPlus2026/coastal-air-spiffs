@@ -580,11 +580,15 @@ def compute(month_label):
             emps[name] = {"name": name, "svc": 0, "ins": 0, "plb": 0, "com": 0, "chs": 0, "chi": 0, "dups": []}
         return emps[name]
 
+    line_col = {}  # lineId -> emps column it was added to, so a line can be backed out later
+
     def add_spiff(name, col, amount, date, job, customer, type_, item, auto_added=False):
         e = ensure_emp(name)
         e[col] += amount
+        line_id = new_line_id(name, job, type_, item, amount)
+        line_col[line_id] = col
         spiff_detail[name].append({
-            "lineId": new_line_id(name, job, type_, item, amount),
+            "lineId": line_id,
             "date": date, "job": job, "customer": customer, "type": type_, "item": item, "spiff": amount,
             **({"note": "Auto-added — not on Master Pay File"} if auto_added else {}),
         })
@@ -867,6 +871,63 @@ def compute(month_label):
         }
         for r in rich_rows
     ]
+
+    # ── 7b) Drop MPF lines that are just the Master Pay File catching up on a prior-month auto-add ──
+    # An accessory sale that isn't on the MPF yet gets auto-added (step 2) and paid in the month it
+    # was sold; the MPF then lists the same job a month later. Found 2026-10-02: Jay Hall and Steve
+    # Gordon were being paid $1,350 a second time in Sep 2026 for jobs August had already paid —
+    # the cross-month check below only FLAGS that, it never removed it, so it still counted in
+    # every total. Deliberately narrow so it can't swallow a genuine second payment: the prior
+    # payments for that (employee, job) must ALL be auto-added (an MPF-sourced prior payment could
+    # be legitimate, leave that to the flag), and this month's MPF Sales Spiff total for the job
+    # must equal them exactly (MPF splits a job into different line amounts than the accessory
+    # report does, so lines can't be matched one-to-one — the job total is what matches).
+    # Anything that doesn't qualify is kept and still gets the duplicate-payment flag below.
+    prior_ledger_rows = sheet_get("spiff_ledger", required=True)
+    prior_auto = defaultdict(float)
+    prior_other = set()
+    for row in prior_ledger_rows:
+        if len(row) < 9 or not row[3] or norm_month(row[0]) == MONTH_LABEL:
+            continue
+        key = (row[2], str(row[3]))
+        if row[5] == "Sales Spiff" and row[8] == "auto-added":
+            try:
+                prior_auto[key] += float(row[7])
+            except (TypeError, ValueError):
+                prior_other.add(key)
+        else:
+            prior_other.add(key)
+    mpf_total = defaultdict(float)
+    for emp_name, lines in spiff_detail.items():
+        for line in lines:
+            if line.get("type") == "Sales Spiff" and not line.get("note") and line.get("job"):
+                mpf_total[(emp_name, str(line["job"]))] += line["spiff"]
+    caught_up = {k for k, v in mpf_total.items()
+                 if k in prior_auto and k not in prior_other and abs(prior_auto[k] - v) < 0.005}
+    for emp_name, lines in list(spiff_detail.items()):
+        keep = []
+        for line in lines:
+            k = (emp_name, str(line.get("job", "")))
+            if k in caught_up and line.get("type") == "Sales Spiff" and not line.get("note"):
+                col_ = line_col[line["lineId"]]
+                emps[emp_name][col_] = round(emps[emp_name][col_] - line["spiff"], 2)
+            else:
+                keep.append(line)
+        spiff_detail[emp_name] = keep
+    for emp_name, job in sorted(caught_up):
+        add_flag(team_of(emp_name), emp_name, f"Job #{job}",
+                  f"Already paid last month — job #{job} not paid again",
+                  f"{emp_name} was already paid ${prior_auto[(emp_name, job)]:.2f} for job #{job} "
+                  f"(auto-added from the accessory report in a prior month, before it reached the Master Pay "
+                  f"File). This month's Master Pay File lists the same job for the same total, so it was left "
+                  f"out rather than paid a second time. If it should be paid again, add it manually.",
+                  sev="yellow")
+    # An employee whose ONLY activity was the dropped catch-up shouldn't linger as an all-zero row.
+    for emp_name in {n for n, _ in caught_up}:
+        if not spiff_detail.get(emp_name) and not any(
+                emps[emp_name][c] for c in ("svc", "ins", "plb", "com", "chs", "chi")):
+            del emps[emp_name]
+            spiff_detail.pop(emp_name, None)
 
     # ── 8) Payout ledger — cross-month duplicate detection + carryover history ──
     def fmt_amt(n):

@@ -431,3 +431,69 @@ def test_carry_forward_resolution_replays_regardless_of_month_cell_format(mock_p
         "carry-forward item vanished across the month boundary once its baseline row's month "
         "cell was an ISO datetime instead of a plain string"
     )
+
+
+# ── Aug auto-add paid again from the Sep MPF (found 2026-10-02) ──────────────────────────────
+# An accessory sale not yet on the Master Pay File gets auto-added and paid in the month it was
+# sold; the MPF then catches up a month later and lists the same job again. Without a check the
+# tech is paid twice (Jay Hall/Steve Gordon, ~$1,350 in Sep 2026) — it was only flagged, never
+# removed, so it still counted in every total.
+def _prior_auto_added(job, amount, item="Test Item (CHAC-7)"):
+    return ["Aug 2026", "steven", "Test Tech One", job, "Test Customer, Gamma", "Sales Spiff",
+            item, str(amount), "auto-added"]
+
+
+def _mpf_line(job, pay):
+    return {"EmployeeName": "Test Tech One", "Activity": "Sales Spiff", "Date": "2026-09-05",
+            "JobNumber": job, "GrossPay": pay, "CustomerName": "Test Customer, Gamma",
+            "LocationName": "", "LaborTypeCode": ""}
+
+
+def test_mpf_catchup_of_prior_month_auto_add_is_not_paid_twice(mock_pipeline, fixture_reports):
+    mock_pipeline.tabs["spiff_ledger"] = [_prior_auto_added("999100", 50)]
+    fixture_reports["masterPayFile"] = [_mpf_line("999100", 50.0), _mpf_line("999101", 25.0)]
+    result = run_month("Sep 2026")
+    emp = next(e for m in result["emps"].values() for e in m if e["name"] == "Test Tech One")
+    assert emp["svc"] + emp["ins"] + emp["plb"] + emp["com"] + emp["chs"] + emp["chi"] == 25.0
+    detail = next(v for m in result["spiffDetail"].values() for k, v in m.items() if k == "Test Tech One")
+    assert [d["job"] for d in detail] == ["999101"]
+    ledger_sep = [r for r in mock_pipeline.get("spiff_ledger") if pm.norm_month(r[0]) == "Sep 2026"]
+    assert [r[3] for r in ledger_sep] == ["999101"]
+
+
+def test_mpf_catchup_summing_across_several_lines_is_dropped(mock_pipeline, fixture_reports):
+    """MPF splits one job into different line amounts than the accessory report did (Dyer, Audrey:
+    4 auto-added lines Aug, 5 MPF lines Sep, same $1,100 total) — match on the job total."""
+    mock_pipeline.tabs["spiff_ledger"] = [_prior_auto_added("999200", 200), _prior_auto_added("999200", 100)]
+    fixture_reports["masterPayFile"] = [_mpf_line("999200", 100.0), _mpf_line("999200", 200.0)]
+    result = run_month("Sep 2026")
+    assert not any(e["name"] == "Test Tech One" for m in result["emps"].values() for e in m)
+
+
+def test_mpf_line_with_different_total_than_prior_auto_add_is_kept_and_flagged(mock_pipeline, fixture_reports):
+    mock_pipeline.tabs["spiff_ledger"] = [_prior_auto_added("999300", 50)]
+    fixture_reports["masterPayFile"] = [_mpf_line("999300", 75.0)]
+    result = run_month("Sep 2026")
+    emp = next(e for m in result["emps"].values() for e in m if e["name"] == "Test Tech One")
+    assert emp["svc"] + emp["ins"] + emp["plb"] + emp["com"] + emp["chs"] + emp["chi"] == 75.0
+    assert any("already paid" in f["title"].lower() for m in result["flags"].values() for f in m)
+
+
+def test_prior_mpf_paid_job_is_not_treated_as_a_catchup(mock_pipeline, fixture_reports):
+    """Only prior AUTO-ADDED payments mean 'MPF is just catching up'. A prior MPF-sourced line for
+    the same job could be a genuine second payment — leave that to the existing flag."""
+    row = _prior_auto_added("999400", 50)
+    row[8] = "MPF"
+    mock_pipeline.tabs["spiff_ledger"] = [row]
+    fixture_reports["masterPayFile"] = [_mpf_line("999400", 50.0)]
+    result = run_month("Sep 2026")
+    emp = next(e for m in result["emps"].values() for e in m if e["name"] == "Test Tech One")
+    assert emp["svc"] + emp["ins"] + emp["plb"] + emp["com"] + emp["chs"] + emp["chi"] == 50.0
+
+
+def test_catchup_dedupe_is_stable_across_reruns(mock_pipeline, fixture_reports):
+    mock_pipeline.tabs["spiff_ledger"] = [_prior_auto_added("999500", 50)]
+    fixture_reports["masterPayFile"] = [_mpf_line("999500", 50.0), _mpf_line("999501", 25.0)]
+    first = run_month("Sep 2026")
+    second = run_month("Sep 2026")
+    assert first["emps"] == second["emps"]

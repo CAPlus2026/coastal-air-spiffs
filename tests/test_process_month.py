@@ -497,3 +497,67 @@ def test_catchup_dedupe_is_stable_across_reruns(mock_pipeline, fixture_reports):
     first = run_month("Sep 2026")
     second = run_month("Sep 2026")
     assert first["emps"] == second["emps"]
+
+
+# ── Items resolved in an EARLIER month came back as fresh pending items (found 2026-10-02) ───
+# Steven resolved 28 of August's carry-forward items after August's last run had already written
+# its res_carry_forward seed, so September's starting list still held them and the client (which
+# only replays resolutions dated the current month) showed them as unresolved.
+def _seed_baseline(mock_pipeline, emp="Test Tech One", job="Job 12345", cust="Test Customer, Old"):
+    mock_pipeline.tabs["res_carry_forward"] = [
+        ["Aug 2026", "cf_x", "Jul 2026", emp, job, f"Lead Stage 2 — {cust}", "75",
+         "MB Install Residential", "Stage 1 paid Jul 2026."],
+        ["Aug 2026", "cf_y", "Aug 2026", "Test Tech Two", "Job 777", "Lead Stage 2 — Test Customer, Other",
+         "75", "MB Install Residential", "Stage 1 paid Aug 2026."],
+    ]
+
+
+def _resolution(month, disp, job="Job 12345", cust="Test Customer, Old", id_="stale_id"):
+    return [month, "steven", id_, "Test Tech One", job, f"Lead Stage 2 — {cust}", "75", disp, "",
+            "2026-09-10T00:00:00.000Z"]
+
+
+def test_carry_forward_paid_in_a_prior_month_is_not_pending_again(mock_pipeline):
+    _seed_baseline(mock_pipeline)
+    mock_pipeline.tabs["carry_forward_resolutions"] = [_resolution("Aug 2026", "paid")]
+    result = run_month("Sep 2026")
+    names = [(c["emp"], c["ref"]) for c in result["carryForward"]]
+    assert ("Test Tech One", "Job 12345") not in names
+    assert ("Test Tech Two", "Job 777") in names, "an unrelated still-open holdover must stay"
+
+
+def test_carry_forward_dead_in_a_prior_month_is_not_pending_again(mock_pipeline):
+    _seed_baseline(mock_pipeline)
+    mock_pipeline.tabs["carry_forward_resolutions"] = [_resolution("Aug 2026", "dead")]
+    result = run_month("Sep 2026")
+    assert not any(c["emp"] == "Test Tech One" for c in result["carryForward"])
+
+
+def test_carry_forward_resolved_this_month_stays_for_the_client_replay(mock_pipeline):
+    _seed_baseline(mock_pipeline)
+    mock_pipeline.tabs["carry_forward_resolutions"] = [_resolution("Sep 2026", "paid")]
+    result = run_month("Sep 2026")
+    assert any(c["emp"] == "Test Tech One" and c["ref"] == "Job 12345" for c in result["carryForward"])
+
+
+def test_carry_forward_prior_month_resolution_undone_keeps_the_item(mock_pipeline):
+    _seed_baseline(mock_pipeline)
+    mock_pipeline.tabs["carry_forward_resolutions"] = [
+        _resolution("Aug 2026", "paid"), _resolution("Aug 2026", "")]
+    result = run_month("Sep 2026")
+    assert any(c["emp"] == "Test Tech One" for c in result["carryForward"])
+
+
+def test_carry_forward_prior_month_resolution_matches_by_customer_when_id_is_stale(mock_pipeline):
+    _seed_baseline(mock_pipeline)
+    mock_pipeline.tabs["carry_forward_resolutions"] = [_resolution("Aug 2026", "paid", id_="cf_totally_other")]
+    result = run_month("Sep 2026")
+    assert not any(c["emp"] == "Test Tech One" for c in result["carryForward"])
+
+
+def test_carry_forward_reviewed_marker_does_not_revive_a_prior_month_resolution(mock_pipeline):
+    _seed_baseline(mock_pipeline)
+    mock_pipeline.tabs["carry_forward_resolutions"] = [
+        _resolution("Aug 2026", "paid"), _resolution("Sep 2026", "reviewed")]
+    result = run_month("Sep 2026")
+    assert not any(c["emp"] == "Test Tech One" for c in result["carryForward"])

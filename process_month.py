@@ -331,6 +331,61 @@ def fetch_carry_forward_disposition_by_customer(required=True):
     return resolved
 
 
+def month_index(label):
+    """'Aug 2026' -> a sortable integer, or None if unparseable."""
+    try:
+        mon, year = str(label).split()
+        return int(year) * 12 + _MONTH_NAMES.index(mon)
+    except (ValueError, AttributeError):
+        return None
+
+
+def fetch_resolved_before_this_month():
+    """Carry-forward items a manager marked paid/dead in a month BEFORE the one being processed.
+    Returns (ids, keys): the item ids, and (emp, full_customer_key, ref) tuples as a fallback for
+    stale/suffixed ids (same reasoning as fetch_carry_forward_disposition_by_customer()).
+
+    BUG FOUND 2026-10-02 (Sep 2026 run): 28 of the 38 pending items shown for September had
+    already been marked paid or dead in August — Steven kept resolving items AFTER August's last
+    run had written its res_carry_forward seed, so the seed (which only excludes what was resolved
+    by the time that run happened) still held them. compute_prior_carry_forward() deliberately
+    keeps same-month resolutions in the list (the client replays them to apply that month's
+    payout), but index.html's replay only looks at resolutions dated the CURRENT month, so
+    anything resolved in an earlier month sat there as a fresh, unresolved item — payable a
+    second time if anyone clicked Paid. A resolution from a prior month is final for this
+    month's purposes: that month's payroll already used it.
+
+    Last effective row wins, same as every other log here; an empty disposition undoes it, and a
+    'reviewed' marker is just a bookmark that changes nothing."""
+    cur = month_index(MONTH_LABEL)
+    state = {}  # id -> (disp, month_idx); key -> same
+    for row in sheet_get("carry_forward_resolutions", required=True):
+        if len(row) < 8:
+            continue
+        month, _mgr, id_, emp, ref, type_, _amount, disp = row[:8]
+        if disp == "reviewed":
+            continue
+        entry = (disp, month_index(norm_month(month))) if disp in ("paid", "dead") else None
+        customer = type_.split(" — ", 1)[-1].strip() if " — " in type_ else ""
+        full_key = full_customer_key(customer)
+        keys = []
+        if id_:
+            keys.append(("id", id_))
+        if emp and full_key:
+            keys.append(("key", (emp, full_key, ref or "")))
+        for k in keys:
+            if entry:
+                state[k] = entry
+            else:
+                state.pop(k, None)
+    ids, keys = set(), set()
+    for (kind, k), (_disp, m) in state.items():
+        if m is None or cur is None or m >= cur:
+            continue
+        (ids if kind == "id" else keys).add(k)
+    return ids, keys
+
+
 def compute_prior_carry_forward():
     """Auto-computes the carry-forward seed for this run from res_carry_forward (last month's
     computed output, written by that month's run — see write-back at the end of main()) plus
@@ -353,10 +408,13 @@ def compute_prior_carry_forward():
     # stayed in the array (and payouts kept showing) far longer than intended by accident.
     resolved = fetch_disposition_map("carry_forward_resolutions", id_col=2, disposition_col=7, required=True)
     resolved_by_customer = fetch_carry_forward_disposition_by_customer()
+    settled_ids, settled_keys = fetch_resolved_before_this_month()
     out = []
     for r in prev_rows:
         _month, id_, from_month, emp, ref, type_, amount, dept, reason = r[:9]
         customer = type_.split(" — ", 1)[-1].strip() if " — " in type_ else ""
+        if id_ in settled_ids or (emp, full_customer_key(customer), ref or "") in settled_keys:
+            continue  # resolved in an earlier month — that month's payroll already used it
         out.append({
             "id": id_, "fromMonth": norm_month(from_month), "emp": emp, "ref": ref, "type": type_,
             "amount": float(amount), "dept": dept, "lnk": last_name_key(customer),

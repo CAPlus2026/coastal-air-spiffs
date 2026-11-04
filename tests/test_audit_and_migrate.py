@@ -31,7 +31,7 @@ def test_audit_flags_matches_on_emp_and_ref_not_just_detail(mock_pipeline, fixtu
          "JobNumber": "2", "GrossPay": 10.0, "CustomerName": "Test, Two", "LocationName": "", "LaborTypeCode": ""},
     ]
     result = run_month("Aug 2026")
-    flags = result["flags"]["steven"]
+    flags = result["flags"]["review"]
     alpha_flag = next(f for f in flags if f["emp"] == "Unknown Person Alpha")
     beta_flag = next(f for f in flags if f["emp"] == "Unknown Person Beta")
     assert alpha_flag["id"] != beta_flag["id"]
@@ -42,7 +42,7 @@ def test_audit_flags_matches_on_emp_and_ref_not_just_detail(mock_pipeline, fixtu
     # (no resolution rows exist yet in this fixture, so latest_flags legitimately returns {} here
     # -- write one by hand to exercise the column parsing.)
     mock_pipeline.tabs["flags"] = [
-        ["Aug 2026", "steven", alpha_flag["id"], "red", "red", "Unknown Person Alpha",
+        ["Aug 2026", "review", alpha_flag["id"], "red", "red", "Unknown Person Alpha",
          alpha_flag["ref"], "", alpha_flag["detail"], "Not paid", "test note", "true",
          "2026-08-01T00:00:00.000Z"],
     ]
@@ -58,13 +58,13 @@ def test_audit_flags_already_remediated(mock_pipeline, fixture_reports):
          "JobNumber": "3", "GrossPay": 10.0, "CustomerName": "Test, Three", "LocationName": "", "LaborTypeCode": ""},
     ]
     result = run_month("Aug 2026")
-    flag = result["flags"]["steven"][0]
+    flag = result["flags"]["review"][0]
     mock_pipeline.tabs["flags"] = [
         # Old (stale) id, resolved.
-        ["Aug 2026", "steven", "flag_stale_id", flag["sev"], flag["sev"], flag["emp"], flag["ref"],
+        ["Aug 2026", "review", "flag_stale_id", flag["sev"], flag["sev"], flag["emp"], flag["ref"],
          "", flag["detail"], "Not paid", "old note", "true", "2026-08-01T00:00:00.000Z"],
         # Corrected row under the real current id -- makes the stale one "already_remediated".
-        ["Aug 2026", "steven", flag["id"], flag["sev"], flag["sev"], flag["emp"], flag["ref"],
+        ["Aug 2026", "review", flag["id"], flag["sev"], flag["sev"], flag["emp"], flag["ref"],
          "", flag["detail"], "Not paid", "old note", "true", "2026-08-01T00:00:01.000Z"],
     ]
     orphans = audit_orphans.audit_flags(result, "Aug 2026")
@@ -79,10 +79,10 @@ def test_migrate_log_ids_applies_flags_migration(mock_pipeline, fixture_reports,
          "JobNumber": "4", "GrossPay": 10.0, "CustomerName": "Test, Four", "LocationName": "", "LaborTypeCode": ""},
     ]
     result = run_month("Aug 2026")
-    flag = result["flags"]["steven"][0]
+    flag = result["flags"]["review"][0]
     old_id = "flag_stale_id_for_migration_test"
     mock_pipeline.tabs["flags"] = [
-        ["Aug 2026", "steven", old_id, flag["sev"], flag["sev"], flag["emp"], flag["ref"],
+        ["Aug 2026", "review", old_id, flag["sev"], flag["sev"], flag["emp"], flag["ref"],
          "", flag["detail"], "Not paid", "a real note", "true", "2026-08-01T00:00:00.000Z"],
     ]
     orphan = next(o for o in audit_orphans.audit_flags(result, "Aug 2026") if o["old_id"] == old_id)

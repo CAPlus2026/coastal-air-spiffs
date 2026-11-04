@@ -95,7 +95,25 @@ SHARED_KEY = os.environ.get("SPIFFS_SHARED_KEY", "")
 # so it stays a plain constant. Everyone/everything else below used to be hardcoded here — now
 # loaded from the `roster` Sheet tab via load_roster_globals(), called from the __main__ block
 # right after configure_month(). None until then, same reasoning as the month config above.
-LEAD_ACTIVITIES = {"TGL Lead Set Res", "TGL Lead Sold Res"}
+# ServiceTitan renamed the residential Stage 2 activity: "TGL Lead Sold Res" until ~May 2026,
+# "TGL Sold Res" from Jun 2026 on. Both mean the same thing and must be matched everywhere
+# (here, carry_forward_evidence.py, reconcile_carry_forward.py) — matching only the old name meant
+# every Stage 2 since June went unseen by the duplicate check and the carry-forward matcher.
+TGL_SOLD_RES_ACTIVITIES = {"TGL Lead Sold Res", "TGL Sold Res"}
+LEAD_ACTIVITIES = {"TGL Lead Set Res"} | TGL_SOLD_RES_ACTIVITIES
+
+# Pay items that show up on the Master Pay File but are NOT spiffs Billy pays through this app.
+# Billy pays spiffs through the "Sales Spiff" item (plus the residential TGL lead items above).
+#  - "TGL Lead Sold Comm": commercial lead spiffs are paid ONLY from the commercial salesperson's
+#    monthly submitted list (comm_sales_submissions tab). The ST line is a duplicate check only.
+#  - "SoldBy Commission" / "Invoice Specific Bonus": not spiff items — flagged for Billy, never
+#    added to anyone's spiff total.
+COMM_LEAD_ST_ACTIVITY = "TGL Lead Sold Comm"
+FLAG_NOT_PAY_ACTIVITIES = {COMM_LEAD_ST_ACTIVITY, "SoldBy Commission", "Invoice Specific Bonus"}
+
+# Commercial lead spiff — same $100 the Commercial Leads Log has always used (index.html).
+COMM_LEAD_SPIFF = 100.0
+COMM_SUBMISSIONS_TAB = "comm_sales_submissions"
 STEVEN_ROSTER = CALEB_ROSTER = PLUMBERS = COMM_TECHS = CH_TECHS = OFFICE_NAMES = EXCLUDED_FROM_SPIFFS = None
 
 
@@ -511,6 +529,36 @@ def compute_prior_carry_forward():
     return out
 
 
+def load_comm_submissions(month_label):
+    """The commercial salesperson's monthly submitted sales list — the ONLY source of commercial
+    lead spiff payouts. Tab `comm_sales_submissions`, one row per sold job:
+      month, salesperson, job, customer, leadTech, leadSource, completed (TRUE/FALSE),
+      completedDate, submittedAt, notes
+    Only rows for `month_label` count. A re-submission of the same (salesperson, job) replaces the
+    earlier one (last row wins), so a salesperson can mark a job completed by re-submitting it.
+    A missing tab just means nothing was submitted — no commercial lead spiffs that month.
+
+    Provisional rules pending Billy's decisions (see the build plan): a row pays only when it has
+    a lead tech, a job number, and completed=TRUE; any lead age is accepted; amount is the flat
+    COMM_LEAD_SPIFF.
+    """
+    latest = {}
+    for row in sheet_get(COMM_SUBMISSIONS_TAB) or []:
+        row = list(row) + [""] * (10 - len(row))
+        month, salesperson, job, customer, lead_tech, lead_source, completed, completed_date = row[:8]
+        if str(month).strip().lower() == "month" or norm_month(month) != month_label:
+            continue
+        key = (str(salesperson).strip(), str(job).strip() or str(customer).strip())
+        latest[key] = {
+            "salesperson": str(salesperson).strip(), "job": str(job).strip(),
+            "customer": str(customer).strip(), "leadTech": str(lead_tech).strip(),
+            "leadSource": str(lead_source).strip(),
+            "completed": str(completed).strip().upper() == "TRUE",
+            "date": str(completed_date or "")[:10], "notes": str(row[9] or "").strip(),
+        }
+    return list(latest.values())
+
+
 def compute_carried_leads():
     """Same idea for the commercial lead rolling log — reads res_comm_leads (last month's
     computed output) + commlead_updates (resolutions since, not month-filtered since an update
@@ -574,6 +622,11 @@ def load_roster():
         if not eligible_b:
             excluded[name] = reason or "Not eligible for spiffs"
             continue
+        if role == "installer":
+            # Installers aren't managed by this team, so their spiffs are never processed here
+            # (Billy, 2026-11-04). Excluded entirely — no pay, no hold.
+            excluded[name] = reason or "Installer — spiffs not processed here"
+            continue
         if not active_b:
             continue  # departed — not on any team/role set, so team_of()'s red-flag path catches
             # them if they still show up with activity, instead of silently dropping the money
@@ -615,10 +668,46 @@ def classify_mpf_line(name, activity, business_unit_hint=""):
     return "ins" if is_lead else "svc"
 
 
+REVIEW = "review"  # "Needs review" hold — not a manager's team, never paid until resolved
+
+
 def team_of(name):
     if name in CALEB_ROSTER:
         return "caleb"
-    return "steven"  # default; unknown names still land somewhere and get flagged
+    if name in STEVEN_ROSTER or name in PLUMBERS or name in COMM_TECHS or name in CH_TECHS \
+            or name in OFFICE_NAMES:
+        return "steven"  # known person with no team set — same default as before
+    # Unrecognized person: used to default to Steven's team (and get paid there). Now held in
+    # "Needs review" until Billy adds them to the roster (or marks them not eligible).
+    return REVIEW
+
+
+def is_installer_bu(bu):
+    return "install" in (bu or "").lower()
+
+
+# ── Rich Smith 3% — service-related sales only ───────────────────────
+# Billy, 2026-11-04: component replacements count (compressor, water heater, pool boiler);
+# full equipment replacements don't. Paid when the job is completed.
+RICH_COMPONENT_KEYWORDS = ("compressor", "water heater", "pool boiler", "pool heater")
+RICH_FULL_EQUIPMENT_KEYWORDS = (
+    "system", "full equipment", "equipment replacement", "change out", "changeout", "change-out",
+    "split", "package unit", "packaged unit", "rtu", "rooftop unit", "heat pump", "air handler",
+    "furnace", "condenser", "ductless", "mini split", "new install", "complete replacement",
+)
+RICH_REPLACEMENT_WORDS = ("replace", "install")
+
+
+def classify_rich_item(estimate_name):
+    """Returns ("pay" | "exclude" | "review", reason)."""
+    n = (estimate_name or "").lower()
+    if any(k in n for k in RICH_COMPONENT_KEYWORDS):
+        return "pay", "Component replacement — counts as service"
+    if any(k in n for k in RICH_FULL_EQUIPMENT_KEYWORDS):
+        return "exclude", "Looks like a full equipment replacement — not service, not paid"
+    if any(k in n for k in RICH_REPLACEMENT_WORDS):
+        return "review", "Replacement/install not on the component list — confirm before paying"
+    return "pay", "Service-related sale"
 
 
 def spiff_rate_for_code(code):
@@ -677,7 +766,7 @@ def compute(month_label):
 
     emps = {}  # name -> {svc,ins,plb,com,chs,chi,dups}
     spiff_detail = defaultdict(list)  # name -> [{date,job,customer,type,item,spiff}]
-    flags = {"steven": [], "caleb": [], "jenny": []}
+    flags = {"steven": [], "caleb": [], "jenny": [], REVIEW: []}
     office_mems = defaultdict(float)
     office_mem_details = defaultdict(list)
     # Content-derived, not a sequence counter — flags/details raised for the same underlying
@@ -693,7 +782,8 @@ def compute(month_label):
 
     line_col = {}  # lineId -> emps column it was added to, so a line can be backed out later
 
-    def add_spiff(name, col, amount, date, job, customer, type_, item, auto_added=False):
+    def add_spiff(name, col, amount, date, job, customer, type_, item, auto_added=False, note=None,
+                  source=None):
         e = ensure_emp(name)
         e[col] += amount
         line_id = new_line_id(name, job, type_, item, amount)
@@ -702,6 +792,8 @@ def compute(month_label):
             "lineId": line_id,
             "date": date, "job": job, "customer": customer, "type": type_, "item": item, "spiff": amount,
             **({"note": "Auto-added — not on Master Pay File"} if auto_added else {}),
+            **({"note": note} if note else {}),
+            **({"source": source} if source else {}),
         })
 
     def add_flag(mgr, emp, ref, title, detail, sev="yellow"):
@@ -717,6 +809,8 @@ def compute(month_label):
     tgl_sold_seen = defaultdict(list)  # (name, last-name key) -> [job,...] for dup detection
     stage1_paid_detail = {}  # (name, last-name key) -> {job, customer, dept} for carry-forward generation
 
+    installer_noted = set()
+    st_not_paid = []  # MPF lines on FLAG_NOT_PAY_ACTIVITIES — flagged after the loop
     for row in mpf:
         name = row.get("EmployeeName")
         activity = row.get("Activity")
@@ -728,6 +822,27 @@ def compute(month_label):
             continue
 
         bu_hint = business_unit_by_name.get(name, "")
+        known = team_of(name) != REVIEW
+        if not known and is_installer_bu(bu_hint):
+            # Not on the roster and home business unit is an install BU — an installer. We
+            # don't process installer spiffs at all (no pay, no hold); one info note per person.
+            if name not in installer_noted:
+                installer_noted.add(name)
+                add_flag(REVIEW, name, "", f"Installer skipped — {name}",
+                         f"{name} has Master Pay File activity but their home business unit is "
+                         f"'{bu_hint}' (install). Installer spiffs aren't processed here, so nothing "
+                         f"was paid. If {name} is NOT an installer, add them to the roster and re-run.",
+                         sev="yellow")
+                flags[REVIEW][-1].update(resolved=True, disp="Not paid",
+                                         note="Auto-resolved: installer, excluded.")
+            continue
+
+        if activity in FLAG_NOT_PAY_ACTIVITIES:
+            # Never paid from the MPF. Flag so payroll can confirm it isn't also paid in ST.
+            st_not_paid.append({"name": name, "activity": activity, "pay": float(pay), "job": job,
+                                "customer": customer, "date": date})
+            continue
+
         col = classify_mpf_line(name, activity, bu_hint)
         # MPF has no item/code field (only EmployeeName/Activity/Date/JobNumber/GrossPay/
         # CustomerName/LocationName/LaborTypeCode — confirmed via a live field dump) — item is
@@ -742,17 +857,22 @@ def compute(month_label):
             tgl_set_keys[name].add(lnk)
             stage1_paid_detail[(name, lnk)] = {"job": job, "customer": customer,
                                                 "dept": "CH Install" if name in CH_TECHS else "MB Install Residential"}
-        if activity == "TGL Lead Sold Res":
+        if activity in TGL_SOLD_RES_ACTIVITIES:
             tgl_sold_seen[(name, lnk)].append(job)
 
-        if name not in STEVEN_ROSTER and name not in CALEB_ROSTER and name not in PLUMBERS \
-                and name not in COMM_TECHS and name not in CH_TECHS:
-            mgr = team_of(name)
-            add_flag(mgr, name, f"Job #{job}",
+        if not known:
+            add_flag(REVIEW, name, f"Job #{job}",
                       f"Unrecognized employee on Master Pay File — {name}",
                       f"{name} appears on the Master Pay File ({activity}, {customer}) but isn't in the known "
-                      f"roster. Best-guess classified via business unit '{bu_hint}'. Verify this is a current "
-                      f"employee and the department is correct.", sev="red")
+                      f"roster. Held in Needs review — NOT paid and not on any manager's team. Add them to "
+                      f"the roster (or mark them not eligible) and re-run. Business unit: '{bu_hint}'.",
+                      sev="red")
+        elif is_installer_bu(bu_hint):
+            add_flag(team_of(name), name, f"Job #{job}",
+                     f"Possible installer on the roster — {name}",
+                     f"{name} is on the roster but their home business unit is '{bu_hint}'. Installer "
+                     f"spiffs aren't processed here. If {name} is an installer, set their roster role to "
+                     f"'installer' and re-run; otherwise resolve this flag.", sev="red")
 
     # Duplicate TGL Sold detection
     for (name, lnk), jobs in tgl_sold_seen.items():
@@ -760,9 +880,32 @@ def compute(month_label):
             mgr = team_of(name)
             add_flag(mgr, name, ", ".join(f"#{j}" for j in jobs),
                       f"Duplicate TGL Stage 2 — {name}",
-                      f"TGL Lead Sold Res appears more than once for the same customer. Jobs: "
+                      f"TGL Lead Sold Res / TGL Sold Res appears more than once for the same customer. Jobs: "
                       f"{', '.join('#' + str(j) for j in jobs)}. One is likely a duplicate payroll entry — verify "
                       f"and reverse the incorrect one.", sev="red")
+
+    # Commercial lead submissions (the ONLY way a commercial lead spiff gets paid) — read once,
+    # used for the ST duplicate check right below and the payout in step 6.
+    comm_submissions = load_comm_submissions(MONTH_LABEL)
+    submitted_jobs = {str(sub["job"]) for sub in comm_submissions if sub["job"]}
+
+    # MPF items that are never paid here (see FLAG_NOT_PAY_ACTIVITIES).
+    for item in st_not_paid:
+        nm, act, job_ = item["name"], item["activity"], item["job"]
+        if act == COMM_LEAD_ST_ACTIVITY:
+            matched = str(job_) in submitted_jobs
+            title = (f"Duplicate check — ST also paid commercial lead, job #{job_}" if matched else
+                     f"ST paid a commercial lead with no salesperson submission — job #{job_}")
+            detail = (f"ServiceTitan shows '{act}' ${item['pay']:.2f} for {nm} on job #{job_} ({item['customer']}). "
+                      f"Commercial lead spiffs are paid only from the commercial salesperson's submitted list"
+                      f"{' — this job IS on that list and is paid from it, so this ST line is a duplicate' if matched else ' — this job is NOT on that list, so nothing was paid'}. "
+                      f"Make sure payroll doesn't also pay the ST line.")
+        else:
+            title = f"Not a spiff item — '{act}' on job #{job_}"
+            detail = (f"ServiceTitan shows '{act}' ${item['pay']:.2f} for {nm} on job #{job_} ({item['customer']}). "
+                      f"Spiffs are paid only through the 'Sales Spiff' item, so this was NOT added to anyone's "
+                      f"spiff total. Confirm with payroll whether it should be paid at all.")
+        add_flag(team_of(nm), nm, f"Job #{job_}", title, detail, sev="red")
 
     # ── 2) Accessory Sales cross-check — catch spiffs missing from MPF ──
     for row in accessories:
@@ -772,7 +915,7 @@ def compute(month_label):
         job = row.get("JobNumber")
         customer = row.get("CustomerName") or ""
         date = (row.get("Date") or "")[:10]
-        if not tech or not code or tech in EXCLUDED_FROM_SPIFFS:
+        if not tech or not code or tech in EXCLUDED_FROM_SPIFFS or tech in installer_noted:
             continue
         if (tech, str(job)) in mpf_job_keys:
             continue  # already paid via MPF, nothing to do
@@ -923,14 +1066,62 @@ def compute(month_label):
     # Auto-computed from res_comm_leads (last month's output) + commlead_updates — see
     # compute_carried_leads() near the top of this file. Same history as the carry-forward
     # seed above: used to be a hand-maintained snapshot before 2026-09.
+    # Payout (Billy, 2026-11-04): commercial lead spiffs are paid ONCE, and ONLY from the
+    # commercial salesperson's monthly submitted sales list (with lead source). The log below is
+    # tracking only now — its status never moves money, and ST's TGL Lead Sold Comm is a
+    # duplicate check (flagged above), never a payout.
+    prior_comm_paid_jobs = {
+        str(r[3]) for r in sheet_get("spiff_ledger", required=True)
+        if len(r) >= 9 and r[3] and r[8] == "comm-submission" and norm_month(r[0]) != MONTH_LABEL
+    }
+    paid_sub_jobs = set()
+    paid_sub_keys = set()
+    for sub in comm_submissions:
+        tech, job_, cust = sub["leadTech"], str(sub["job"]), sub["customer"]
+        ref = f"Job #{job_}" if job_ else cust
+        if not tech:
+            add_flag(REVIEW, sub["salesperson"] or "?", ref, f"Commercial sale submitted with no lead tech — {ref}",
+                     f"{sub['salesperson']} submitted {cust} ({ref}) but no lead-source tech. Nothing paid.",
+                     sev="red")
+            continue
+        if not job_:
+            add_flag(REVIEW, tech, cust, f"Commercial lead submission missing job # — {cust}",
+                     f"{sub['salesperson']} submitted {cust} with lead tech {tech} but no job number, so "
+                     f"it can't be checked against prior payouts. Held — nothing paid.", sev="red")
+            continue
+        if job_ in prior_comm_paid_jobs or job_ in paid_sub_jobs:
+            add_flag(team_of(tech), tech, ref, f"Commercial lead already paid — job #{job_}",
+                     f"Job #{job_} ({cust}) was already paid as a commercial lead spiff "
+                     f"{'in a prior month' if job_ in prior_comm_paid_jobs else 'earlier in this list'}. "
+                     f"Not paid again.", sev="yellow")
+            flags[team_of(tech)][-1].update(resolved=True, disp="Not paid",
+                                            note="Auto-resolved: commercial lead pays only once.")
+            continue
+        if not sub["completed"]:
+            continue  # sold, not completed yet — the salesperson re-submits it once the job completes
+        if team_of(tech) == REVIEW or tech in EXCLUDED_FROM_SPIFFS:
+            add_flag(REVIEW, tech, ref, f"Commercial lead tech not on roster — {tech}",
+                     f"{sub['salesperson']} submitted {cust} ({ref}) with lead tech {tech}, who isn't an "
+                     f"eligible person on the roster. Held — nothing paid.", sev="red")
+            continue
+        col = "chs" if tech in CH_TECHS else "com" if tech in COMM_TECHS else "plb" if tech in PLUMBERS else "svc"
+        add_spiff(tech, col, COMM_LEAD_SPIFF, sub["date"], job_, cust, "Commercial Lead Spiff",
+                  f"Commercial lead — {cust}",
+                  note=f"From {sub['salesperson'] or 'commercial salesperson'}'s submitted sales list",
+                  source="comm-submission")
+        paid_sub_jobs.add(job_)
+        paid_sub_keys.add((tech, last_name_key(cust)))
+
     carried_leads = compute_carried_leads()
     comm_leads_out = []
     for lead in carried_leads:
-        if (lead["tech"], lead["job"]) in mpf_job_keys:
-            # Already paid via this month's Master Pay File (counted in the main MPF loop above) —
-            # just mark the log entry resolved, don't add the spiff a second time.
+        if (lead["tech"], last_name_key(lead.get("customer") or "")) in paid_sub_keys \
+                or (lead.get("job") and str(lead["job"]) in paid_sub_jobs):
+            # Paid this month from the salesperson's submission — the money is on the tech's
+            # spiff line; the log entry is just closed out (spiff 0 here so nothing double-counts).
             lead["status"] = "Sold & Completed"
             lead["paid"] = True
+            lead["spiff"] = 0
             lead["payMonth"] = MONTH_LABEL
         else:
             # Still not paid — roll forward again. No flag generated here: the Commercial Leads Log
@@ -961,8 +1152,8 @@ def compute(month_label):
         location = (row.get("LocationName") or "").strip()
         lnk = last_name_key(customer)
         key = (name, lnk)
-        if key in known_leads or lnk in mpf_customer_keys.get(name, set()):
-            continue  # already logged, or already paid via MPF this month
+        if key in known_leads or key in paid_sub_keys:
+            continue  # already logged, or already paid from a submission this month
         known_leads.add(key)
         comm_leads_out.append({
             "id": new_cl_id(name, lnk), "month": MONTH_LABEL, "tech": name, "job": "",
@@ -970,18 +1161,33 @@ def compute(month_label):
         })
 
     # ── 7) Rich Smith commission (3%) ──
+    # Billy, 2026-11-04: service-related sales only (component replacements like compressor,
+    # water heater, pool boiler count; full equipment replacements don't), paid when the job is
+    # completed. A row only pays when it has installed (completed) sales AND an install job.
+    # NOTE: the report still runs on a Sold On date basis (DateType=0) — see report_ids.json. A job
+    # sold one month and completed the next can fall out of both windows; that's a report-setting
+    # decision for the rebuild, not something to flip blindly here.
     rich_rows = [r for r in rich if r.get("SoldBy") == "Rich Smith"]
-    rich_total_base = sum((r.get("EstimateSalesInstalled") or 0) for r in rich_rows)
+    rich_details = []
+    rich_review = []
+    for r in rich_rows:
+        sale = r.get("EstimateSalesInstalled") or 0
+        item = r.get("EstimateName") or ""
+        base = {"job": r.get("InstallJobs") or "", "customer": r.get("LocationName") or "",
+                "item": item, "soldOn": (r.get("SoldOn") or "")[:10], "sale": sale}
+        if not sale or not r.get("InstallJobs"):
+            continue  # not completed yet — nothing to pay this month
+        verdict, why = classify_rich_item(item)
+        if verdict == "pay":
+            rich_details.append({**base, "commission": round(sale * 0.03, 2)})
+        else:
+            rich_review.append({**base, "commission": 0, "verdict": verdict, "reason": why})
+            add_flag(REVIEW, "Rich Smith", f"Job #{base['job']}",
+                     f"Rich 3% {'excluded' if verdict == 'exclude' else 'held'} — {item}",
+                     f"{item} ({base['customer']}, job #{base['job']}, ${sale:.2f}): {why}. "
+                     f"Not included in Rich's 3%.", sev="yellow" if verdict == "exclude" else "red")
+    rich_total_base = sum(d["sale"] for d in rich_details)
     rich_commission = round(rich_total_base * 0.03, 2)
-    rich_details = [
-        {
-            "job": r.get("InstallJobs") or "", "customer": r.get("LocationName") or "",
-            "item": r.get("EstimateName") or "", "soldOn": (r.get("SoldOn") or "")[:10],
-            "sale": r.get("EstimateSalesInstalled") or 0,
-            "commission": round((r.get("EstimateSalesInstalled") or 0) * 0.03, 2),
-        }
-        for r in rich_rows
-    ]
 
     # ── 7b) Drop MPF lines that are just the Master Pay File catching up on a prior-month auto-add ──
     # An accessory sale that isn't on the MPF yet gets auto-added (step 2) and paid in the month it
@@ -1063,22 +1269,18 @@ def compute(month_label):
         # can't drift apart again.
         for emp_name, lines in spiff_detail.items():
             mgr_ = team_of(emp_name)
+            if mgr_ == REVIEW:
+                continue  # held in Needs review — not paid, so not a ledger payout
             for line in lines:
                 entries.append({
                     "month": MONTH_LABEL, "mgr": mgr_, "employee": emp_name,
                     "job": line.get("job", ""), "customer": line.get("customer", ""),
                     "type": line.get("type", ""), "item": line.get("item", ""),
                     "amount": line.get("spiff", 0),
-                    "source": "auto-added" if line.get("note") else "MPF",
+                    "source": line.get("source") or ("auto-added" if line.get("note") else "MPF"),
                 })
-        for lead in comm_leads_out:
-            if lead.get("paid"):
-                entries.append({
-                    "month": MONTH_LABEL, "mgr": team_of(lead["tech"]), "employee": lead["tech"],
-                    "job": lead.get("job", ""), "customer": lead.get("customer", ""),
-                    "type": "Commercial Lead", "item": f"Commercial lead — {lead['customer']}",
-                    "amount": lead.get("spiff", 0), "source": "commercial-lead",
-                })
+        # Commercial lead payouts are spiff lines now (source "comm-submission"), written above —
+        # the log itself no longer carries money, so it no longer writes its own ledger rows.
         for r in carry_forward_ledger_rows(MONTH_LABEL):
             entries.append({
                 "month": r[0], "mgr": r[1], "employee": r[2], "job": r[3], "customer": r[4],
@@ -1218,14 +1420,27 @@ def compute(month_label):
     # unrecognized name to Steven's team and raises a red flag when it's first classified above —
     # mirror that default here so the money and the flag always land in the same place.
     known_names = set(STEVEN_ROSTER) | set(CALEB_ROSTER)
-    steven_emps += [e for n, e in emps.items() if n not in known_names]
+    # Anyone not on the roster is HELD in "Needs review" (Billy, 2026-11-04) — the money is shown,
+    # never dropped, but it's not on any manager's team and not in any total until resolved.
+    needs_review = []
+    steven_emps += [e for n, e in emps.items() if n not in known_names and team_of(n) == "steven"]
+    for n, e in emps.items():
+        if n in known_names or team_of(n) != REVIEW:
+            continue
+        amt = round(sum(e[c] for c in ("svc", "ins", "plb", "com", "chs", "chi")), 2)
+        needs_review.append({"name": n, "amount": amt, "lines": spiff_detail.get(n, []),
+                             "reason": "Not on the roster — add them (or mark not eligible) and re-run"})
+    for d in rich_review:
+        needs_review.append({"name": "Rich Smith", "amount": round(d["sale"] * 0.03, 2) if d["verdict"] == "review" else 0,
+                             "lines": [d], "reason": d["reason"]})
 
     result = {
         "month": MONTH_LABEL,
         "emps": {"steven": steven_emps, "caleb": caleb_emps},
         "flags": flags,
         "spiffDetail": {
-            "steven": {n: d for n, d in spiff_detail.items() if n not in CALEB_ROSTER},
+            "steven": {n: d for n, d in spiff_detail.items()
+                       if n not in CALEB_ROSTER and team_of(n) != REVIEW},
             "caleb": {n: d for n, d in spiff_detail.items() if n in CALEB_ROSTER},
         },
         "officeMems": [{"name": n, "total": round(t, 2), "details": office_mem_details.get(n, [])}
@@ -1235,16 +1450,18 @@ def compute(month_label):
         "bonuses": [
             {"id": "rich", "name": "Rich Smith", "type": "Commercial Commission (3%)",
              "amount": rich_commission, "dept": "MB Service Commercial", "approved": False,
-             "note": f"3% of {rich_total_base:.2f} total EstimateSalesInstalled (Sold On basis) — "
-                     f"recomputed fresh each month from Rich's Commission Report, does not carry forward",
+             "note": f"3% of {rich_total_base:.2f} completed service-related sales (component replacements "
+                     f"count, full equipment replacements excluded) — recomputed fresh each month from "
+                     f"Rich's Commission Report, does not carry forward",
              "details": rich_details},
         ],
         "unresolvedCompleters": list(unresolved_completers),
+        "needsReview": needs_review,
     }
 
-    unclassified_names = [n for n in emps if n not in known_names]
+    unclassified_names = [n for n in emps if team_of(n) == REVIEW]
     if unclassified_names:
-        print(f"  UNCLASSIFIED (flagged, paid under Steven by default): {unclassified_names}")
+        print(f"  UNCLASSIFIED (held in Needs review, not paid): {unclassified_names}")
 
     # ledger_entries isn't part of `result` (it's not written to output_<month>.json — it only
     # ever existed to become spiff_ledger rows) but commit() needs it, so it travels alongside

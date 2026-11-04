@@ -423,3 +423,38 @@ test("departed-employee clearances show on Billy's Overview as cleared, not as w
   live.disposition = 'dead'; live.note = 'Auto-cleared — x is no longer employed'; live.auto = true;
   assert.match(sandbox.rEvidenceCard(), /1 cleared/);
 });
+
+// ── Quick fixes 2026-11 (Billy) ─────────────────────────────────────────────────────────────
+test('marking a commercial lead "Sold & Completed" in the log never adds money', async () => {
+  const { sandbox, S } = loadApp();
+  const name = (S.emps.steven[0] || {}).name;
+  S.commLeads.push({ id: 'cl_qf', month: S.MONTH, tech: name, job: '1', customer: 'Acme', status: 'Pending',
+                     spiff: 0, payMonth: '', paid: false });
+  const before = sandbox.grandTotal();
+  await sandbox.updateCommLead('cl_qf', 'Sold & Completed');
+  assert.ok(Math.abs(sandbox.grandTotal() - before) < 0.005);
+  await sandbox.undoCommLead('cl_qf');
+  assert.ok(Math.abs(sandbox.grandTotal() - before) < 0.005);
+});
+
+test('resolving a check-only flag as "Pay this month" adds nothing', () => {
+  const { sandbox, S } = loadApp();
+  const name = S.emps.steven[0].name;
+  const before = sandbox.buildRows().find(r => r.name === name)?.total || 0;
+  for (const title of ["Not a spiff item — 'SoldBy Commission' on job #1",
+                       'Duplicate check — ST also paid commercial lead, job #2',
+                       'Possible installer on the roster — x']) {
+    S.flags.steven.push({ id: 'f_' + title.length, sev: 'red', emp: name, ref: '', resolved: true,
+                          disp: 'Pay this month', note: '', title, detail: '' });
+  }
+  const after = sandbox.buildRows().find(r => r.name === name)?.total || 0;
+  assert.ok(Math.abs(after - before) < 0.005, `check-only flags changed the total by ${after - before}`);
+});
+
+test('Needs review holds are shown but never counted', () => {
+  const { sandbox, S } = loadApp();
+  const before = sandbox.grandTotal();
+  S.needsReview.push({ name: 'Brand New Person', amount: 60, reason: 'Not on the roster', lines: 1 });
+  assert.ok(Math.abs(sandbox.grandTotal() - before) < 0.005);
+  assert.match(sandbox.rNeedsReviewCard(), /Brand New Person/);
+});

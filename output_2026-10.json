@@ -23,6 +23,16 @@
         "dups": []
       },
       {
+        "name": "Herbie Windley",
+        "svc": 0,
+        "ins": 0,
+        "plb": 200.0,
+        "com": 0,
+        "chs": 0,
+        "chi": 0,
+        "dups": []
+      },
+      {
         "name": "Nick Scarpa",
         "svc": 0,
         "ins": 0,
@@ -51,6 +61,18 @@
         "chs": 0,
         "chi": 0,
         "dups": []
+      },
+      {
+        "name": "John High",
+        "svc": 0,
+        "ins": 0,
+        "plb": 0,
+        "com": 25.0,
+        "chs": 0,
+        "chi": 0,
+        "dups": [
+          "174428819"
+        ]
       },
       {
         "name": "Liam Richardson (Mobile)",
@@ -90,7 +112,9 @@
         "com": 0,
         "chs": 0,
         "chi": 0,
-        "dups": []
+        "dups": [
+          "174428819"
+        ]
       }
     ],
     "caleb": [
@@ -110,7 +134,7 @@
         "ins": 0,
         "plb": 0,
         "com": 0,
-        "chs": 204.5,
+        "chs": 275.0,
         "chi": 25.0,
         "dups": []
       }
@@ -119,81 +143,15 @@
   "flags": {
     "steven": [
       {
-        "id": "flag_1916d7cf16",
+        "id": "flag_1f2ea50887",
         "sev": "red",
-        "emp": "Herbie Windley",
-        "ref": "Job #174352648",
+        "emp": "John High",
+        "ref": "Job #174428819",
         "resolved": false,
         "disp": "",
         "note": "",
-        "title": "Unrecognized accessory code \u2014 WHA-100",
-        "detail": "Herbie Windley sold WHA-100 x0.7 to Mark Smith (Job #174352648), not on Master Pay File, and 'WHA-100' isn't in the spiff rate table. Confirm the spiff amount and add manually."
-      },
-      {
-        "id": "flag_297082a4c2",
-        "sev": "red",
-        "emp": "Michelle Kulcavage",
-        "ref": "Membership #173462123",
-        "resolved": false,
-        "disp": "",
-        "note": "",
-        "title": "Unrecognized membership seller \u2014 Michelle Kulcavage",
-        "detail": "Membership sold by 'Michelle Kulcavage' (not on Master Pay File, Standard Membership - 1 System, Allison Swanson). Not a recognized tech, office staff, or manager. Verify and add manually."
-      },
-      {
-        "id": "flag_9b039bc80c",
-        "sev": "red",
-        "emp": "Michelle Kulcavage",
-        "ref": "Membership #174474607",
-        "resolved": false,
-        "disp": "",
-        "note": "",
-        "title": "Unrecognized membership seller \u2014 Michelle Kulcavage",
-        "detail": "Membership sold by 'Michelle Kulcavage' (not on Master Pay File, Basic Membership - 1 System, Andrew Weiss). Not a recognized tech, office staff, or manager. Verify and add manually."
-      },
-      {
-        "id": "flag_00203c8bc8",
-        "sev": "red",
-        "emp": "Michelle Kulcavage",
-        "ref": "Membership #174401896",
-        "resolved": false,
-        "disp": "",
-        "note": "",
-        "title": "Unrecognized membership seller \u2014 Michelle Kulcavage",
-        "detail": "Membership sold by 'Michelle Kulcavage' (not on Master Pay File, Plumbing Membership - 1 Tank, Arthur Messina). Not a recognized tech, office staff, or manager. Verify and add manually."
-      },
-      {
-        "id": "flag_62d228f9a0",
-        "sev": "red",
-        "emp": "Michelle Kulcavage",
-        "ref": "Membership #174207228",
-        "resolved": false,
-        "disp": "",
-        "note": "",
-        "title": "Unrecognized membership seller \u2014 Michelle Kulcavage",
-        "detail": "Membership sold by 'Michelle Kulcavage' (not on Master Pay File, Standard Membership - 1 System, Betty Brown). Not a recognized tech, office staff, or manager. Verify and add manually."
-      },
-      {
-        "id": "flag_a7a93291c3",
-        "sev": "red",
-        "emp": "Michelle Kulcavage",
-        "ref": "Membership #195952550",
-        "resolved": false,
-        "disp": "",
-        "note": "",
-        "title": "Unrecognized membership seller \u2014 Michelle Kulcavage",
-        "detail": "Membership sold by 'Michelle Kulcavage' (not on Master Pay File, Standard Membership - 1 System, Bruce Whiteley). Not a recognized tech, office staff, or manager. Verify and add manually."
-      },
-      {
-        "id": "flag_fd59fdfc39",
-        "sev": "red",
-        "emp": "Michelle Kulcavage",
-        "ref": "Membership #173288871",
-        "resolved": false,
-        "disp": "",
-        "note": "",
-        "title": "Unrecognized membership seller \u2014 Michelle Kulcavage",
-        "detail": "Membership sold by 'Michelle Kulcavage' (not on Master Pay File, Standard Membership - 1 System, Charles Davies). Not a recognized tech, office staff, or manager. Verify and add manually."
+        "title": "Unrecognized employee on Master Pay File \u2014 John High",
+        "detail": "John High appears on the Master Pay File (Sales Spiff, Jaime & Kim Pando) but isn't in the known roster. Best-guess classified via business unit 'MB - Maint Commercial HVAC'. Verify this is a current employee and the department is correct."
       },
       {
         "id": "flag_f5ffa54512",
@@ -207,94 +165,6 @@
         "detail": "Membership sold by 'Liam Richardson (Desktop)' (not on Master Pay File, Plumbing Membership - 1 Tank, David Hall). Not a recognized tech, office staff, or manager. Verify and add manually."
       },
       {
-        "id": "flag_995fa6f22b",
-        "sev": "red",
-        "emp": "Michelle Kulcavage",
-        "ref": "Membership #174354041",
-        "resolved": false,
-        "disp": "",
-        "note": "",
-        "title": "Unrecognized membership seller \u2014 Michelle Kulcavage",
-        "detail": "Membership sold by 'Michelle Kulcavage' (not on Master Pay File, Standard Membership - 1 System, Elizabeth Roby). Not a recognized tech, office staff, or manager. Verify and add manually."
-      },
-      {
-        "id": "flag_e2ef363634",
-        "sev": "red",
-        "emp": "John High",
-        "ref": "Membership #174476559",
-        "resolved": false,
-        "disp": "",
-        "note": "",
-        "title": "Unrecognized membership seller \u2014 John High",
-        "detail": "Membership sold by 'John High' (not on Master Pay File, Standard Membership - 2 Systems, Jaime & Kim Pando). Not a recognized tech, office staff, or manager. Verify and add manually."
-      },
-      {
-        "id": "flag_f53ca2b56f",
-        "sev": "red",
-        "emp": "Michelle Kulcavage",
-        "ref": "Membership #173443591",
-        "resolved": false,
-        "disp": "",
-        "note": "",
-        "title": "Unrecognized membership seller \u2014 Michelle Kulcavage",
-        "detail": "Membership sold by 'Michelle Kulcavage' (not on Master Pay File, Basic Membership - 1 System, John Woods). Not a recognized tech, office staff, or manager. Verify and add manually."
-      },
-      {
-        "id": "flag_f4c23e5628",
-        "sev": "red",
-        "emp": "Michelle Kulcavage",
-        "ref": "Membership #196029666",
-        "resolved": false,
-        "disp": "",
-        "note": "",
-        "title": "Unrecognized membership seller \u2014 Michelle Kulcavage",
-        "detail": "Membership sold by 'Michelle Kulcavage' (not on Master Pay File, Standard Membership - 1 System, Kevin Leedy). Not a recognized tech, office staff, or manager. Verify and add manually."
-      },
-      {
-        "id": "flag_6a9182a025",
-        "sev": "red",
-        "emp": "Michelle Kulcavage",
-        "ref": "Membership #196036721",
-        "resolved": false,
-        "disp": "",
-        "note": "",
-        "title": "Unrecognized membership seller \u2014 Michelle Kulcavage",
-        "detail": "Membership sold by 'Michelle Kulcavage' (not on Master Pay File, Standard Membership - 2 Systems, Kevin Leedy). Not a recognized tech, office staff, or manager. Verify and add manually."
-      },
-      {
-        "id": "flag_3d58037fd5",
-        "sev": "red",
-        "emp": "Michelle Kulcavage",
-        "ref": "Membership #174705555",
-        "resolved": false,
-        "disp": "",
-        "note": "",
-        "title": "Unrecognized membership seller \u2014 Michelle Kulcavage",
-        "detail": "Membership sold by 'Michelle Kulcavage' (not on Master Pay File, Standard Membership - 1 System, Laura & Kenny Graven). Not a recognized tech, office staff, or manager. Verify and add manually."
-      },
-      {
-        "id": "flag_d5949ca351",
-        "sev": "red",
-        "emp": "Michelle Kulcavage",
-        "ref": "Membership #173920225",
-        "resolved": false,
-        "disp": "",
-        "note": "",
-        "title": "Unrecognized membership seller \u2014 Michelle Kulcavage",
-        "detail": "Membership sold by 'Michelle Kulcavage' (not on Master Pay File, Standard Membership - 2 Systems, Linda Geldenhuys). Not a recognized tech, office staff, or manager. Verify and add manually."
-      },
-      {
-        "id": "flag_e6149e1ebc",
-        "sev": "red",
-        "emp": "Michelle Kulcavage",
-        "ref": "Membership #174223471",
-        "resolved": false,
-        "disp": "",
-        "note": "",
-        "title": "Unrecognized membership seller \u2014 Michelle Kulcavage",
-        "detail": "Membership sold by 'Michelle Kulcavage' (not on Master Pay File, Standard Membership - 2 Systems, Rachel Miller). Not a recognized tech, office staff, or manager. Verify and add manually."
-      },
-      {
         "id": "flag_b1bb9e7240",
         "sev": "red",
         "emp": "Quinton Budnick",
@@ -304,61 +174,6 @@
         "note": "",
         "title": "Unrecognized membership seller \u2014 Quinton Budnick",
         "detail": "Membership sold by 'Quinton Budnick' (not on Master Pay File, Standard Membership - 4 Systems, Ralph Regalbuto). Not a recognized tech, office staff, or manager. Verify and add manually."
-      },
-      {
-        "id": "flag_24fbb28e8d",
-        "sev": "red",
-        "emp": "Michelle Kulcavage",
-        "ref": "Membership #174295668",
-        "resolved": false,
-        "disp": "",
-        "note": "",
-        "title": "Unrecognized membership seller \u2014 Michelle Kulcavage",
-        "detail": "Membership sold by 'Michelle Kulcavage' (not on Master Pay File, Basic Membership - 3 Systems, Richard Murray). Not a recognized tech, office staff, or manager. Verify and add manually."
-      },
-      {
-        "id": "flag_4d6fea3fa5",
-        "sev": "red",
-        "emp": "Michelle Kulcavage",
-        "ref": "Membership #174705273",
-        "resolved": false,
-        "disp": "",
-        "note": "",
-        "title": "Unrecognized membership seller \u2014 Michelle Kulcavage",
-        "detail": "Membership sold by 'Michelle Kulcavage' (not on Master Pay File, Standard Membership - 3 Systems, Richard Steadman). Not a recognized tech, office staff, or manager. Verify and add manually."
-      },
-      {
-        "id": "flag_d24b3862f6",
-        "sev": "red",
-        "emp": "Michelle Kulcavage",
-        "ref": "Membership #174715148",
-        "resolved": false,
-        "disp": "",
-        "note": "",
-        "title": "Unrecognized membership seller \u2014 Michelle Kulcavage",
-        "detail": "Membership sold by 'Michelle Kulcavage' (not on Master Pay File, Premium Membership - 2 Systems, Sean Dingle). Not a recognized tech, office staff, or manager. Verify and add manually."
-      },
-      {
-        "id": "flag_04302162c5",
-        "sev": "red",
-        "emp": "Michelle Kulcavage",
-        "ref": "Membership #196080258",
-        "resolved": false,
-        "disp": "",
-        "note": "",
-        "title": "Unrecognized membership seller \u2014 Michelle Kulcavage",
-        "detail": "Membership sold by 'Michelle Kulcavage' (not on Master Pay File, Basic Membership - 1 System, Walter Doughty). Not a recognized tech, office staff, or manager. Verify and add manually."
-      },
-      {
-        "id": "flag_496525117e",
-        "sev": "red",
-        "emp": "Michelle Kulcavage",
-        "ref": "Membership #196143882",
-        "resolved": false,
-        "disp": "",
-        "note": "",
-        "title": "Unrecognized membership seller \u2014 Michelle Kulcavage",
-        "detail": "Membership sold by 'Michelle Kulcavage' (not on Master Pay File, Standard Membership - 2 Systems, William Johnson). Not a recognized tech, office staff, or manager. Verify and add manually."
       },
       {
         "id": "flag_b79255dee8",
@@ -381,6 +196,17 @@
         "note": "",
         "title": "Unrecognized membership seller \u2014 Liam Richardson (Desktop)",
         "detail": "Membership sold by 'Liam Richardson (Desktop)' (not on Master Pay File, Plumbing Membership - 1 Tank, William Morgan). Not a recognized tech, office staff, or manager. Verify and add manually."
+      },
+      {
+        "id": "flag_149c2674c8",
+        "sev": "red",
+        "emp": "John High",
+        "ref": "Job #174428819",
+        "resolved": false,
+        "disp": "",
+        "note": "",
+        "title": "Possible duplicate spiff \u2014 job #174428819 credited to more than one technician",
+        "detail": "John High is being paid $25.00 for job #174428819 (Jaime & Kim Pando), but the payout ledger also shows Michelle Kulcavage credited for the same job. Verify only one technician should be paid before approving."
       }
     ],
     "caleb": [
@@ -426,7 +252,7 @@
         "disp": "",
         "note": "",
         "title": "Possible duplicate payment \u2014 job #170144440 already paid in a prior month",
-        "detail": "Jay Hall is being paid $20.00 for job #170144440 (Winslow, Barbara) this month, but the ledger shows this same job/employee combination was already paid in a previous month. Verify this isn't a duplicate before approving."
+        "detail": "Jay Hall is being paid $20.00 for job #170144440 (Barbara Winslow) this month, but the ledger shows this same job/employee combination was already paid in a previous month. Verify this isn't a duplicate before approving."
       },
       {
         "id": "flag_fac12432bf_2",
@@ -437,7 +263,7 @@
         "disp": "",
         "note": "",
         "title": "Possible duplicate payment \u2014 job #170144440 already paid in a prior month",
-        "detail": "Jay Hall is being paid $50.00 for job #170144440 (Winslow, Barbara) this month, but the ledger shows this same job/employee combination was already paid in a previous month. Verify this isn't a duplicate before approving."
+        "detail": "Jay Hall is being paid $50.00 for job #170144440 (Barbara Winslow) this month, but the ledger shows this same job/employee combination was already paid in a previous month. Verify this isn't a duplicate before approving."
       },
       {
         "id": "flag_37b0b9ae8a",
@@ -678,6 +504,26 @@
           "note": "Auto-added \u2014 not on Master Pay File"
         }
       ],
+      "Herbie Windley": [
+        {
+          "lineId": "ln_4ab1277363",
+          "date": "2026-10-16",
+          "job": "173184716",
+          "customer": "Andrew Weiss",
+          "type": "Sales Spiff",
+          "item": "Andrew Weiss",
+          "spiff": 100.0
+        },
+        {
+          "lineId": "ln_354877f76c",
+          "date": "2026-10-23",
+          "job": "174352648",
+          "customer": "Mark Smith",
+          "type": "Sales Spiff",
+          "item": "Mark Smith",
+          "spiff": 100.0
+        }
+      ],
       "Jesse Mertens": [
         {
           "lineId": "ln_9eaed0b15f",
@@ -696,6 +542,17 @@
           "type": "Sales Spiff",
           "item": "Steve Jones",
           "spiff": 100.0
+        }
+      ],
+      "John High": [
+        {
+          "lineId": "ln_21dc682333",
+          "date": "2026-10-23",
+          "job": "174428819",
+          "customer": "Jaime & Kim Pando",
+          "type": "Sales Spiff",
+          "item": "Jaime & Kim Pando",
+          "spiff": 25.0
         }
       ],
       "Karl Welch": [
@@ -736,6 +593,42 @@
           "spiff": 10.0
         },
         {
+          "lineId": "ln_ed2e6b58df",
+          "date": "2026-10-10",
+          "job": "172781923",
+          "customer": "Stan Earl",
+          "type": "Sales Spiff",
+          "item": "Stan Earl",
+          "spiff": 50.0
+        },
+        {
+          "lineId": "ln_0d9776be82",
+          "date": "2026-10-10",
+          "job": "172781946",
+          "customer": "Lindsay Malady",
+          "type": "Sales Spiff",
+          "item": "Lindsay Malady",
+          "spiff": 25.0
+        },
+        {
+          "lineId": "ln_bd68aae5a9",
+          "date": "2026-10-10",
+          "job": "172787293",
+          "customer": "Dennis Staples",
+          "type": "Sales Spiff",
+          "item": "Dennis Staples",
+          "spiff": 20.0
+        },
+        {
+          "lineId": "ln_5bf857a243",
+          "date": "2026-10-10",
+          "job": "172787293",
+          "customer": "Dennis Staples",
+          "type": "Sales Spiff",
+          "item": "Dennis Staples",
+          "spiff": 50.0
+        },
+        {
           "lineId": "ln_e10384bcfa",
           "date": "2026-10-12",
           "job": "171566685",
@@ -772,26 +665,6 @@
           "spiff": 25.0
         },
         {
-          "lineId": "ln_0b500c20e1",
-          "date": "2026-10-10",
-          "job": "172787293",
-          "customer": "Dennis Staples",
-          "type": "Sales Spiff",
-          "item": "07 Compressor Protection Kit (CHAC-7)",
-          "spiff": 50.0,
-          "note": "Auto-added \u2014 not on Master Pay File"
-        },
-        {
-          "lineId": "ln_1fe6f3a98b",
-          "date": "2026-10-10",
-          "job": "172781923",
-          "customer": "Stan Earl",
-          "type": "Sales Spiff",
-          "item": "07 Compressor Protection Kit (CHAC-7)",
-          "spiff": 50.0,
-          "note": "Auto-added \u2014 not on Master Pay File"
-        },
-        {
           "lineId": "ln_59df3799ed",
           "date": "2026-10-23",
           "job": "173400671",
@@ -799,26 +672,6 @@
           "type": "Sales Spiff",
           "item": "Air Scrubber (CHAC-91)",
           "spiff": 300.0,
-          "note": "Auto-added \u2014 not on Master Pay File"
-        },
-        {
-          "lineId": "ln_7e6b0f5798",
-          "date": "2026-10-10",
-          "job": "",
-          "customer": "Dennis Staples",
-          "type": "Sales Spiff",
-          "item": "Standard Membership - 1 System \u2014 New Sale",
-          "spiff": 20.0,
-          "note": "Auto-added \u2014 not on Master Pay File"
-        },
-        {
-          "lineId": "ln_44f61a4f40",
-          "date": "2026-10-10",
-          "job": "",
-          "customer": "Lindsay Malady",
-          "type": "Sales Spiff",
-          "item": "Standard Membership - 2 Systems \u2014 New Sale",
-          "spiff": 25.0,
           "note": "Auto-added \u2014 not on Master Pay File"
         }
       ],
@@ -936,21 +789,30 @@
     "caleb": {
       "Jay Hall": [
         {
-          "lineId": "ln_e81aaa4fbd",
+          "lineId": "ln_70db6d7dd1",
+          "date": "2026-10-01",
+          "job": "171121379",
+          "customer": "Judy Smalley",
+          "type": "Sales Spiff",
+          "item": "Judy Smalley",
+          "spiff": 50.0
+        },
+        {
+          "lineId": "ln_cdf5ee5c04",
           "date": "2026-10-02",
           "job": "170144440",
-          "customer": "Winslow, Barbara",
+          "customer": "Barbara Winslow",
           "type": "Sales Spiff",
-          "item": "Winslow, Barbara",
+          "item": "Barbara Winslow",
           "spiff": 20.0
         },
         {
-          "lineId": "ln_4eb0d7410d",
+          "lineId": "ln_e986717d6e",
           "date": "2026-10-02",
           "job": "170144440",
-          "customer": "Winslow, Barbara",
+          "customer": "Barbara Winslow",
           "type": "Sales Spiff",
-          "item": "Winslow, Barbara",
+          "item": "Barbara Winslow",
           "spiff": 50.0
         },
         {
@@ -1080,16 +942,6 @@
           "spiff": 20.0
         },
         {
-          "lineId": "ln_a1494494d5",
-          "date": "2026-10-01",
-          "job": "171121379",
-          "customer": "Judy Smalley",
-          "type": "Sales Spiff",
-          "item": "07 Compressor Protection Kit (CHAC-7)",
-          "spiff": 50.0,
-          "note": "Auto-added \u2014 not on Master Pay File"
-        },
-        {
           "lineId": "ln_18e0b29f56",
           "date": "2026-10-21",
           "job": "173303046",
@@ -1178,29 +1030,161 @@
           "spiff": 25.0
         },
         {
-          "lineId": "ln_3abee5d775",
+          "lineId": "ln_714d757f9d",
           "date": "2026-10-21",
           "job": "173067654",
           "customer": "Pure Property Management of South Carolina",
           "type": "Sales Spiff",
           "item": "Surge Protection Bundle (CHAC-22)",
-          "spiff": 53.0,
+          "spiff": 100.0,
           "note": "Auto-added \u2014 not on Master Pay File"
         },
         {
-          "lineId": "ln_bb77b022e0",
+          "lineId": "ln_af1ff38fd0",
           "date": "2026-10-21",
           "job": "173067654",
           "customer": "Pure Property Management of South Carolina",
           "type": "Sales Spiff",
           "item": "07 Compressor Protection Kit (CHAC-7)",
-          "spiff": 26.5,
+          "spiff": 50.0,
           "note": "Auto-added \u2014 not on Master Pay File"
         }
       ]
     }
   },
   "officeMems": [
+    {
+      "name": "Michelle Kulcavage",
+      "total": 335.0,
+      "details": [
+        {
+          "customer": "Allison Swanson",
+          "type": "Standard Membership - 1 System",
+          "activation": "Renewal",
+          "soldOn": "2026-10-19",
+          "amount": 5.0
+        },
+        {
+          "customer": "Andrew Weiss",
+          "type": "Basic Membership - 1 System",
+          "activation": "New Sale",
+          "soldOn": "2026-10-23",
+          "amount": 10.0
+        },
+        {
+          "customer": "Arthur Messina",
+          "type": "Plumbing Membership - 1 Tank",
+          "activation": "New Sale",
+          "soldOn": "2026-10-23",
+          "amount": 25.0
+        },
+        {
+          "customer": "Betty Brown",
+          "type": "Standard Membership - 1 System",
+          "activation": "New Sale",
+          "soldOn": "2026-10-21",
+          "amount": 20.0
+        },
+        {
+          "customer": "Bruce Whiteley",
+          "type": "Standard Membership - 1 System",
+          "activation": "New Sale",
+          "soldOn": "2026-10-28",
+          "amount": 20.0
+        },
+        {
+          "customer": "Charles Davies",
+          "type": "Standard Membership - 1 System",
+          "activation": "New Sale",
+          "soldOn": "2026-10-16",
+          "amount": 20.0
+        },
+        {
+          "customer": "Elizabeth Roby",
+          "type": "Standard Membership - 1 System",
+          "activation": "New Sale",
+          "soldOn": "2026-10-22",
+          "amount": 20.0
+        },
+        {
+          "customer": "John Woods",
+          "type": "Basic Membership - 1 System",
+          "activation": "Renewal",
+          "soldOn": "2026-10-19",
+          "amount": 5.0
+        },
+        {
+          "customer": "Kevin Leedy",
+          "type": "Standard Membership - 1 System",
+          "activation": "New Sale",
+          "soldOn": "2026-10-28",
+          "amount": 20.0
+        },
+        {
+          "customer": "Kevin Leedy",
+          "type": "Standard Membership - 2 Systems",
+          "activation": "Renewal",
+          "soldOn": "2026-10-28",
+          "amount": 10.0
+        },
+        {
+          "customer": "Laura & Kenny Graven",
+          "type": "Standard Membership - 1 System",
+          "activation": "New Sale",
+          "soldOn": "2026-10-27",
+          "amount": 20.0
+        },
+        {
+          "customer": "Linda Geldenhuys",
+          "type": "Standard Membership - 2 Systems",
+          "activation": "New Sale",
+          "soldOn": "2026-10-20",
+          "amount": 25.0
+        },
+        {
+          "customer": "Rachel Miller",
+          "type": "Standard Membership - 2 Systems",
+          "activation": "New Sale",
+          "soldOn": "2026-10-21",
+          "amount": 25.0
+        },
+        {
+          "customer": "Richard Murray",
+          "type": "Basic Membership - 3 Systems",
+          "activation": "Renewal",
+          "soldOn": "2026-10-22",
+          "amount": 15.0
+        },
+        {
+          "customer": "Richard Steadman",
+          "type": "Standard Membership - 3 Systems",
+          "activation": "New Sale",
+          "soldOn": "2026-10-27",
+          "amount": 30.0
+        },
+        {
+          "customer": "Sean Dingle",
+          "type": "Premium Membership - 2 Systems",
+          "activation": "New Sale",
+          "soldOn": "2026-10-27",
+          "amount": 30.0
+        },
+        {
+          "customer": "Walter Doughty",
+          "type": "Basic Membership - 1 System",
+          "activation": "New Sale",
+          "soldOn": "2026-10-29",
+          "amount": 10.0
+        },
+        {
+          "customer": "William Johnson",
+          "type": "Standard Membership - 2 Systems",
+          "activation": "New Sale",
+          "soldOn": "2026-10-30",
+          "amount": 25.0
+        }
+      ]
+    },
     {
       "name": "Chris Port",
       "total": 145.0,

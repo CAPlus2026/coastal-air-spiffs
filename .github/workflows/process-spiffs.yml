@@ -45,4 +45,4 @@ jobs:
         run: pip install -r requirements-dev.txt
 
       - name: READ-ONLY diagnostic (no writes)
-        run: python diag_jay.py
+        run: python diag_leads.py

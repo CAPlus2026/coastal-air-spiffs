@@ -1,19 +1,14 @@
 name: Process Spiffs
 
-# Billy's "Run payroll" button in the app appends a row to the run_requests Sheet tab. This
-# workflow is a WATCHER: the job stays alive for ~5h45m, polling that tab every 30 seconds and
-# processing a request (tests -> ServiceTitan pull -> splice -> commit/push) within seconds of it
-# appearing, then starts its own successor before the 6-hour job limit. See watch_requests.py.
+# MANUAL ONLY (changed 2026-11-04, approved by Billy). The 24/7 watcher and the hourly cron safety
+# net were removed: spiffs run once a month, so the workflow now runs only when someone clicks
+# "Run workflow" on the Actions tab.
 #
-# Why not just a cron schedule: GitHub throttles scheduled workflows hard — observed 2026-10-02 as
-# one run every 4-6 HOURS despite `*/5` — so requests sat on "Queued" for hours. The hourly cron
-# below is only a safety net that restarts the chain if it ever dies; the concurrency group keeps
-# it from running alongside a live watcher (it waits its turn instead).
-#
-# One click on "Run workflow" (Actions tab) starts a watcher; it then keeps itself going.
+# How to run a month: click "Run payroll" in the app (queues the month in the run_requests tab),
+# then Actions -> Process Spiffs -> Run workflow. The job processes whatever is queued ONCE
+# (tests -> ServiceTitan pull -> splice -> commit/push) and exits. It does not poll and does not
+# start a successor run.
 on:
-  schedule:
-    - cron: "17 * * * *"
   workflow_dispatch:
 
 concurrency:
@@ -22,14 +17,12 @@ concurrency:
 
 permissions:
   contents: write
-  actions: write
 
 jobs:
   watch:
     runs-on: ubuntu-latest
-    # 5h45m of polling (watch_requests.py) + headroom for a request being processed right at the
-    # end; GitHub's hard cap is 6h.
-    timeout-minutes: 355
+    # One-shot: process queued month(s) and exit.
+    timeout-minutes: 60
     env:
       ST_CLIENT_ID: ${{ secrets.ST_CLIENT_ID }}
       ST_CLIENT_SECRET: ${{ secrets.ST_CLIENT_SECRET }}
@@ -51,5 +44,19 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
 
-      - name: Watch for queued payroll runs
-        run: python watch_requests.py
+      - name: Process queued payroll run(s) once (no polling, no successor)
+        run: |
+          python - <<'PY'
+          import watch_requests as w
+          seen = set()
+          for _ in range(5):  # hard cap; normally one month is queued
+              month = w.queued_month()
+              # queued_month() can return a "(couldn't fetch ...)" message when the Sheet read
+              # fails (that wrote 113 junk run_requests rows on 2026-11-04) — treat it as nothing queued.
+              if not month or month.startswith("(") or month in seen:
+                  break
+              seen.add(month)
+              w.handle(month)
+          if not seen:
+              print("Nothing queued. Click 'Run payroll' in the app first, then re-run this workflow.")
+          PY

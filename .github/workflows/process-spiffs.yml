@@ -44,19 +44,5 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
 
-      - name: Process queued payroll run(s) once (no polling, no successor)
-        run: |
-          python - <<'PY'
-          import watch_requests as w
-          seen = set()
-          for _ in range(5):  # hard cap; normally one month is queued
-              month = w.queued_month()
-              # queued_month() can return a "(couldn't fetch ...)" message when the Sheet read
-              # fails (that wrote 113 junk run_requests rows on 2026-11-04) — treat it as nothing queued.
-              if not month or month.startswith("(") or month in seen:
-                  break
-              seen.add(month)
-              w.handle(month)
-          if not seen:
-              print("Nothing queued. Click 'Run payroll' in the app first, then re-run this workflow.")
-          PY
+      - name: READ-ONLY diagnostic (no writes)
+        run: python diag_rerun.py

@@ -94,7 +94,9 @@ for mgr in ("steven", "caleb"):
 lines.append("  },")
 
 lines.append("  flags:{")
-for mgr in ("steven", "caleb", "jenny"):
+# "review" = the Needs review hold (unrecognized people, held Rich items, installer notes) —
+# shown on Billy's Overview only, never on a manager's team and never rolled into any total.
+for mgr in ("steven", "caleb", "jenny", "review"):
     lines.append(f"    {mgr}:[")
     for f in r["flags"].get(mgr, []):
         lines.append(f"      {flag_line(f)},")
@@ -135,6 +137,15 @@ for mgr in ("steven", "caleb"):
         lines.append("      ],")
     lines.append("    },")
 lines.append("  },")
+
+def review_line(n):
+    return (f"{{name:{js(n['name'])},amount:{n['amount']:g},reason:{js(n['reason'])},"
+            f"lines:{len(n.get('lines') or [])}}}")
+
+lines.append("  needsReview:[")
+for n in r.get("needsReview", []):
+    lines.append(f"    {review_line(n)},")
+lines.append("  ],")
 
 lines.append("  ingestion:[")
 lines.append("    {name:'Master Pay File',    ok:true},")

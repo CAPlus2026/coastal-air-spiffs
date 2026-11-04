@@ -189,7 +189,7 @@ def build_mpf_indexes(mpf_rows):
     kept on purpose: the only question here is 'was a Stage 2 recorded', not 'how much'."""
     by_emp, by_customer = defaultdict(list), defaultdict(list)
     for row in mpf_rows:
-        if row.get("Activity") != "TGL Lead Sold Res":
+        if row.get("Activity") not in pm.TGL_SOLD_RES_ACTIVITIES:
             continue
         name, customer = row.get("EmployeeName"), row.get("CustomerName") or ""
         lnk = pm.last_name_key(customer)

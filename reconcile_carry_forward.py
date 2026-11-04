@@ -61,7 +61,7 @@ def build_sold_index(mpf_rows):
     monthly pipeline checks via tgl_sold_seen, just built once across a wide date range."""
     index = defaultdict(list)
     for row in mpf_rows:
-        if row.get("Activity") != "TGL Lead Sold Res":
+        if row.get("Activity") not in pm.TGL_SOLD_RES_ACTIVITIES:
             continue
         name = row.get("EmployeeName")
         customer = row.get("CustomerName") or ""

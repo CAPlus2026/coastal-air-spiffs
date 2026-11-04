@@ -289,7 +289,10 @@ const S={
     ],
     jenny:[
     ],
+    review:[
+    ],
   },
+  needsReview:[],
   commLeads:[
     {id:"cl_2026-06_1",month:"Jun 2026",tech:"Nick Scarpa",job:"",customer:"Rambler - Wares to Wander",location:"",status:"Pending",spiff:0,payMonth:"Oct 2026",paid:false},
     {id:"cl_2026-06_2",month:"Jun 2026",tech:"Ray Lambert",job:"",customer:"Founders Group Int'l",location:"",status:"Pending",spiff:0,payMonth:"Oct 2026",paid:false},
@@ -865,10 +868,8 @@ async function loadSheetsOnce(){
       lead.status=c.status;lead.spiff=c.spiff;lead.payMonth=c.payMonth;
       lead.disposition=c.disposition;lead.note=c.note;
       if(c.location) lead.location=c.location;
-      if(lead.status==='Sold & Completed'){
-        const mgr=mgrForEmployee(lead.tech);
-        if(mgr){payOutCommLead(mgr,lead);lead.paid=true;}
-      }
+      // 2026-11: the log no longer pays — commercial lead spiffs come only from the commercial
+      // salesperson's submitted list (process_month.py, comm_sales_submissions tab).
     });
   }
   // Replay month close-out status — last row for this MONTH wins.
@@ -1083,6 +1084,23 @@ function show(id){
 }
 function vw(){return document.querySelector('.view');}
 
+// ── NEEDS REVIEW (hold) ──────────────────────────────────
+// Unrecognized people, held Rich items, and installer notes. Added 2026-11 (Billy): these used
+// to default onto Steven's team and get paid there. Nothing here is in any total or the payroll
+// file — fix the roster (or the rule) and re-run to release it.
+function rNeedsReviewCard(){
+  const held=S.needsReview||[];
+  const rf=(S.flags&&S.flags.review)||[];
+  if(!held.length&&!rf.length) return '';
+  const heldAmt=held.reduce((a,n)=>a+(n.amount||0),0);
+  return `<div class="card" style="border-left:3px solid #f59e0b">
+    <div class="ctitle">Needs review — held, not paid (${fp(heldAmt)})</div>
+    <div style="font-size:.75rem;color:#999;margin-bottom:.5rem">Not in any total or the payroll file. Add the person to the roster (or mark them not eligible) and re-run to release it.</div>
+    ${held.map(n=>`<div class="ri"><div class="ril"><span style="font-weight:500">${n.name}</span><span class="risub">${n.reason}</span></div><span class="badge bwarn">${fp(n.amount)} held</span></div>`).join('')}
+    ${rf.map(f=>`<div class="ri"><div class="ril"><span style="font-weight:500">${f.title}</span><span class="risub">${f.detail}</span></div><span class="badge ${f.resolved?'bgray':'bdanger'}">${f.resolved?'Info':'Review'}</span></div>`).join('')}
+  </div>`;
+}
+
 // ── OVERVIEW ─────────────────────────────────────────────
 function rOverview(){
   const v=vw();
@@ -1137,6 +1155,7 @@ function rOverview(){
     `}
   </div>
   ${rEvidenceCard()}
+  ${rNeedsReviewCard()}
   <div class="card" style="border-left:3px solid ${isClosed()?'#065f46':'#f59e0b'}">
     <div class="ctitle">Month status</div>
     ${isClosed()?`
@@ -1658,7 +1677,7 @@ function buildRows(){
   });
 
   // Roll resolved flags into the employee's row
-  [...S.flags.steven,...S.flags.caleb].filter(f=>f.resolved&&f.disp==='Pay this month').forEach(f=>{
+  [...S.flags.steven,...S.flags.caleb].filter(f=>f.resolved&&f.disp==='Pay this month'&&!isNoPayFlag(f)).forEach(f=>{
     const isLead = f.title.toLowerCase().includes('lead stage 1')||f.title.toLowerCase().includes('lead stage 2');
     const isAccessory = f.title.toLowerCase().includes('accessory');
     const isCH = ROSTER.chTechs.has(f.emp);
@@ -1682,9 +1701,8 @@ function buildRows(){
   // Commercial lead spiffs — amount is already baked into the tech's base vals above
   // (payOutCommLead mutates S.emps directly, same pattern as carry-forward payouts below),
   // so this only adds a traceable note, not the dollar amount again.
-  S.commLeads.filter(l=>l.status==='Sold & Completed'&&normMonth(l.payMonth)===MONTH).forEach(l=>{
-    addToEmp(l.tech, [0,0,0,0,0,0], `Commercial lead: ${l.customer} (Job ${l.job}) — ${fp(l.spiff)}`, '');
-  });
+  // (2026-11) Commercial lead spiffs now arrive as ordinary "Commercial Lead Spiff" lines from the
+  // salesperson's submitted list, already in the base vals — no separate log note needed.
 
   // Carry-forward payouts — amount is already baked into the employee's base vals above
   // (payOutCarryForward mutates S.emps directly), so this only adds a traceable note,
@@ -1774,6 +1792,11 @@ function rOutput(){
     </tbody>
   </table></div></div>`;
 }
+// Flags that are checks only — resolving one as "Pay this month" must never add money (the
+// default-amount parsing below would otherwise turn it into a $25 payout).
+const NO_PAY_FLAG_PREFIXES=['Not a spiff item','Duplicate check','ST paid a commercial lead','Commercial lead already paid','Possible installer'];
+function isNoPayFlag(f){return NO_PAY_FLAG_PREFIXES.some(p=>(f.title||'').startsWith(p));}
+
 function dlCSV(){
   const rows=buildRows();
   const h=['Employee',...DCOLS,'Total Due','Notes'].join(',');
@@ -2038,12 +2061,12 @@ function rCommLeads(){
     <span class="badge binfo">${active.length} active · ${pending.length} pending</span>
   </div>
   <div class="card" style="margin-bottom:.5rem;font-size:.75rem;color:#999">
-    Commercial lead spiff = \$100 paid when job sells AND completes. This log rolls month to month — leads stay until resolved. Add new leads each month.
+    Tracking only. Commercial lead spiffs are paid once, only from the commercial salesperson's monthly submitted sales list — changing a status here never pays anything. This log rolls month to month — leads stay until resolved.
   </div>
 
   ${active.length?`
   <div class="card" style="border-left:3px solid #ef4444">
-    <div class="ctitle">Pay in ${MONTH} — sold &amp; in progress</div>
+    <div class="ctitle">Sold — install in progress (paid once it is on the salesperson's list)</div>
     ${active.map(l=>`<div class="ri">
       <div class="ril">
         <span style="font-weight:500">${l.tech} — ${l.customer}${l.location&&l.location!==l.customer?` <span style="color:#999;font-weight:400">(${l.location})</span>`:''}</span>
@@ -2078,7 +2101,7 @@ function rCommLeads(){
         </select>
         ${l.prevStatus?`<button onclick="undoCommLead('${l.id}')" style="font-size:.65rem;padding:2px 8px;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;color:#666;white-space:nowrap">Undo</button>`:''}
         </div>
-        <span style="font-size:.7rem;color:#999;text-align:right">${l.status==='Sold & Completed'?'<span class="badge bok">\$100 due</span>':''}</span>
+        <span style="font-size:.7rem;color:#999;text-align:right">${l.status==='Sold & Completed'?'<span class="badge bgray">Paid from sales list</span>':''}</span>
       </div>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px">
         <select id="cl-disp-${l.id}" style="font-size:.7rem;padding:3px 6px;border:1px solid #ddd;border-radius:6px;background:#fff">
@@ -2133,13 +2156,9 @@ async function updateCommLead(id, status){
   lead.prevStatus = lead.status; // save for undo
   lead.status=status;
   lead.disposition=''; lead.note='';
-  if(status==='Sold & Completed'){
-    lead.spiff=100; lead.payMonth=MONTH;
-    if(mgr){payOutCommLead(mgr,lead);lead.paid=true;}
-    toast(`\$100 spiff due to ${lead.tech} — added to their total for ${MONTH}.`);
-  }else{
-    lead.spiff=0; lead.payMonth='';
-  }
+  // 2026-11: status is tracking only — never pays (see rCommLeads note).
+  lead.spiff=0; lead.payMonth='';
+  if(status==='Sold & Completed') toast('Noted. The spiff is paid only when it is on the commercial salesperson\'s submitted list.');
   rCommLeads();
   await sAppend('commlead_updates',[[MONTH,id,lead.tech,lead.customer,lead.job,status,lead.spiff,lead.payMonth,new Date().toISOString(),'','',lead.location||'']]);
 }
@@ -2175,12 +2194,7 @@ async function undoCommLead(id){
   lead.status=lead.prevStatus;
   lead.prevStatus=null;
   lead.disposition=''; lead.note='';
-  if(lead.status==='Sold & Completed'){
-    lead.spiff=100; lead.payMonth=MONTH;
-    if(mgr){payOutCommLead(mgr,lead);lead.paid=true;}
-  }else{
-    lead.spiff=0;lead.payMonth='';
-  }
+  lead.spiff=0;lead.payMonth='';  // 2026-11: tracking only, never pays
   toast('Status reverted.');
   rCommLeads();
   await sAppend('commlead_updates',[[MONTH,id,lead.tech,lead.customer,lead.job,lead.status,lead.spiff,lead.payMonth,new Date().toISOString(),'','',lead.location||'']]);

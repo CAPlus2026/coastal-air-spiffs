@@ -131,7 +131,13 @@ def main():
         # status row on failure — the bare "returned non-zero exit status 1" that check_returncode()
         # produces hides the real traceback inside GitHub's log, which can't be read without a
         # login (found 2026-10-02 debugging a failed Sep re-run).
-        result = subprocess.run([sys.executable, "process_month.py", month], check=False,
+        # FORCE_PREFLIGHT=true comes from the workflow_dispatch input force_preflight (default
+        # false) — only for a pre-flight block that was investigated and approved by Billy.
+        cmd = [sys.executable, "process_month.py", month]
+        if os.environ.get("FORCE_PREFLIGHT", "").strip().lower() == "true":
+            cmd.append("--force-preflight")
+            print("  force_preflight=true — passing --force-preflight to process_month.py")
+        result = subprocess.run(cmd, check=False,
                                  stderr=subprocess.PIPE, text=True)
         if result.stderr:
             print(result.stderr, file=sys.stderr)

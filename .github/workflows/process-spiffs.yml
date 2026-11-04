@@ -10,6 +10,11 @@ name: Process Spiffs
 # start a successor run.
 on:
   workflow_dispatch:
+    inputs:
+      force_preflight:
+        description: "Proceed even if the pre-flight orphan check blocks (passes --force-preflight). Only after the block was investigated and approved."
+        type: boolean
+        default: false
 
 concurrency:
   group: process-spiffs
@@ -30,6 +35,7 @@ jobs:
       ST_TENANT_ID: ${{ secrets.ST_TENANT_ID }}
       SPIFFS_SHARED_KEY: ${{ secrets.SPIFFS_SHARED_KEY }}
       GH_TOKEN: ${{ github.token }}
+      FORCE_PREFLIGHT: ${{ inputs.force_preflight && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v4
 
